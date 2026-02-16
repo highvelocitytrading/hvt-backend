@@ -3,21 +3,34 @@ import express from "express";
 const app = express();
 
 /**
- * IMPORTANT:
- * - Authorize.Net sends JSON -> express.json() is required
- * - Jotform Webhooks often send application/x-www-form-urlencoded -> express.urlencoded() is required
+ * Trust proxy so req.ip / protocol behave correctly behind Railway/edge proxies.
  */
-app.use(express.json());
+app.set("trust proxy", true);
+
+/**
+ * IMPORTANT:
+ * - Authorize sends JSON. We also capture raw body for future signature verification.
+ * - Jotform webhooks are often x-www-form-urlencoded, so we enable urlencoded too.
+ */
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      // Save raw body for debugging / future signature verification
+      req.rawBody = buf?.toString("utf8");
+    },
+  })
+);
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Health check (easy test)
-app.get("/health", (req, res) => {
-  res.json({ ok: true });
-});
-
-// ✅ Root route
+/**
+ * Basic routes
+ */
 app.get("/", (req, res) => {
   res.send("HVT backend is running. Try /health");
+});
+
+app.get("/health", (req, res) => {
+  res.json({ ok: true });
 });
 
 /**
@@ -25,26 +38,38 @@ app.get("/", (req, res) => {
  * AUTHORIZE.NET WEBHOOKS
  * =========================
  */
-
-// ✅ Quick browser test (GET) so you don't see an error in the browser
 app.get("/webhooks/authorize", (req, res) => {
   res.json({ ok: true, msg: "Use POST here for real Authorize.Net webhooks" });
 });
 
-// ✅ Webhook endpoint (Authorize.Net will POST to this)
 app.post("/webhooks/authorize", (req, res) => {
   try {
+    const body = req.body || {};
+    const eventType = body.eventType;
+    const payload = body.payload || {};
+    const txId = payload.id; // <-- this is the Authorize transaction ID in your logs
+    const amount = payload.authAmount ?? payload.settleAmount ?? payload.amount;
+
     console.log("=== AUTHORIZE WEBHOOK HIT ===");
     console.log("Time:", new Date().toISOString());
-    console.log("Headers:", req.headers);
-    console.log("Body:", req.body);
+    console.log("IP:", req.ip);
+    console.log("User-Agent:", req.get("user-agent"));
+    console.log("Event:", eventType);
+    console.log("Transaction ID:", txId);
+    console.log("Amount:", amount);
+    console.log("webhookId:", body.webhookId);
+    console.log("notificationId:", body.notificationId);
 
-    // Always respond 200 fast so Authorize doesn't retry
-    return res.sendStatus(200);
+    // If you ever need deeper debugging:
+    console.log("Headers:", req.headers);
+    console.log("Body:", body);
+
+    // Always 200 quickly so Authorize doesn't retry
+    return res.status(200).send("OK");
   } catch (err) {
     console.error("Authorize webhook handler error:", err);
-    // Still return 200 so Authorize doesn't keep retrying forever
-    return res.sendStatus(200);
+    // Still return 200 to avoid endless retries while you debug
+    return res.status(200).send("OK");
   }
 });
 
@@ -53,42 +78,51 @@ app.post("/webhooks/authorize", (req, res) => {
  * JOTFORM WEBHOOKS
  * =========================
  */
-
-// ✅ Quick browser test (GET)
 app.get("/webhooks/jotform", (req, res) => {
   res.json({ ok: true, msg: "Use POST here for real Jotform webhooks" });
 });
 
-// ✅ Jotform webhook endpoint
 app.post("/webhooks/jotform", (req, res) => {
   try {
+    const body = req.body || {};
+
     console.log("=== JOTFORM WEBHOOK HIT ===");
     console.log("Time:", new Date().toISOString());
+    console.log("IP:", req.ip);
+    console.log("User-Agent:", req.get("user-agent"));
+
+    // Helpful: try to auto-find an email field (varies by form)
+    let detectedEmail = null;
+    for (const [k, v] of Object.entries(body)) {
+      if (typeof v === "string" && k.toLowerCase().includes("email")) {
+        detectedEmail = v;
+        break;
+      }
+    }
+
+    console.log("Detected email:", detectedEmail);
     console.log("Headers:", req.headers);
-    console.log("Body:", req.body);
+    console.log("Body:", body);
 
-    /**
-     * NOTE:
-     * Jotform payload field names vary depending on webhook settings.
-     * Common places email can appear:
-     * - req.body.email
-     * - req.body["q3_email"] or similar (question id based)
-     * - req.body.rawRequest / submission data object (depends on integration)
-     *
-     * For now we just log everything.
-     * Once you paste a sample Jotform Body here, we’ll extract the exact email key.
-     */
-
-    return res.sendStatus(200);
+    return res.status(200).send("OK");
   } catch (err) {
     console.error("Jotform webhook handler error:", err);
-    return res.sendStatus(200);
+    return res.status(200).send("OK");
   }
 });
 
-// ✅ Railway provides PORT automatically. Local fallback = 3000
-const port = process.env.PORT || 3000;
+/**
+ * Catch-all (optional)
+ */
+app.use((req, res) => {
+  res.status(404).json({ ok: false, error: "Not found" });
+});
 
+/**
+ * Start server
+ * Railway supplies PORT automatically. Local fallback = 3000
+ */
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log("Server running on port", port);
 });
