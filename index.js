@@ -1,128 +1,130 @@
-import express from "express";
+'use strict';
+
+require('dotenv').config();
+
+const express = require('express');
+const cors = require('cors');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
+app.set('trust proxy', 1);
 
-/**
- * Trust proxy so req.ip / protocol behave correctly behind Railway/edge proxies.
- */
-app.set("trust proxy", true);
-
-/**
- * IMPORTANT:
- * - Authorize sends JSON. We also capture raw body for future signature verification.
- * - Jotform webhooks are often x-www-form-urlencoded, so we enable urlencoded too.
- */
+// Keep the raw body (useful for webhook signature validation later)
 app.use(
   express.json({
+    limit: '2mb',
     verify: (req, res, buf) => {
-      // Save raw body for debugging / future signature verification
-      req.rawBody = buf?.toString("utf8");
-    },
+      req.rawBody = buf?.toString('utf8') || '';
+    }
   })
 );
-app.use(express.urlencoded({ extended: true }));
+
+app.use(cors({ origin: true }));
+
+const PORT = process.env.PORT || 3000;
+
+// Supabase config
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
+const WEBHOOK_TABLE = process.env.SUPABASE_WEBHOOK_TABLE || 'webhook_events';
+
+let supabase = null;
+if (SUPABASE_URL && SUPABASE_KEY) {
+  supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: false }
+  });
+} else {
+  console.warn(
+    '[WARN] SUPABASE_URL and/or SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_ANON_KEY) is missing. Webhook inserts will fail until set.'
+  );
+}
+
+// Basic routes
+app.get('/', (req, res) => {
+  res.json({ ok: true, service: 'hvt-backend' });
+});
+
+app.get('/health', (req, res) => {
+  res.json({
+    ok: true,
+    uptime_s: Math.round(process.uptime()),
+    hasSupabase: Boolean(supabase),
+    webhookTable: WEBHOOK_TABLE
+  });
+});
 
 /**
- * Basic routes
+ * Authorize.Net webhook endpoint
+ * - Stores payload + headers to Supabase table for auditing/debugging
+ * - Signature verification / business logic can be added later
  */
-app.get("/", (req, res) => {
-  res.send("HVT backend is running. Try /health");
-});
-
-app.get("/health", (req, res) => {
-  res.json({ ok: true });
-});
-
-/**
- * =========================
- * AUTHORIZE.NET WEBHOOKS
- * =========================
- */
-app.get("/webhooks/authorize", (req, res) => {
-  res.json({ ok: true, msg: "Use POST here for real Authorize.Net webhooks" });
-});
-
-app.post("/webhooks/authorize", (req, res) => {
+app.post('/webhooks/authorize-net', async (req, res) => {
   try {
-    const body = req.body || {};
-    const eventType = body.eventType;
-    const payload = body.payload || {};
-    const txId = payload.id; // <-- this is the Authorize transaction ID in your logs
-    const amount = payload.authAmount ?? payload.settleAmount ?? payload.amount;
-
-    console.log("=== AUTHORIZE WEBHOOK HIT ===");
-    console.log("Time:", new Date().toISOString());
-    console.log("IP:", req.ip);
-    console.log("User-Agent:", req.get("user-agent"));
-    console.log("Event:", eventType);
-    console.log("Transaction ID:", txId);
-    console.log("Amount:", amount);
-    console.log("webhookId:", body.webhookId);
-    console.log("notificationId:", body.notificationId);
-
-    // If you ever need deeper debugging:
-    console.log("Headers:", req.headers);
-    console.log("Body:", body);
-
-    // Always 200 quickly so Authorize doesn't retry
-    return res.status(200).send("OK");
-  } catch (err) {
-    console.error("Authorize webhook handler error:", err);
-    // Still return 200 to avoid endless retries while you debug
-    return res.status(200).send("OK");
-  }
-});
-
-/**
- * =========================
- * JOTFORM WEBHOOKS
- * =========================
- */
-app.get("/webhooks/jotform", (req, res) => {
-  res.json({ ok: true, msg: "Use POST here for real Jotform webhooks" });
-});
-
-app.post("/webhooks/jotform", (req, res) => {
-  try {
-    const body = req.body || {};
-
-    console.log("=== JOTFORM WEBHOOK HIT ===");
-    console.log("Time:", new Date().toISOString());
-    console.log("IP:", req.ip);
-    console.log("User-Agent:", req.get("user-agent"));
-
-    // Helpful: try to auto-find an email field (varies by form)
-    let detectedEmail = null;
-    for (const [k, v] of Object.entries(body)) {
-      if (typeof v === "string" && k.toLowerCase().includes("email")) {
-        detectedEmail = v;
-        break;
-      }
+    if (!supabase) {
+      return res.status(500).json({
+        ok: false,
+        error: 'supabase_not_configured',
+        missing: [
+          !SUPABASE_URL ? 'SUPABASE_URL' : null,
+          !SUPABASE_KEY
+            ? 'SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_ANON_KEY)'
+            : null
+        ].filter(Boolean)
+      });
     }
 
-    console.log("Detected email:", detectedEmail);
-    console.log("Headers:", req.headers);
-    console.log("Body:", body);
+    const payload = req.body || {};
+    const rawBody = req.rawBody || '';
+    const headers = req.headers || {};
 
-    return res.status(200).send("OK");
+    // Store the webhook event (adjust column names if your table differs)
+    const record = {
+      source: 'authorize_net',
+      received_at: new Date().toISOString(),
+      headers,
+      payload,
+      raw_body: rawBody
+    };
+
+    const { data, error } = await supabase
+      .from(WEBHOOK_TABLE)
+      .insert(record)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[Supabase insert error]', error);
+      return res.status(500).json({
+        ok: false,
+        error: 'supabase_insert_failed',
+        details: error.message
+      });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      stored: true,
+      id: data?.id ?? null
+    });
   } catch (err) {
-    console.error("Jotform webhook handler error:", err);
-    return res.status(200).send("OK");
+    console.error('[Webhook handler error]', err);
+    return res.status(500).json({ ok: false, error: 'server_error' });
   }
 });
 
-/**
- * Catch-all (optional)
- */
+// 404 handler
 app.use((req, res) => {
-  res.status(404).json({ ok: false, error: "Not found" });
+  res.status(404).json({ ok: false, error: 'not_found' });
 });
 
-/**
- * Start server
- * Railway supplies PORT automatically. Local fallback = 3000
- */
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log("Server running on port", port);
+// Error handler
+app.use((err, req, res, next) => {
+  console.error('[Unhandled error]', err);
+  res.status(500).json({ ok: false, error: 'unhandled_error' });
+});
+
+app.listen(PORT, () => {
+  console.log(`HVT backend listening on port ${PORT}`);
 });
