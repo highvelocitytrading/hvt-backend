@@ -57,8 +57,8 @@ app.get('/health', (req, res) => {
 
 /**
  * Authorize.Net webhook endpoint
- * - Stores payload + headers to Supabase table for auditing/debugging
- * - Signature verification / business logic can be added later
+ * - Stores raw payload to Supabase table for auditing/debugging
+ * - Maps fields to your webhook_events columns so inserts don't fail
  */
 app.post('/webhooks/authorize-net', async (req, res) => {
   try {
@@ -79,13 +79,35 @@ app.post('/webhooks/authorize-net', async (req, res) => {
     const rawBody = req.rawBody || '';
     const headers = req.headers || {};
 
-    // Store the webhook event (adjust column names if your table differs)
+    // ---- IMPORTANT ----
+    // Your Supabase table columns (from your screenshot) are:
+    // email, full_name, transaction_id, amount, currency, product, status,
+    // authorize_event_type, jotform_submission_id, raw_authorize, raw_jotform
+    //
+    // We store:
+    // - parsed best-effort values (mostly null until you send real Authorize payloads)
+    // - full raw payload in raw_authorize so NOTHING is lost
+    // - also stash headers + rawBody inside raw_authorize for debugging
     const record = {
-      source: 'authorize_net',
-      received_at: new Date().toISOString(),
-      headers,
-      payload,
-      raw_body: rawBody
+      email: null,
+      full_name: null,
+      transaction_id: null,
+      amount: null,
+      currency: null,
+      product: null,
+      status: null,
+      authorize_event_type: payload?.eventType ?? payload?.event_type ?? null,
+      jotform_submission_id: payload?.jotform_submission_id ?? null,
+
+      // Keep everything for auditing / debugging:
+      raw_authorize: {
+        headers,
+        raw_body: rawBody,
+        body: payload
+      },
+
+      // Not coming from this endpoint (yet)
+      raw_jotform: null
     };
 
     const { data, error } = await supabase
