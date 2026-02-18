@@ -10,10 +10,14 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 app.set('trust proxy', 1);
 
-// Keep raw body (useful for signature validation + raw capture)
+/**
+ * IMPORTANT:
+ * We store the raw request body for signature validation and debugging.
+ * We also keep parsed JSON in req.body via express.json().
+ */
 app.use(
   express.json({
-    limit: '2mb',
+    limit: '10mb',
     verify: (req, res, buf) => {
       req.rawBody = buf?.toString('utf8') || '';
     }
@@ -24,18 +28,17 @@ app.use(cors({ origin: true }));
 
 const PORT = process.env.PORT || 3000;
 
-// ------------------ ENV ------------------
+// ------------------ Supabase ------------------
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
-// Your tables
+// Your existing license table
 const LICENSE_TABLE = process.env.SUPABASE_LICENSE_TABLE || 'license_keys';
 
-// Optional debug capture table (recommended)
-const DEBUG_TABLE = process.env.SUPABASE_DEBUG_TABLE || 'webhook_events';
+// New capture table (for raw webhook payload logging)
+const CAPTURE_TABLE = process.env.SUPABASE_CAPTURE_TABLE || 'webhook_captures';
 
-// ------------------ Supabase client ------------------
 let supabase = null;
 if (SUPABASE_URL && SUPABASE_KEY) {
   supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -48,12 +51,24 @@ if (SUPABASE_URL && SUPABASE_KEY) {
 }
 
 // ------------------ helpers ------------------
+function genId() {
+  return crypto.randomBytes(12).toString('hex');
+}
+
 function pickFirst(...vals) {
   for (const v of vals) {
     if (typeof v === 'string' && v.trim()) return v.trim();
     if (typeof v === 'number') return String(v);
   }
   return null;
+}
+
+function safeJsonParse(str) {
+  try {
+    return JSON.parse(str);
+  } catch {
+    return null;
+  }
 }
 
 function genLicenseKey() {
@@ -64,8 +79,42 @@ function genLicenseKey() {
 }
 
 /**
- * Extract best-guess fields from Authorize.Net webhook payload
- * (We’ll lock these in after you capture real payloads.)
+ * Capture + store ANY webhook payload (raw + json + headers).
+ */
+async function storeCapture({ source, req }) {
+  if (!supabase) throw new Error('supabase_not_configured');
+
+  const headers = req.headers || {};
+  const rawBody = req.rawBody || '';
+  const parsedBody = req.body && Object.keys(req.body).length ? req.body : safeJsonParse(rawBody);
+
+  const record = {
+    id: genId(),
+    source, // 'authorize' | 'jotform'
+    content_type: headers['content-type'] || null,
+    user_agent: headers['user-agent'] || null,
+    ip:
+      (headers['x-forwarded-for'] || '').split(',')[0].trim() ||
+      req.ip ||
+      null,
+    headers,
+    body_json: parsedBody || null,
+    body_raw: rawBody || null
+  };
+
+  const { data, error } = await supabase
+    .from(CAPTURE_TABLE)
+    .insert(record)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+/**
+ * Extract "best guess" fields from Authorize payload shapes.
+ * We DO NOT assume exact structure until capture confirms.
  */
 function extractFromAuthorizeNet(body) {
   const eventType =
@@ -81,7 +130,6 @@ function extractFromAuthorizeNet(body) {
     body?.payload?.customer?.email,
     body?.payload?.customerEmail,
     body?.payload?.email,
-    body?.payload?.billTo?.email,
     body?.customer?.email,
     body?.email
   );
@@ -102,30 +150,10 @@ function extractFromAuthorizeNet(body) {
     body?.payload?.transaction_id,
     body?.transactionId,
     body?.transId,
-    body?.transaction_id,
-    body?.transaction_id // just in case your test payload uses this
+    body?.transaction_id
   );
 
   return { email, fullName, transactionId, eventType };
-}
-
-/**
- * Safe insert into debug table (won't break your flow if table doesn't exist)
- */
-async function tryDebugStore(payload) {
-  if (!supabase) return;
-
-  try {
-    await supabase.from(DEBUG_TABLE).insert({
-      source: payload.source,
-      headers: payload.headers,
-      body: payload.body,
-      raw_body: payload.raw_body
-    });
-  } catch (e) {
-    // Don’t fail the webhook if debug storage isn’t set up
-    console.warn('[WARN] Debug store failed (ok to ignore):', e?.message || e);
-  }
 }
 
 // ------------------ routes ------------------
@@ -137,41 +165,71 @@ app.get('/health', (req, res) => {
     uptime_s: Math.round(process.uptime()),
     hasSupabase: Boolean(supabase),
     licenseTable: LICENSE_TABLE,
-    debugTable: DEBUG_TABLE
+    captureTable: CAPTURE_TABLE
   });
 });
 
-/**
- * DEBUG CAPTURE ENDPOINT
- * Point Authorize.Net endpoint here temporarily:
- *   https://<your-railway-domain>/debug/capture
- *
- * This returns 200 no matter what so Authorize.Net won't keep retrying.
- */
-app.post('/debug/capture', async (req, res) => {
-  const payload = {
-    source: 'authorize_net',
-    received_at: new Date().toISOString(),
-    headers: req.headers,
-    body: req.body,
-    raw_body: req.rawBody || null
-  };
-
-  // Always log to Railway logs
-  console.log('[DEBUG CAPTURE]', JSON.stringify(payload, null, 2));
-
-  // Optional: also store in Supabase (if webhook_events exists)
-  await tryDebugStore(payload);
-
-  return res.status(200).json({ ok: true, captured: true });
+// ------------------ CAPTURE ENDPOINTS ------------------
+app.post('/debug/capture/authorize', async (req, res) => {
+  try {
+    const row = await storeCapture({ source: 'authorize', req });
+    return res.status(200).json({ ok: true, captured: true, id: row.id });
+  } catch (e) {
+    console.error('[capture authorize error]', e);
+    return res.status(500).json({ ok: false, error: 'capture_failed', details: e.message });
+  }
 });
 
-// Manual tester (verifies Supabase insert + license generation)
+app.post('/debug/capture/jotform', async (req, res) => {
+  try {
+    const row = await storeCapture({ source: 'jotform', req });
+    return res.status(200).json({ ok: true, captured: true, id: row.id });
+  } catch (e) {
+    console.error('[capture jotform error]', e);
+    return res.status(500).json({ ok: false, error: 'capture_failed', details: e.message });
+  }
+});
+
+/**
+ * View the most recent capture (optionally filtered by source).
+ * Examples:
+ *  /debug/last?source=authorize
+ *  /debug/last?source=jotform
+ */
+app.get('/debug/last', async (req, res) => {
+  try {
+    if (!supabase) return res.status(500).json({ ok: false, error: 'supabase_not_configured' });
+
+    const source = pickFirst(req.query?.source);
+    let q = supabase
+      .from(CAPTURE_TABLE)
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (source) {
+      q = supabase
+        .from(CAPTURE_TABLE)
+        .select('*')
+        .eq('source', source)
+        .order('created_at', { ascending: false })
+        .limit(1);
+    }
+
+    const { data, error } = await q;
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+
+    return res.status(200).json({ ok: true, row: data?.[0] || null });
+  } catch (e) {
+    console.error('[debug last error]', e);
+    return res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// ------------------ LICENSE ISSUING (kept) ------------------
 app.post('/test/issue-license', async (req, res) => {
   try {
-    if (!supabase) {
-      return res.status(500).json({ ok: false, error: 'supabase_not_configured' });
-    }
+    if (!supabase) return res.status(500).json({ ok: false, error: 'supabase_not_configured' });
 
     const email = pickFirst(req.body?.email);
     const full_name = pickFirst(req.body?.full_name, req.body?.name);
@@ -185,18 +243,13 @@ app.post('/test/issue-license', async (req, res) => {
       });
     }
 
-    const license_key = genLicenseKey();
-    const authorize_event_type =
-      pickFirst(req.body?.authorize_event_type) || 'manual_test';
-    const status = pickFirst(req.body?.status) || 'active';
-
     const record = {
       email,
       full_name,
       transaction_id,
-      authorize_event_type,
-      license_key,
-      status
+      authorize_event_type: pickFirst(req.body?.authorize_event_type) || 'manual_test',
+      license_key: genLicenseKey(),
+      status: pickFirst(req.body?.status) || 'active'
     };
 
     const { data, error } = await supabase
@@ -207,11 +260,7 @@ app.post('/test/issue-license', async (req, res) => {
 
     if (error) {
       console.error('[Supabase insert error]', error);
-      return res.status(500).json({
-        ok: false,
-        error: 'supabase_insert_failed',
-        details: error.message
-      });
+      return res.status(500).json({ ok: false, error: 'supabase_insert_failed', details: error.message });
     }
 
     return res.status(200).json({ ok: true, stored: true, row: data });
@@ -221,36 +270,14 @@ app.post('/test/issue-license', async (req, res) => {
   }
 });
 
-/**
- * PRODUCTION Authorize.Net webhook endpoint (your real one)
- * Keep Authorize.Net pointed here once capture/mapping is confirmed:
- *   https://<your-railway-domain>/webhooks/authorize-net
- */
 app.post('/webhooks/authorize-net', async (req, res) => {
   try {
-    if (!supabase) {
-      return res.status(500).json({
-        ok: false,
-        error: 'supabase_not_configured',
-        missing: [
-          !SUPABASE_URL ? 'SUPABASE_URL' : null,
-          !SUPABASE_KEY ? 'SUPABASE_SERVICE_ROLE_KEY' : null
-        ].filter(Boolean)
-      });
-    }
+    if (!supabase) return res.status(500).json({ ok: false, error: 'supabase_not_configured' });
 
     const body = req.body || {};
     const { email, fullName, transactionId, eventType } = extractFromAuthorizeNet(body);
 
     if (!email || !transactionId) {
-      // Also log what we got, so you can see why it failed
-      console.warn('[WARN] Missing fields from webhook:', {
-        email,
-        fullName,
-        transactionId,
-        eventType
-      });
-
       return res.status(400).json({
         ok: false,
         error: 'missing_fields_from_webhook',
@@ -275,19 +302,10 @@ app.post('/webhooks/authorize-net', async (req, res) => {
 
     if (error) {
       console.error('[Supabase insert error]', error);
-      return res.status(500).json({
-        ok: false,
-        error: 'supabase_insert_failed',
-        details: error.message
-      });
+      return res.status(500).json({ ok: false, error: 'supabase_insert_failed', details: error.message });
     }
 
-    return res.status(200).json({
-      ok: true,
-      stored: true,
-      id: data?.id ?? null,
-      license_key: data?.license_key ?? null
-    });
+    return res.status(200).json({ ok: true, stored: true, id: data?.id ?? null, license_key: data?.license_key ?? null });
   } catch (err) {
     console.error('[Authorize.Net webhook error]', err);
     return res.status(500).json({ ok: false, error: 'server_error' });
@@ -296,11 +314,5 @@ app.post('/webhooks/authorize-net', async (req, res) => {
 
 // 404
 app.use((req, res) => res.status(404).json({ ok: false, error: 'not_found' }));
-
-// Error handler
-app.use((err, req, res, next) => {
-  console.error('[Unhandled error]', err);
-  res.status(500).json({ ok: false, error: 'unhandled_error' });
-});
 
 app.listen(PORT, () => console.log(`HVT backend listening on port ${PORT}`));
