@@ -32,6 +32,11 @@ const SUPABASE_KEY =
 // IMPORTANT: set this to "license_keys" in Railway
 const LICENSE_TABLE = process.env.SUPABASE_LICENSE_TABLE || 'license_keys';
 
+// If CAPTURE_MODE=1, we will NOT insert into Supabase.
+// We will only log payloads and return 200 OK.
+// (This is optional, but very useful while diagnosing.)
+const CAPTURE_MODE = String(process.env.CAPTURE_MODE || '').trim() === '1';
+
 let supabase = null;
 if (SUPABASE_URL && SUPABASE_KEY) {
   supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -107,6 +112,19 @@ function extractFromAuthorizeNet(body) {
   return { email, fullName, transactionId, eventType };
 }
 
+// Common logger (so logs are consistent)
+function logCapture(label, req) {
+  console.log(`\n=== ${label} ===`);
+  console.log('time:', new Date().toISOString());
+  console.log('method:', req.method);
+  console.log('path:', req.path);
+  console.log('ip:', req.ip);
+  console.log('headers:', req.headers);
+  console.log('body:', JSON.stringify(req.body || {}, null, 2));
+  console.log('rawBody:', req.rawBody || '');
+  console.log(`=== END ${label} ===\n`);
+}
+
 // ---------- routes ----------
 app.get('/', (req, res) => res.json({ ok: true, service: 'hvt-backend' }));
 
@@ -115,8 +133,18 @@ app.get('/health', (req, res) => {
     ok: true,
     uptime_s: Math.round(process.uptime()),
     hasSupabase: Boolean(supabase),
-    licenseTable: LICENSE_TABLE
+    licenseTable: LICENSE_TABLE,
+    captureMode: CAPTURE_MODE
   });
+});
+
+/**
+ * RAW CAPTURE ENDPOINT
+ * Point Authorize.Net + Jotform here to see EXACT payloads in Railway logs
+ */
+app.post('/debug/capture', (req, res) => {
+  logCapture('DEBUG CAPTURE', req);
+  return res.status(200).json({ ok: true, captured: true });
 });
 
 // Manual tester (super useful for verifying inserts)
@@ -149,7 +177,6 @@ app.post('/test/issue-license', async (req, res) => {
       authorize_event_type,
       license_key,
       status
-      // created_at will default to now() if you set that in Supabase
     };
 
     const { data, error } = await supabase
@@ -178,9 +205,16 @@ app.post('/test/issue-license', async (req, res) => {
  * Authorize.Net webhook endpoint
  * Inserts into license_keys with:
  * email, full_name, transaction_id, authorize_event_type, license_key, status
+ *
+ * If CAPTURE_MODE=1 -> logs payload and returns 200 without inserting.
  */
 app.post('/webhooks/authorize-net', async (req, res) => {
   try {
+    if (CAPTURE_MODE) {
+      logCapture('AUTHORIZE WEBHOOK (CAPTURE_MODE)', req);
+      return res.status(200).json({ ok: true, captured: true, captureMode: true });
+    }
+
     if (!supabase) {
       return res.status(500).json({
         ok: false,
@@ -197,6 +231,7 @@ app.post('/webhooks/authorize-net', async (req, res) => {
 
     // Minimum we MUST have to create a license row
     if (!email || !transactionId) {
+      logCapture('AUTHORIZE WEBHOOK (MISSING FIELDS)', req);
       return res.status(400).json({
         ok: false,
         error: 'missing_fields_from_webhook',
