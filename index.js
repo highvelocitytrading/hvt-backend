@@ -3,34 +3,33 @@
 require('dotenv').config();
 
 const express = require('express');
-const cors = require('cors');
 const crypto = require('crypto');
+const Busboy = require('busboy');
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 app.set('trust proxy', 1);
-app.use(cors({ origin: true }));
 
 const PORT = process.env.PORT || 3000;
 
-// -------------------- Supabase --------------------
+// -------------------- ENV --------------------
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const AUTHORIZE_SIGNATURE_KEY = process.env.AUTHORIZE_SIGNATURE_KEY || null;
 
-const LICENSE_TABLE = process.env.SUPABASE_LICENSE_TABLE || 'license_keys';
-const CAPTURE_TABLE = process.env.SUPABASE_CAPTURE_TABLE || 'webhook_captures';
+const LICENSE_TABLE = 'license_keys';
 
-let supabase = null;
-if (SUPABASE_URL && SUPABASE_KEY) {
-  supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-    auth: { persistSession: false }
-  });
-} else {
-  console.warn('[WARN] Missing SUPABASE_URL and/or SUPABASE_SERVICE_ROLE_KEY.');
+// -------------------- SUPABASE --------------------
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('[FATAL] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+  process.exit(1);
 }
 
-// -------------------- helpers --------------------
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { persistSession: false }
+});
+
+// -------------------- Helpers --------------------
 function pickFirst(...vals) {
   for (const v of vals) {
     if (typeof v === 'string' && v.trim()) return v.trim();
@@ -45,240 +44,240 @@ function genLicenseKey() {
   return `HVT-${a}-${b}`;
 }
 
-function parseUrlEncoded(raw) {
+// Header: X-ANET-SIGNATURE: "sha512=<hex>"
+function verifyAuthorizeSignature(rawBody, signatureHeader) {
+  if (!AUTHORIZE_SIGNATURE_KEY) return { ok: true, reason: 'signature_key_not_set_skip' };
+
+  if (!signatureHeader || typeof signatureHeader !== 'string') {
+    return { ok: false, reason: 'missing_signature_header' };
+  }
+
+  const provided = signatureHeader.startsWith('sha512=')
+    ? signatureHeader.slice('sha512='.length)
+    : signatureHeader;
+
+  let computed;
   try {
-    const params = new URLSearchParams(raw);
-    const obj = {};
-    for (const [k, v] of params.entries()) obj[k] = v;
-    return obj;
+    computed = crypto
+      .createHmac('sha512', AUTHORIZE_SIGNATURE_KEY)
+      .update(rawBody || '', 'utf8')
+      .digest('hex');
   } catch {
-    return null;
-  }
-}
-
-function bestEffortParse(raw, contentType) {
-  const ct = (contentType || '').toLowerCase();
-
-  // JSON
-  if (ct.includes('application/json')) {
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return null;
-    }
+    return { ok: false, reason: 'compute_failed' };
   }
 
-  // URLENCODED (common for Jotform)
-  if (ct.includes('application/x-www-form-urlencoded')) {
-    return parseUrlEncoded(raw);
-  }
-
-  // Sometimes providers send text/plain but it's actually JSON
   try {
-    const maybe = JSON.parse(raw);
-    if (maybe && typeof maybe === 'object') return maybe;
-  } catch {}
-
-  return null;
+    const a = Buffer.from(provided, 'hex');
+    const b = Buffer.from(computed, 'hex');
+    if (a.length !== b.length) return { ok: false, reason: 'signature_length_mismatch' };
+    const match = crypto.timingSafeEqual(a, b);
+    return match ? { ok: true } : { ok: false, reason: 'signature_mismatch' };
+  } catch {
+    return { ok: false, reason: 'invalid_signature_format' };
+  }
 }
 
-async function insertCaptureRow({ source, path, headers, rawBody, parsedBody }) {
-  if (!supabase) return { ok: false, error: 'supabase_not_configured' };
+async function getRowByTxn(transaction_id) {
+  const { data, error } = await supabase
+    .from(LICENSE_TABLE)
+    .select('*')
+    .eq('transaction_id', transaction_id)
+    .maybeSingle();
 
-  const record = {
-    source: source || 'unknown',
-    path: path || null,
-    content_type: headers?.['content-type'] || headers?.['Content-Type'] || null,
-    headers: headers || {},
-    raw_body: rawBody || '',
-    body_json: parsedBody || null
+  if (error) throw new Error(error.message);
+  return data || null;
+}
+
+/**
+ * Upsert "one sale = one row" into license_keys, while preserving existing license_key.
+ */
+async function upsertSaleRow(transaction_id, patch) {
+  if (!transaction_id) throw new Error('missing_transaction_id');
+
+  const existing = await getRowByTxn(transaction_id);
+
+  // Preserve license_key if already created, otherwise create once.
+  const license_key = existing?.license_key || genLicenseKey();
+
+  // Build final payload. (Only overwrite what we explicitly set.)
+  const payload = {
+    transaction_id,
+    license_key,
+    updated_at: new Date().toISOString(),
+    ...patch
   };
 
   const { data, error } = await supabase
-    .from(CAPTURE_TABLE)
-    .insert(record)
+    .from(LICENSE_TABLE)
+    .upsert(payload, { onConflict: 'transaction_id' })
     .select()
     .single();
 
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, row: data };
+  if (error) throw new Error(error.message);
+  return data;
 }
 
-// -------------------- health --------------------
-app.get('/', (req, res) => res.json({ ok: true, service: 'hvt-backend' }));
-
+// -------------------- Health --------------------
 app.get('/health', (req, res) => {
-  res.json({
-    ok: true,
-    uptime_s: Math.round(process.uptime()),
-    hasSupabase: Boolean(supabase),
-    licenseTable: LICENSE_TABLE,
-    captureTable: CAPTURE_TABLE
-  });
+  res.json({ ok: true, service: 'hvt-backend', licenseTable: LICENSE_TABLE });
 });
 
-// -------------------- RAW CAPTURE ENDPOINTS --------------------
-// IMPORTANT: use express.raw here so it works for JSON, urlencoded, text, etc.
-const rawParser = express.raw({ type: '*/*', limit: '5mb' });
+// -------------------- Authorize.Net webhook (RAW JSON) --------------------
+app.post(
+  '/webhooks/authorize-net',
+  express.raw({ type: '*/*', limit: '2mb' }),
+  async (req, res) => {
+    try {
+      const rawBody = req.body ? req.body.toString('utf8') : '';
+      const sigHeader = req.headers['x-anet-signature'];
 
-app.post('/debug/capture', rawParser, async (req, res) => {
-  try {
-    const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : '';
-    const parsed = bestEffortParse(rawBody, req.headers['content-type']);
+      const sigCheck = verifyAuthorizeSignature(rawBody, sigHeader);
+      if (!sigCheck.ok) {
+        return res.status(401).json({ ok: false, error: 'invalid_signature', reason: sigCheck.reason });
+      }
 
-    const out = await insertCaptureRow({
-      source: 'generic',
-      path: req.path,
-      headers: req.headers,
-      rawBody,
-      parsedBody: parsed
-    });
+      let body = {};
+      try {
+        body = rawBody ? JSON.parse(rawBody) : {};
+      } catch {
+        body = {};
+      }
 
-    if (!out.ok) {
-      console.error('[capture insert failed]', out.error);
-      return res.status(500).json({ ok: false, error: 'capture_insert_failed', details: out.error });
+      // Authorize: transaction id
+      const transaction_id = pickFirst(body?.payload?.id);
+      const eventType = pickFirst(body?.eventType) || 'authorize_net';
+
+      if (!transaction_id) {
+        return res.status(400).json({ ok: false, error: 'missing_transaction_id_from_authorize' });
+      }
+
+      // If authorize hits first, we still create the row (with placeholder status)
+      const row = await upsertSaleRow(transaction_id, {
+        authorize_received: true,
+        last_source: 'authorize',
+        authorize_event_type: eventType,
+        raw_authorize: rawBody,
+        authorize_body_json: body,
+        // status logic:
+        // - if we already have email/full_name from jotform -> active
+        // - else -> pending_jotform
+        status: 'pending_jotform'
+      });
+
+      // If Jotform already exists (email + name present), flip active
+      if (row.email && row.full_name) {
+        const activated = await upsertSaleRow(transaction_id, {
+          authorize_received: true,
+          last_source: 'authorize',
+          authorize_event_type: eventType,
+          raw_authorize: rawBody,
+          authorize_body_json: body,
+          status: 'active'
+        });
+        return res.status(200).json({ ok: true, transaction_id, status: activated.status });
+      }
+
+      return res.status(200).json({ ok: true, transaction_id, status: row.status, eventType });
+    } catch (err) {
+      console.error('[authorize webhook error]', err);
+      return res.status(500).json({ ok: false, error: 'server_error', details: err.message });
     }
-
-    return res.status(200).json({ ok: true, captured: true, id: out.row?.id || null });
-  } catch (err) {
-    console.error('[capture error]', err);
-    return res.status(500).json({ ok: false, error: 'capture_server_error' });
   }
-});
-
-app.post('/debug/capture/:source', rawParser, async (req, res) => {
-  try {
-    const source = req.params.source || 'unknown';
-    const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : '';
-    const parsed = bestEffortParse(rawBody, req.headers['content-type']);
-
-    const out = await insertCaptureRow({
-      source,
-      path: req.path,
-      headers: req.headers,
-      rawBody,
-      parsedBody: parsed
-    });
-
-    if (!out.ok) {
-      console.error('[capture insert failed]', out.error);
-      return res.status(500).json({ ok: false, error: 'capture_insert_failed', details: out.error });
-    }
-
-    return res.status(200).json({ ok: true, captured: true, id: out.row?.id || null });
-  } catch (err) {
-    console.error('[capture error]', err);
-    return res.status(500).json({ ok: false, error: 'capture_server_error' });
-  }
-});
-
-// -------------------- JSON endpoints (license issuing) --------------------
-app.use(
-  express.json({
-    limit: '2mb',
-    verify: (req, res, buf) => {
-      req.rawBody = buf?.toString('utf8') || '';
-    }
-  })
 );
 
-// Manual tester
-app.post('/test/issue-license', async (req, res) => {
-  try {
-    if (!supabase) return res.status(500).json({ ok: false, error: 'supabase_not_configured' });
+// -------------------- Jotform webhook (multipart/form-data) --------------------
+app.post('/webhooks/jotform', (req, res) => {
+  const bb = Busboy({
+    headers: req.headers,
+    limits: { fieldSize: 5 * 1024 * 1024 }
+  });
 
-    const email = pickFirst(req.body?.email);
-    const full_name = pickFirst(req.body?.full_name, req.body?.name);
-    const transaction_id = pickFirst(req.body?.transaction_id);
+  const fields = {};
+  let rawConcat = '';
 
-    if (!email || !transaction_id) {
-      return res.status(400).json({ ok: false, error: 'missing_fields', required: ['email', 'transaction_id'] });
-    }
+  bb.on('field', (name, val) => {
+    fields[name] = val;
+    rawConcat += `\n[${name}]=${val}`;
+  });
 
-    const record = {
-      email,
-      full_name,
-      transaction_id,
-      authorize_event_type: pickFirst(req.body?.authorize_event_type) || 'manual_test',
-      license_key: genLicenseKey(),
-      status: pickFirst(req.body?.status) || 'active'
-    };
+  bb.on('error', (err) => {
+    console.error('[busboy error]', err);
+    return res.status(400).json({ ok: false, error: 'invalid_multipart' });
+  });
 
-    const { data, error } = await supabase.from(LICENSE_TABLE).insert(record).select().single();
-    if (error) return res.status(500).json({ ok: false, error: 'supabase_insert_failed', details: error.message });
+  bb.on('finish', async () => {
+    try {
+      let rawRequest = null;
+      try {
+        rawRequest = fields.rawRequest ? JSON.parse(fields.rawRequest) : null;
+      } catch {
+        rawRequest = null;
+      }
 
-    return res.status(200).json({ ok: true, stored: true, row: data });
-  } catch (err) {
-    console.error('[test issue license error]', err);
-    return res.status(500).json({ ok: false, error: 'server_error' });
-  }
-});
+      const rr = rawRequest || {};
 
-// Authorize.Net webhook (your current extractor can stay)
-function extractFromAuthorizeNet(body) {
-  const eventType =
-    pickFirst(body?.eventType, body?.event_type, body?.type, body?.payload?.eventType, body?.payload?.event_type) ||
-    'authorize_net';
+      // Your Jotform structure:
+      const first = pickFirst(rr?.q8_q8_fullname6?.first);
+      const last = pickFirst(rr?.q8_q8_fullname6?.last);
+      const email = pickFirst(rr?.q11_email);
+      const transaction_id = pickFirst(rr?.transactionId);
 
-  const email = pickFirst(body?.payload?.customer?.email, body?.payload?.customerEmail, body?.payload?.email, body?.customer?.email, body?.email);
+      const full_name = [first, last].filter(Boolean).join(' ') || null;
 
-  const fullName = pickFirst(
-    body?.payload?.customer?.name,
-    body?.payload?.billing?.name,
-    body?.payload?.billTo?.name,
-    body?.customer?.name,
-    body?.full_name,
-    body?.name
-  );
+      if (!transaction_id) {
+        return res.status(400).json({ ok: false, error: 'missing_transaction_id_from_jotform' });
+      }
 
-  const transactionId = pickFirst(
-    body?.payload?.id,
-    body?.payload?.transactionId,
-    body?.payload?.transId,
-    body?.payload?.transaction_id,
-    body?.transactionId,
-    body?.transId,
-    body?.transaction_id
-  );
-
-  return { email, fullName, transactionId, eventType };
-}
-
-app.post('/webhooks/authorize-net', async (req, res) => {
-  try {
-    if (!supabase) return res.status(500).json({ ok: false, error: 'supabase_not_configured' });
-
-    const body = req.body || {};
-    const { email, fullName, transactionId, eventType } = extractFromAuthorizeNet(body);
-
-    if (!email || !transactionId) {
-      return res.status(400).json({
-        ok: false,
-        error: 'missing_fields_from_webhook',
-        extracted: { email, fullName, transactionId, eventType }
+      // Upsert into the same single row
+      const row = await upsertSaleRow(transaction_id, {
+        jotform_received: true,
+        last_source: 'jotform',
+        email: email || null,
+        full_name: full_name || null,
+        raw_jotform: rawConcat,
+        jotform_body_json: rr,
+        // status logic:
+        // - if authorize already received -> active
+        // - else -> pending_authorize
+        status: 'pending_authorize'
       });
+
+      // If authorize already came in, activate
+      if (row.authorize_received) {
+        const activated = await upsertSaleRow(transaction_id, {
+          jotform_received: true,
+          last_source: 'jotform',
+          email: email || row.email || null,
+          full_name: full_name || row.full_name || null,
+          raw_jotform: rawConcat,
+          jotform_body_json: rr,
+          status: 'active'
+        });
+
+        return res.status(200).json({
+          ok: true,
+          transaction_id,
+          license_key: activated.license_key,
+          status: activated.status
+        });
+      }
+
+      return res.status(200).json({
+        ok: true,
+        transaction_id,
+        license_key: row.license_key,
+        status: row.status
+      });
+    } catch (err) {
+      console.error('[jotform webhook error]', err);
+      return res.status(500).json({ ok: false, error: 'server_error', details: err.message });
     }
+  });
 
-    const record = {
-      email,
-      full_name: fullName,
-      transaction_id: transactionId,
-      authorize_event_type: eventType,
-      license_key: genLicenseKey(),
-      status: 'active'
-    };
-
-    const { data, error } = await supabase.from(LICENSE_TABLE).insert(record).select().single();
-    if (error) return res.status(500).json({ ok: false, error: 'supabase_insert_failed', details: error.message });
-
-    return res.status(200).json({ ok: true, stored: true, id: data?.id ?? null, license_key: data?.license_key ?? null });
-  } catch (err) {
-    console.error('[authorize webhook error]', err);
-    return res.status(500).json({ ok: false, error: 'server_error' });
-  }
+  req.pipe(bb);
 });
 
-// 404
+// -------------------- 404 --------------------
 app.use((req, res) => res.status(404).json({ ok: false, error: 'not_found' }));
 
 app.listen(PORT, () => console.log(`HVT backend listening on port ${PORT}`));
