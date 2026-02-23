@@ -1,271 +1,460 @@
 /**
- * CAPTURE + DEBUG SERVER (Membership)
- * Purpose: Capture EXACT inbound payloads from:
- *  - Jotform webhook (membership form submission)
- *  - Authorize.Net webhook notifications (subscription/payment events)
+ * HVT Membership Capture + Mapping Server
  *
- * Capture-first: always logs raw + parsed payload.
- * Optional: write to Supabase table `webhook_events`
+ * Captures EXACT inbound payloads from:
+ *  - Jotform webhook (often multipart/form-data)
+ *  - Authorize.Net webhook notifications (application/json + x-anet-signature)
  *
- * NOTE:
- * - Supabase capture is ON BY DEFAULT.
- * - To turn it OFF, set CAPTURE_TO_SUPABASE=false (or 0/no/off) in Railway.
+ * Always captures:
+ *  - raw_body (string)
+ *  - parsed body when possible
+ * Writes into Supabase table: webhook_events
+ *
+ * Optionally maps membership status into a Supabase table (MEMBERS_TABLE) via upsert.
  */
 
 const express = require("express");
 const crypto = require("crypto");
-const fs = require("fs");
-const path = require("path");
+const getRawBody = require("raw-body");
 
-// ========= Config =========
-const PORT = process.env.PORT || 3000;
-const SERVICE_NAME = process.env.SERVICE_NAME || "hvt-backend-capture-membership";
+// ===== Config =====
+const PORT = Number(process.env.PORT || 8080);
+const SERVICE_NAME = process.env.SERVICE_NAME || "hvt-backend-membership";
 
-// If set, we will append NDJSON capture logs to this folder (optional)
-const CAPTURE_DIR = process.env.CAPTURE_DIR || "";
-
-// Increase limits because Jotform payloads can be large
 const JSON_LIMIT = process.env.JSON_LIMIT || "25mb";
-const FORM_LIMIT = process.env.FORM_LIMIT || "25mb";
+const RAW_LIMIT = process.env.RAW_LIMIT || "25mb";
 
-// ✅ Supabase capture: ON by default. Turn OFF only if explicitly false/0/no/off
-const CAPTURE_TO_SUPABASE = !["false", "0", "no", "off"].includes(
-  (process.env.CAPTURE_TO_SUPABASE || "").toLowerCase()
-);
+// Capture events to Supabase webhook_events table
+const CAPTURE_TO_SUPABASE =
+  (process.env.CAPTURE_TO_SUPABASE || "true").toLowerCase() === "true";
 
-// ========= Optional Supabase capture =========
+// Optional membership mapping (upsert)
+const ENABLE_MEMBERSHIP_MAPPING =
+  (process.env.ENABLE_MEMBERSHIP_MAPPING || "true").toLowerCase() === "true";
+
+const MEMBERS_TABLE = process.env.MEMBERS_TABLE || "memberships"; // you create this table (SQL below)
+const WEBHOOK_EVENTS_TABLE = process.env.WEBHOOK_EVENTS_TABLE || "webhook_events";
+
+// Authorize.Net signature verification (recommended)
+const AUTHNET_SIGNATURE_KEY = process.env.AUTHNET_SIGNATURE_KEY || "";
+
+// ===== Supabase =====
 let supabase = null;
-let SUPABASE_READY = false;
+let supabaseReady = false;
 
-if (CAPTURE_TO_SUPABASE) {
-  const { createClient } = require("@supabase/supabase-js");
+function initSupabase() {
+  if (!CAPTURE_TO_SUPABASE && !ENABLE_MEMBERSHIP_MAPPING) return;
+
   const SUPABASE_URL = process.env.SUPABASE_URL;
-  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY; // backend only
+  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     console.error(
-      "❌ Supabase capture ON, but SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing."
+      "❌ Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Supabase features disabled."
     );
-    console.error("   -> Set both in Railway Variables and redeploy/restart.");
-  } else {
-    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { persistSession: false },
-    });
-    SUPABASE_READY = true;
-    console.log("✅ Supabase client initialized (service role).");
+    return;
   }
+
+  const { createClient } = require("@supabase/supabase-js");
+  supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false },
+  });
+  supabaseReady = true;
 }
 
+initSupabase();
+
+// ===== App =====
 const app = express();
 
-// ========= Helpers =========
-function ensureDir(dir) {
-  if (!dir) return;
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-}
+/**
+ * We want RAW body for ALL webhook posts so:
+ * - Jotform multipart can be stored exactly (your CSV showed {} body for Jotform)
+ * - Auth.net signature verification needs raw body exactly
+ *
+ * We'll read raw body for ONLY our webhook routes to avoid interfering with other routes.
+ */
+async function rawBodyMiddleware(req, res, next) {
+  const isWebhook =
+    req.path.startsWith("/webhooks/") || req.path.startsWith("/debug/");
 
-function sha256(str) {
-  return crypto.createHash("sha256").update(str || "").digest("hex");
-}
+  if (!isWebhook) return next();
 
-function writeCaptureToFile(eventObj) {
-  // One-line summary
-  console.log(
-    `[CAPTURE] ${eventObj.capture_id} source=${eventObj.source} ${eventObj.method} ${eventObj.path} bytes=${eventObj.raw_body_bytes}`
-  );
-
-  if (!CAPTURE_DIR) return;
-  ensureDir(CAPTURE_DIR);
-
-  const file = path.join(
-    CAPTURE_DIR,
-    `${new Date().toISOString().slice(0, 10)}-captures.ndjson`
-  );
-
-  fs.appendFileSync(file, JSON.stringify(eventObj) + "\n", "utf8");
-}
-
-async function writeCaptureToSupabase(eventObj) {
-  if (!supabase || !SUPABASE_READY) return;
-
-  // Matches your table columns:
-  // source, event_type, received_at, headers, body, raw_body, query, ip, user_agent, status, notes
-  const row = {
-    source: eventObj.source,
-    event_type: eventObj.event_type || null,
-    received_at: eventObj.captured_at, // timestamptz
-    headers: eventObj.headers || null, // jsonb
-    body: eventObj.body ?? null,       // jsonb
-    raw_body: eventObj.raw_body || null, // text
-    query: eventObj.query || null,     // jsonb
-    ip: eventObj.ip || null,           // text
-    user_agent: eventObj.user_agent || null, // text
-    status: "received",                // text
-    notes: `capture_id=${eventObj.capture_id} sha256=${eventObj.raw_body_sha256}`, // text
-  };
-
-  const { error } = await supabase.from("webhook_events").insert(row);
-
-  if (error) {
-    console.error("❌ Supabase insert failed:", error.message);
-    // Helpful hint for common causes
-    console.error(
-      "   -> Check: table name webhook_events, RLS, service role key, and column types."
-    );
-  } else {
-    console.log(`✅ Supabase insert ok (source=${row.source})`);
+  try {
+    const buf = await getRawBody(req, {
+      length: req.headers["content-length"],
+      limit: RAW_LIMIT,
+      encoding: true, // string
+    });
+    req.rawBody = buf || "";
+  } catch (e) {
+    req.rawBody = "";
+    req.rawBodyError = e?.message || "raw_body_read_failed";
   }
+
+  return next();
 }
 
-// ========= Raw Body Capture Middleware =========
-function rawBodySaver(req, res, buf) {
-  if (buf && buf.length) {
-    req.rawBody = buf.toString("utf8");
-  }
-}
+app.use(rawBodyMiddleware);
 
+// We still enable parsers for non-multipart cases (json/urlencoded/text)
 app.use(
   express.json({
     limit: JSON_LIMIT,
-    verify: rawBodySaver,
+    type: ["application/json", "application/*+json"],
   })
 );
 
 app.use(
   express.urlencoded({
     extended: true,
-    limit: FORM_LIMIT,
-    verify: rawBodySaver,
+    limit: JSON_LIMIT,
   })
 );
 
-// If provider sends text/plain or xml
 app.use(
   express.text({
     type: ["text/*", "application/xml", "application/*+xml"],
-    limit: FORM_LIMIT,
-    verify: rawBodySaver,
+    limit: JSON_LIMIT,
   })
 );
 
-// ========= Routes =========
-app.get("/health", async (req, res) => {
-  // If Supabase is configured, do a tiny readiness check (non-fatal)
-  let supabase_ok = false;
-  let supabase_error = null;
+// ===== Helpers =====
+function sha256(str) {
+  return crypto.createHash("sha256").update(str || "", "utf8").digest("hex");
+}
 
-  if (SUPABASE_READY) {
+function safeJsonParse(str) {
+  try {
+    return JSON.parse(str);
+  } catch {
+    return null;
+  }
+}
+
+function parseUrlEncoded(str) {
+  try {
+    const params = new URLSearchParams(str);
+    const obj = {};
+    for (const [k, v] of params.entries()) obj[k] = v;
+    return obj;
+  } catch {
+    return null;
+  }
+}
+
+// Best-effort parser for Jotform: many times it’s multipart => raw only.
+// If it’s urlencoded/json/text, we’ll parse it.
+function bestEffortParse(req) {
+  const ct = String(req.headers["content-type"] || "").toLowerCase();
+
+  // If Express already parsed JSON/urlencoded into req.body
+  if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) {
+    return req.body;
+  }
+
+  const raw = req.rawBody || "";
+
+  if (!raw) return null;
+
+  if (ct.includes("application/json")) return safeJsonParse(raw);
+  if (ct.includes("application/x-www-form-urlencoded")) return parseUrlEncoded(raw);
+
+  // If content-type is missing or text
+  const asJson = safeJsonParse(raw);
+  if (asJson) return asJson;
+
+  const asUrl = parseUrlEncoded(raw);
+  if (asUrl && Object.keys(asUrl).length) return asUrl;
+
+  return { _raw_text: raw };
+}
+
+function findFirstEmailDeep(val) {
+  const emailRegex = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
+
+  function walk(x) {
+    if (!x) return null;
+
+    if (typeof x === "string") {
+      const m = x.match(emailRegex);
+      return m ? m[0] : null;
+    }
+
+    if (Array.isArray(x)) {
+      for (const item of x) {
+        const hit = walk(item);
+        if (hit) return hit;
+      }
+      return null;
+    }
+
+    if (typeof x === "object") {
+      // prefer keys containing "email"
+      const keys = Object.keys(x);
+      for (const k of keys) {
+        if (k.toLowerCase().includes("email")) {
+          const hit = walk(x[k]);
+          if (hit) return hit;
+        }
+      }
+      // then search everything
+      for (const k of keys) {
+        const hit = walk(x[k]);
+        if (hit) return hit;
+      }
+    }
+
+    return null;
+  }
+
+  return walk(val);
+}
+
+function timingSafeEqualHex(a, b) {
+  try {
+    const bufA = Buffer.from(a, "hex");
+    const bufB = Buffer.from(b, "hex");
+    if (bufA.length !== bufB.length) return false;
+    return crypto.timingSafeEqual(bufA, bufB);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Authorize.Net: signature header: x-anet-signature: "sha512=<hex>"
+ * expected: HMAC_SHA512(signatureKey, rawBody)
+ */
+function verifyAuthorizeSignature(req) {
+  if (!AUTHNET_SIGNATURE_KEY) return { ok: true, skipped: true };
+
+  const sig = req.headers["x-anet-signature"];
+  if (!sig || typeof sig !== "string") return { ok: false, reason: "missing_x_anet_signature" };
+  if (!sig.startsWith("sha512=")) return { ok: false, reason: "bad_signature_format" };
+
+  const provided = sig.replace("sha512=", "").trim();
+
+  const computed = crypto
+    .createHmac("sha512", AUTHNET_SIGNATURE_KEY)
+    .update(req.rawBody || "", "utf8")
+    .digest("hex");
+
+  const ok = timingSafeEqualHex(provided, computed);
+  return ok ? { ok: true } : { ok: false, reason: "signature_mismatch" };
+}
+
+async function insertWebhookEvent(row) {
+  if (!supabaseReady || !supabase) return { ok: false, skipped: true };
+  const { error } = await supabase.from(WEBHOOK_EVENTS_TABLE).insert(row);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+async function upsertMembershipByEmail(email, patch) {
+  if (!ENABLE_MEMBERSHIP_MAPPING) return { ok: false, skipped: true };
+  if (!supabaseReady || !supabase) return { ok: false, skipped: true };
+  if (!email) return { ok: false, skipped: true, reason: "missing_email" };
+
+  const row = {
+    email: String(email).toLowerCase(),
+    status: patch.status || null,
+    plan: patch.plan || null,
+    external_id: patch.external_id || null,
+    last_event_source: patch.last_event_source || null,
+    last_event_type: patch.last_event_type || null,
+    last_event_at: patch.last_event_at || new Date().toISOString(),
+    last_event: patch.last_event || null, // jsonb
+    updated_at: new Date().toISOString(),
+  };
+
+  // requires memberships.email UNIQUE or PRIMARY KEY
+  const { error } = await supabase.from(MEMBERS_TABLE).upsert(row, {
+    onConflict: "email",
+  });
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+// ===== Health =====
+app.get("/health", async (req, res) => {
+  // lightweight Supabase probe (optional)
+  let supabaseOk = false;
+  let supabaseError = null;
+
+  if (supabaseReady && supabase) {
     try {
-      const { error } = await supabase.from("webhook_events").select("id").limit(1);
-      if (error) supabase_error = error.message;
-      else supabase_ok = true;
+      const { error } = await supabase.from(WEBHOOK_EVENTS_TABLE).select("id").limit(1);
+      if (error) throw new Error(error.message);
+      supabaseOk = true;
     } catch (e) {
-      supabase_error = e?.message || String(e);
+      supabaseOk = false;
+      supabaseError = e?.message || "supabase_probe_failed";
     }
   }
 
   res.json({
     ok: true,
     service: SERVICE_NAME,
-    mode: "capture_debug",
+    mode: "membership_capture_and_mapping",
     capture_to_supabase: CAPTURE_TO_SUPABASE,
-    supabase_ready: SUPABASE_READY,
-    supabase_ok,
-    supabase_error,
+    enable_membership_mapping: ENABLE_MEMBERSHIP_MAPPING,
+    supabase_ready: supabaseReady,
+    supabase_ok: supabaseOk,
+    supabase_error: supabaseError,
   });
 });
 
-function captureHandler(sourceLabel, eventType = null) {
+// ===== Main handlers =====
+function captureRoute(sourceLabel) {
   return async (req, res) => {
-    const captureId = crypto.randomUUID();
+    const capture_id = crypto.randomUUID();
+    const captured_at = new Date().toISOString();
 
-    const eventObj = {
-      capture_id: captureId,
-      captured_at: new Date().toISOString(),
-      source: sourceLabel,
-      event_type: eventType,
+    const parsed = bestEffortParse(req);
+    const raw = req.rawBody || "";
 
-      method: req.method,
-      path: req.originalUrl,
-
-      ip: req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "unknown",
-      user_agent: req.headers["user-agent"] || null,
-      content_type: req.headers["content-type"] || "unknown",
-
-      headers: req.headers,
-      query: req.query || null,
-
-      raw_body: req.rawBody || "",
-      raw_body_bytes: req.rawBody ? Buffer.byteLength(req.rawBody, "utf8") : 0,
-      raw_body_sha256: sha256(req.rawBody || ""),
-
-      body: req.body ?? null,
-    };
-
-    // Always: file/console capture
-    writeCaptureToFile(eventObj);
-
-    // Supabase capture (ON by default)
-    if (CAPTURE_TO_SUPABASE) {
-      await writeCaptureToSupabase(eventObj);
+    // eventType (especially for Authorize.Net payloads)
+    let event_type = null;
+    if (parsed && typeof parsed === "object") {
+      event_type =
+        parsed.eventType ||
+        parsed.event_type ||
+        parsed?.payload?.eventType ||
+        null;
     }
 
-    // Reply fast for webhook provider
-    return res.status(200).json({
-      ok: true,
-      capture_id: captureId,
+    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || null;
+    const user_agent = req.headers["user-agent"] || null;
+
+    const eventObj = {
+      capture_id,
       source: sourceLabel,
+      event_type,
+      captured_at,
+      headers: req.headers || null,
+      body: parsed ?? null,
+      raw_body: raw || null,
+      raw_body_bytes: Buffer.byteLength(raw || "", "utf8"),
+      raw_body_sha256: sha256(raw || ""),
+      query: req.query || null,
+      ip,
+      user_agent,
+      raw_body_error: req.rawBodyError || null,
+    };
+
+    // Insert into webhook_events (your CSV format)
+    if (CAPTURE_TO_SUPABASE) {
+      const row = {
+        source: eventObj.source,
+        event_type: eventObj.event_type,
+        received_at: eventObj.captured_at,
+        headers: eventObj.headers,
+        body: eventObj.body,
+        raw_body: eventObj.raw_body,
+        query: eventObj.query,
+        ip: String(eventObj.ip || ""),
+        user_agent: String(eventObj.user_agent || ""),
+        status: "received",
+        notes: `capture_id=${eventObj.capture_id} sha256=${eventObj.raw_body_sha256}${
+          eventObj.raw_body_error ? ` raw_error=${eventObj.raw_body_error}` : ""
+        }`,
+      };
+
+      const ins = await insertWebhookEvent(row);
+      if (!ins.ok && !ins.skipped) {
+        console.error("❌ Supabase webhook_events insert failed:", ins.error);
+      }
+    }
+
+    // Membership mapping
+    // - Jotform: usually provides email in fields (NOT card)
+    // - Authorize: may provide email or customer info depending on notification type
+    const email = findFirstEmailDeep(parsed) || findFirstEmailDeep(raw);
+
+    // Authorize signature validation only for authorize routes
+    let sig = { ok: true, skipped: true };
+    if (sourceLabel.includes("authorize_net")) {
+      sig = verifyAuthorizeSignature(req);
+      if (!sig.ok) {
+        // still captured to Supabase — but respond 401 so you can see auth failures fast
+        return res.status(401).json({
+          ok: false,
+          error: "authorize_signature_failed",
+          reason: sig.reason,
+          capture_id,
+        });
+      }
+    }
+
+    // Determine a good membership status for mapping
+    // For Jotform => mark "pending" (intent created)
+    // For Authorize => mark "active" (payment/subscription event arrived)
+    let status = null;
+    if (sourceLabel.includes("jotform")) status = "pending";
+    if (sourceLabel.includes("authorize_net")) status = "active";
+
+    // Extract an "external_id" if present (Authorize payload.id matches your sheet)
+    let external_id = null;
+    if (parsed?.payload?.id) external_id = String(parsed.payload.id);
+    if (!external_id && parsed?.id) external_id = String(parsed.id);
+
+    // Plan name if present (your CSV showed payload.name "TEST")
+    let plan = null;
+    if (parsed?.payload?.name) plan = String(parsed.payload.name);
+
+    const up = await upsertMembershipByEmail(email, {
+      status,
+      plan,
+      external_id,
+      last_event_source: sourceLabel,
+      last_event_type: event_type,
+      last_event_at: captured_at,
+      last_event: parsed ?? { raw: raw || null },
+    });
+
+    if (!up.ok && !up.skipped) {
+      console.error("❌ Membership upsert failed:", up.error);
+    }
+
+    return res.json({
+      ok: true,
       received: true,
+      source: sourceLabel,
+      capture_id,
       raw_bytes: eventObj.raw_body_bytes,
       capture_to_supabase: CAPTURE_TO_SUPABASE,
-      supabase_ready: SUPABASE_READY,
+      membership_mapping: {
+        enabled: ENABLE_MEMBERSHIP_MAPPING,
+        email: email || null,
+        status: status || null,
+        upserted: up.ok || false,
+        skipped: !!up.skipped,
+        error: up.error || null,
+      },
+      authorize_signature: sig,
+      supabase_ready: supabaseReady,
     });
   };
 }
 
-/**
- * PRIMARY endpoints (clean)
- */
-app.post("/debug/capture/membership/jotform", captureHandler("jotform_membership"));
-app.post(
-  "/debug/capture/membership/authorize-net",
-  captureHandler("authorize_net_membership")
-);
+// Real endpoints
+app.post("/webhooks/membership/jotform", captureRoute("jotform_membership"));
+app.post("/webhooks/membership/authorize-net", captureRoute("authorize_net_membership"));
 
-/**
- * ALIASES (match what you already set in Railway webhooks)
- */
-app.post(
-  "/webhooks/capture-debug/jotform-membership",
-  captureHandler("jotform_membership")
-);
-app.post(
-  "/webhooks/capture-debug/authorize-net",
-  captureHandler("authorize_net_membership")
-);
+// Debug aliases (what you were using)
+app.post("/webhooks/capture-debug/jotform-membership", captureRoute("jotform_membership"));
+app.post("/webhooks/capture-debug/authorize-net", captureRoute("authorize_net_membership"));
 
-/**
- * Catch-all to instantly show wrong endpoints
- */
-app.all("*", (req, res) => {
-  res.status(404).json({
-    ok: false,
-    error: "not_found",
-    hint:
-      "Use /health OR POST to /debug/capture/membership/(jotform|authorize-net) OR /webhooks/capture-debug/(jotform-membership|authorize-net)",
-    path: req.originalUrl,
-  });
-});
+// Old aliases you had in logs (optional)
+app.post("/debug/capture/membership/jotform", captureRoute("jotform_membership"));
+app.post("/debug/capture/membership/authorize-net", captureRoute("authorize_net_membership"));
 
+// ===== Start =====
 app.listen(PORT, () => {
   console.log(`✅ ${SERVICE_NAME} running on port ${PORT}`);
   console.log(`Health: http://localhost:${PORT}/health`);
-  console.log(`Capture Jotform (primary): /debug/capture/membership/jotform`);
-  console.log(`Capture Authorize (primary): /debug/capture/membership/authorize-net`);
-  console.log(`Capture Jotform (alias): /webhooks/capture-debug/jotform-membership`);
-  console.log(`Capture Authorize (alias): /webhooks/capture-debug/authorize-net`);
-  if (CAPTURE_DIR) console.log(`Captures writing to: ${CAPTURE_DIR}`);
-  console.log(
-    `Supabase capture: ${CAPTURE_TO_SUPABASE ? "ON" : "OFF"} (ready=${SUPABASE_READY})`
-  );
+  console.log(`Jotform: POST /webhooks/membership/jotform`);
+  console.log(`Authorize: POST /webhooks/membership/authorize-net`);
 });
