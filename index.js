@@ -1,10 +1,11 @@
 /**
- * CAPTURE-ONLY SERVER (Membership)
+ * CAPTURE + DEBUG SERVER (Membership)
  * Purpose: Capture EXACT inbound payloads from:
  *  - Jotform webhook (membership form submission)
  *  - Authorize.Net webhook notifications (subscription/payment events)
  *
- * No business logic. No Supabase writes. Just capture + log.
+ * Capture-first: always logs raw + parsed payload.
+ * Optional: write to Supabase table `webhook_events` when CAPTURE_TO_SUPABASE=true
  */
 
 const express = require("express");
@@ -12,10 +13,27 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
+// Optional Supabase capture
+let supabase = null;
+const CAPTURE_TO_SUPABASE = (process.env.CAPTURE_TO_SUPABASE || "").toLowerCase() === "true";
+if (CAPTURE_TO_SUPABASE) {
+  const { createClient } = require("@supabase/supabase-js");
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY; // backend only
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    console.error("❌ CAPTURE_TO_SUPABASE=true but SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing");
+  } else {
+    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false },
+    });
+  }
+}
+
 const app = express();
 
 // ========= Config =========
 const PORT = process.env.PORT || 3000;
+const SERVICE_NAME = process.env.SERVICE_NAME || "hvt-backend-capture-membership";
 
 // If set, we will append NDJSON capture logs to this folder
 // Example: CAPTURE_DIR=./captures
@@ -31,23 +49,16 @@ function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
-function safeString(v, max = 20000) {
-  if (v == null) return "";
-  const s = typeof v === "string" ? v : JSON.stringify(v);
-  return s.length > max ? s.slice(0, max) + `... [truncated ${s.length - max} chars]` : s;
-}
-
 function sha256(str) {
   return crypto.createHash("sha256").update(str || "").digest("hex");
 }
 
-function writeCapture(eventObj) {
-  // Always log to console
+function writeCaptureToFile(eventObj) {
+  // Always log one-line summary
   console.log(
-    `[CAPTURE] ${eventObj.capture_id} ${eventObj.method} ${eventObj.path} ${eventObj.content_type} bytes=${eventObj.raw_body_bytes}`
+    `[CAPTURE] ${eventObj.capture_id} source=${eventObj.source} ${eventObj.method} ${eventObj.path} bytes=${eventObj.raw_body_bytes}`
   );
 
-  // Optionally write to file (NDJSON)
   if (!CAPTURE_DIR) return;
   ensureDir(CAPTURE_DIR);
 
@@ -59,16 +70,40 @@ function writeCapture(eventObj) {
   fs.appendFileSync(file, JSON.stringify(eventObj) + "\n", "utf8");
 }
 
+async function writeCaptureToSupabase(eventObj) {
+  if (!supabase) return;
+
+  // matches your table columns:
+  // source, event_type, received_at, headers, body, raw_body, query, ip, user_agent, status, notes
+  const row = {
+    source: eventObj.source,
+    event_type: eventObj.event_type || null,
+    received_at: eventObj.captured_at,
+    headers: eventObj.headers || null,
+    body: eventObj.body ?? null,
+    raw_body: eventObj.raw_body || null,
+    query: eventObj.query || null,
+    ip: eventObj.ip || null,
+    user_agent: eventObj.user_agent || null,
+    status: "received",
+    notes: `capture_id=${eventObj.capture_id} sha256=${eventObj.raw_body_sha256}`,
+  };
+
+  const { error } = await supabase.from("webhook_events").insert(row);
+  if (error) {
+    console.error("❌ Supabase insert failed:", error.message);
+  } else {
+    console.log(`✅ Supabase insert ok (source=${row.source})`);
+  }
+}
+
 // ========= Raw Body Capture Middleware =========
-// We capture raw bytes for BOTH json + urlencoded bodies.
-// This is critical for webhook debugging (and future signature verification).
 function rawBodySaver(req, res, buf) {
   if (buf && buf.length) {
     req.rawBody = buf.toString("utf8");
   }
 }
 
-// Parse JSON + URL-encoded (covers most Jotform/Authorize webhook styles)
 app.use(
   express.json({
     limit: JSON_LIMIT,
@@ -84,7 +119,7 @@ app.use(
   })
 );
 
-// If a provider sends text/plain
+// If provider sends text/plain or xml
 app.use(
   express.text({
     type: ["text/*", "application/xml", "application/*+xml"],
@@ -97,46 +132,49 @@ app.use(
 app.get("/health", (req, res) => {
   res.json({
     ok: true,
-    service: "hvt-backend-capture-membership",
-    mode: "capture_only",
+    service: SERVICE_NAME,
+    mode: "capture_debug",
+    capture_to_supabase: CAPTURE_TO_SUPABASE,
   });
 });
 
-function captureHandler(sourceLabel) {
-  return (req, res) => {
+function captureHandler(sourceLabel, eventType = null) {
+  return async (req, res) => {
     const captureId = crypto.randomUUID();
 
     const eventObj = {
       capture_id: captureId,
       captured_at: new Date().toISOString(),
       source: sourceLabel,
+      event_type: eventType,
 
       method: req.method,
       path: req.originalUrl,
 
-      ip:
-        req.headers["x-forwarded-for"] ||
-        req.socket?.remoteAddress ||
-        "unknown",
-
+      ip: req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "unknown",
+      user_agent: req.headers["user-agent"] || null,
       content_type: req.headers["content-type"] || "unknown",
 
       headers: req.headers,
+      query: req.query || null,
 
-      // raw body (exact inbound)
       raw_body: req.rawBody || "",
       raw_body_bytes: req.rawBody ? Buffer.byteLength(req.rawBody, "utf8") : 0,
       raw_body_sha256: sha256(req.rawBody || ""),
 
-      // parsed body (what express interpreted)
       body: req.body ?? null,
     };
 
-    // Write capture
-    writeCapture(eventObj);
+    // Always: file/console capture
+    writeCaptureToFile(eventObj);
 
-    // Respond 200 quickly so the webhook provider is happy
-    res.status(200).json({
+    // Optional: Supabase capture
+    if (CAPTURE_TO_SUPABASE) {
+      await writeCaptureToSupabase(eventObj);
+    }
+
+    // Reply fast for webhook provider
+    return res.status(200).json({
       ok: true,
       capture_id: captureId,
       source: sourceLabel,
@@ -147,41 +185,38 @@ function captureHandler(sourceLabel) {
 }
 
 /**
- * IMPORTANT:
- * Use THESE for capture only (membership):
- *
- * Jotform Webhook URL:
- *   https://YOUR_DOMAIN/debug/capture/membership/jotform
- *
- * Authorize.Net Webhook URL:
- *   https://YOUR_DOMAIN/debug/capture/membership/authorize-net
+ * PRIMARY endpoints (clean)
  */
+app.post("/debug/capture/membership/jotform", captureHandler("jotform_membership"));
+app.post("/debug/capture/membership/authorize-net", captureHandler("authorize_net_membership"));
 
-app.post(
-  "/debug/capture/membership/jotform",
-  captureHandler("jotform_membership_capture")
-);
+/**
+ * ALIASES (match what you already set in Railway webhooks)
+ * These eliminate your 404 immediately.
+ */
+app.post("/webhooks/capture-debug/jotform-membership", captureHandler("jotform_membership"));
+app.post("/webhooks/capture-debug/authorize-net", captureHandler("authorize_net_membership"));
 
-app.post(
-  "/debug/capture/membership/authorize-net",
-  captureHandler("authorize_net_membership_capture")
-);
-
-// Optional: catch-all to help you spot wrong endpoints quickly
+/**
+ * Catch-all to instantly show wrong endpoints
+ */
 app.all("*", (req, res) => {
   res.status(404).json({
     ok: false,
     error: "not_found",
-    hint: "Use /health or the /debug/capture/membership/* endpoints",
+    hint:
+      "Use /health OR POST to /debug/capture/membership/(jotform|authorize-net) OR /webhooks/capture-debug/(jotform-membership|authorize-net)",
     path: req.originalUrl,
   });
 });
 
-// ========= Start =========
 app.listen(PORT, () => {
-  console.log(`✅ Capture-only server running on port ${PORT}`);
+  console.log(`✅ ${SERVICE_NAME} running on port ${PORT}`);
   console.log(`Health: http://localhost:${PORT}/health`);
-  console.log(`Capture Jotform: /debug/capture/membership/jotform`);
-  console.log(`Capture Authorize.Net: /debug/capture/membership/authorize-net`);
+  console.log(`Capture Jotform (primary): /debug/capture/membership/jotform`);
+  console.log(`Capture Authorize (primary): /debug/capture/membership/authorize-net`);
+  console.log(`Capture Jotform (alias): /webhooks/capture-debug/jotform-membership`);
+  console.log(`Capture Authorize (alias): /webhooks/capture-debug/authorize-net`);
   if (CAPTURE_DIR) console.log(`Captures writing to: ${CAPTURE_DIR}`);
+  if (CAPTURE_TO_SUPABASE) console.log(`Supabase capture: ENABLED -> webhook_events`);
 });
