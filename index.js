@@ -5,7 +5,11 @@
  *  - Authorize.Net webhook notifications (subscription/payment events)
  *
  * Capture-first: always logs raw + parsed payload.
- * Optional: write to Supabase table `webhook_events` when CAPTURE_TO_SUPABASE=true
+ * Optional: write to Supabase table `webhook_events`
+ *
+ * NOTE:
+ * - Supabase capture is ON BY DEFAULT.
+ * - To turn it OFF, set CAPTURE_TO_SUPABASE=false (or 0/no/off) in Railway.
  */
 
 const express = require("express");
@@ -13,35 +17,46 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
-// Optional Supabase capture
-let supabase = null;
-const CAPTURE_TO_SUPABASE = (process.env.CAPTURE_TO_SUPABASE || "").toLowerCase() === "true";
-if (CAPTURE_TO_SUPABASE) {
-  const { createClient } = require("@supabase/supabase-js");
-  const SUPABASE_URL = process.env.SUPABASE_URL;
-  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY; // backend only
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    console.error("❌ CAPTURE_TO_SUPABASE=true but SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing");
-  } else {
-    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { persistSession: false },
-    });
-  }
-}
-
-const app = express();
-
 // ========= Config =========
 const PORT = process.env.PORT || 3000;
 const SERVICE_NAME = process.env.SERVICE_NAME || "hvt-backend-capture-membership";
 
-// If set, we will append NDJSON capture logs to this folder
-// Example: CAPTURE_DIR=./captures
+// If set, we will append NDJSON capture logs to this folder (optional)
 const CAPTURE_DIR = process.env.CAPTURE_DIR || "";
 
 // Increase limits because Jotform payloads can be large
 const JSON_LIMIT = process.env.JSON_LIMIT || "25mb";
 const FORM_LIMIT = process.env.FORM_LIMIT || "25mb";
+
+// ✅ Supabase capture: ON by default. Turn OFF only if explicitly false/0/no/off
+const CAPTURE_TO_SUPABASE = !["false", "0", "no", "off"].includes(
+  (process.env.CAPTURE_TO_SUPABASE || "").toLowerCase()
+);
+
+// ========= Optional Supabase capture =========
+let supabase = null;
+let SUPABASE_READY = false;
+
+if (CAPTURE_TO_SUPABASE) {
+  const { createClient } = require("@supabase/supabase-js");
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY; // backend only
+
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    console.error(
+      "❌ Supabase capture ON, but SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing."
+    );
+    console.error("   -> Set both in Railway Variables and redeploy/restart.");
+  } else {
+    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false },
+    });
+    SUPABASE_READY = true;
+    console.log("✅ Supabase client initialized (service role).");
+  }
+}
+
+const app = express();
 
 // ========= Helpers =========
 function ensureDir(dir) {
@@ -54,7 +69,7 @@ function sha256(str) {
 }
 
 function writeCaptureToFile(eventObj) {
-  // Always log one-line summary
+  // One-line summary
   console.log(
     `[CAPTURE] ${eventObj.capture_id} source=${eventObj.source} ${eventObj.method} ${eventObj.path} bytes=${eventObj.raw_body_bytes}`
   );
@@ -71,27 +86,32 @@ function writeCaptureToFile(eventObj) {
 }
 
 async function writeCaptureToSupabase(eventObj) {
-  if (!supabase) return;
+  if (!supabase || !SUPABASE_READY) return;
 
-  // matches your table columns:
+  // Matches your table columns:
   // source, event_type, received_at, headers, body, raw_body, query, ip, user_agent, status, notes
   const row = {
     source: eventObj.source,
     event_type: eventObj.event_type || null,
-    received_at: eventObj.captured_at,
-    headers: eventObj.headers || null,
-    body: eventObj.body ?? null,
-    raw_body: eventObj.raw_body || null,
-    query: eventObj.query || null,
-    ip: eventObj.ip || null,
-    user_agent: eventObj.user_agent || null,
-    status: "received",
-    notes: `capture_id=${eventObj.capture_id} sha256=${eventObj.raw_body_sha256}`,
+    received_at: eventObj.captured_at, // timestamptz
+    headers: eventObj.headers || null, // jsonb
+    body: eventObj.body ?? null,       // jsonb
+    raw_body: eventObj.raw_body || null, // text
+    query: eventObj.query || null,     // jsonb
+    ip: eventObj.ip || null,           // text
+    user_agent: eventObj.user_agent || null, // text
+    status: "received",                // text
+    notes: `capture_id=${eventObj.capture_id} sha256=${eventObj.raw_body_sha256}`, // text
   };
 
   const { error } = await supabase.from("webhook_events").insert(row);
+
   if (error) {
     console.error("❌ Supabase insert failed:", error.message);
+    // Helpful hint for common causes
+    console.error(
+      "   -> Check: table name webhook_events, RLS, service role key, and column types."
+    );
   } else {
     console.log(`✅ Supabase insert ok (source=${row.source})`);
   }
@@ -129,12 +149,29 @@ app.use(
 );
 
 // ========= Routes =========
-app.get("/health", (req, res) => {
+app.get("/health", async (req, res) => {
+  // If Supabase is configured, do a tiny readiness check (non-fatal)
+  let supabase_ok = false;
+  let supabase_error = null;
+
+  if (SUPABASE_READY) {
+    try {
+      const { error } = await supabase.from("webhook_events").select("id").limit(1);
+      if (error) supabase_error = error.message;
+      else supabase_ok = true;
+    } catch (e) {
+      supabase_error = e?.message || String(e);
+    }
+  }
+
   res.json({
     ok: true,
     service: SERVICE_NAME,
     mode: "capture_debug",
     capture_to_supabase: CAPTURE_TO_SUPABASE,
+    supabase_ready: SUPABASE_READY,
+    supabase_ok,
+    supabase_error,
   });
 });
 
@@ -168,7 +205,7 @@ function captureHandler(sourceLabel, eventType = null) {
     // Always: file/console capture
     writeCaptureToFile(eventObj);
 
-    // Optional: Supabase capture
+    // Supabase capture (ON by default)
     if (CAPTURE_TO_SUPABASE) {
       await writeCaptureToSupabase(eventObj);
     }
@@ -180,6 +217,8 @@ function captureHandler(sourceLabel, eventType = null) {
       source: sourceLabel,
       received: true,
       raw_bytes: eventObj.raw_body_bytes,
+      capture_to_supabase: CAPTURE_TO_SUPABASE,
+      supabase_ready: SUPABASE_READY,
     });
   };
 }
@@ -188,14 +227,22 @@ function captureHandler(sourceLabel, eventType = null) {
  * PRIMARY endpoints (clean)
  */
 app.post("/debug/capture/membership/jotform", captureHandler("jotform_membership"));
-app.post("/debug/capture/membership/authorize-net", captureHandler("authorize_net_membership"));
+app.post(
+  "/debug/capture/membership/authorize-net",
+  captureHandler("authorize_net_membership")
+);
 
 /**
  * ALIASES (match what you already set in Railway webhooks)
- * These eliminate your 404 immediately.
  */
-app.post("/webhooks/capture-debug/jotform-membership", captureHandler("jotform_membership"));
-app.post("/webhooks/capture-debug/authorize-net", captureHandler("authorize_net_membership"));
+app.post(
+  "/webhooks/capture-debug/jotform-membership",
+  captureHandler("jotform_membership")
+);
+app.post(
+  "/webhooks/capture-debug/authorize-net",
+  captureHandler("authorize_net_membership")
+);
 
 /**
  * Catch-all to instantly show wrong endpoints
@@ -218,5 +265,7 @@ app.listen(PORT, () => {
   console.log(`Capture Jotform (alias): /webhooks/capture-debug/jotform-membership`);
   console.log(`Capture Authorize (alias): /webhooks/capture-debug/authorize-net`);
   if (CAPTURE_DIR) console.log(`Captures writing to: ${CAPTURE_DIR}`);
-  if (CAPTURE_TO_SUPABASE) console.log(`Supabase capture: ENABLED -> webhook_events`);
+  console.log(
+    `Supabase capture: ${CAPTURE_TO_SUPABASE ? "ON" : "OFF"} (ready=${SUPABASE_READY})`
+  );
 });
