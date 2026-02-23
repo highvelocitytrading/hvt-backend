@@ -1,14 +1,14 @@
 {
   "name": "hvt-backend-capture-membership",
   "version": "1.0.0",
-  "description": "Capture-only webhook server for Jotform + Authorize.Net (membership)",
+  "description": "Capture + debug webhook server for Jotform + Authorize.Net (membership)",
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
     "start": "node index.js"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.97.0",
