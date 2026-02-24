@@ -1,98 +1,53 @@
 /**
- * HVT MEMBERSHIPS WEBHOOK SERVER (Railway)
- * - Webhooks:
- *    POST /webhooks/capture-debug/jotform-membership
- *    POST /webhooks/capture-debug/authorize-net
- * - Writes/Upserts into Supabase table: MEMBERSHIPS (aka memberships)
- *
- * Fixes stream errors by reading body ONCE via express.raw().
+ * MEMBERSHIPS WEBHOOK SERVER (Railway)
+ * - Jotform (multipart/urlencoded) + Authorize.Net (json)
+ * - Writes to Supabase table: memberships
+ * - Reads request body ONCE (fixes "stream is not readable")
  */
 
 "use strict";
 
 const express = require("express");
 const crypto = require("crypto");
+const getRawBody = require("raw-body");
 const querystring = require("querystring");
 const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
+app.set("trust proxy", true);
 
-// ===================== ENV =====================
+// ========= ENV =========
 const PORT = process.env.PORT || 8080;
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_TABLE = process.env.SUPABASE_TABLE || "memberships";
 
-// If you *insist* on "MEMBERSHIPS" keep it here.
-// But Supabase best practice is lowercase "memberships".
-const MEMBERSHIPS_TABLE = process.env.MEMBERSHIPS_TABLE || "MEMBERSHIPS";
+const BODY_LIMIT = process.env.BODY_LIMIT || "25mb";
 
-const BODY_LIMIT = process.env.BODY_LIMIT || "10mb";
-
-// Optional: Authorize.Net signature key (sha512 HMAC)
-// If blank, signature checking is skipped.
+// Optional: Authorize.Net webhook signature verification (sha512=...)
 const AUTHNET_SIGNATURE_KEY = process.env.AUTHNET_SIGNATURE_KEY || "";
 
-// ===================== Supabase =====================
+// ========= Supabase =========
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error("❌ Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
 }
-const supabase =
-  SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
-    ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-        auth: { persistSession: false },
-      })
-    : null;
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { persistSession: false },
+});
 
-// Railway / proxies
-app.set("trust proxy", true);
-
-// ===================== Read body ONCE =====================
-app.use(
-  express.raw({
-    type: "*/*",
-    limit: BODY_LIMIT,
-  })
-);
-
-// ===================== Helpers =====================
+// ========= Helpers =========
 function nowIso() {
   return new Date().toISOString();
 }
 
-function sha256(str) {
-  return crypto.createHash("sha256").update(str || "", "utf8").digest("hex");
+function sha256(buf) {
+  return crypto.createHash("sha256").update(buf || Buffer.from("")).digest("hex");
 }
 
 function getClientIp(req) {
   const xff = req.headers["x-forwarded-for"];
-  if (xff) return String(xff);
-  return req.ip || null;
-}
-
-function parseByContentType(rawBodyString, contentType) {
-  const ct = String(contentType || "").toLowerCase();
-
-  if (!rawBodyString) return { parsed: {}, mode: "empty" };
-
-  if (ct.includes("application/json")) {
-    try {
-      return { parsed: JSON.parse(rawBodyString), mode: "json" };
-    } catch {
-      return { parsed: {}, mode: "json_invalid" };
-    }
-  }
-
-  if (ct.includes("application/x-www-form-urlencoded")) {
-    try {
-      return { parsed: querystring.parse(rawBodyString), mode: "urlencoded" };
-    } catch {
-      return { parsed: {}, mode: "urlencoded_invalid" };
-    }
-  }
-
-  // multipart/form-data or anything else: keep raw only (store parsed as {})
-  return { parsed: {}, mode: "raw_only" };
+  return xff ? String(xff) : req.ip || null;
 }
 
 function timingSafeEqualHex(a, b) {
@@ -106,336 +61,314 @@ function timingSafeEqualHex(a, b) {
   }
 }
 
-function verifyAuthorizeNetSignature(rawBodyString, headerValue) {
+function verifyAuthorizeNetSignature(rawText, providedHeader) {
   if (!AUTHNET_SIGNATURE_KEY) return { ok: true, skipped: true };
 
-  if (!headerValue || typeof headerValue !== "string") {
+  if (!providedHeader || typeof providedHeader !== "string") {
     return { ok: false, reason: "missing_x_anet_signature" };
   }
-  if (!headerValue.startsWith("sha512=")) {
+  if (!providedHeader.startsWith("sha512=")) {
     return { ok: false, reason: "bad_signature_format" };
   }
 
-  const provided = headerValue.slice("sha512=".length).trim();
+  const provided = providedHeader.slice("sha512=".length).trim();
   const expected = crypto
     .createHmac("sha512", AUTHNET_SIGNATURE_KEY)
-    .update(rawBodyString || "", "utf8")
+    .update(rawText || "", "utf8")
     .digest("hex");
 
-  const ok = timingSafeEqualHex(provided, expected);
-  return ok ? { ok: true } : { ok: false, reason: "signature_mismatch" };
+  return timingSafeEqualHex(provided, expected)
+    ? { ok: true }
+    : { ok: false, reason: "signature_mismatch" };
 }
 
-// ----- membership field extraction (best-effort) -----
-function pickFirst(...vals) {
-  for (const v of vals) {
-    if (v === undefined || v === null) continue;
-    const s = String(v).trim();
-    if (s.length) return s;
+/**
+ * Minimal multipart parser (text fields only).
+ * Works well for webhook-style multipart forms (like Jotform).
+ */
+function parseMultipartText(rawText, contentType) {
+  const match = /boundary=([^;]+)/i.exec(contentType || "");
+  if (!match) return { parsed: null, mode: "multipart_no_boundary" };
+
+  const boundary = match[1];
+  const delimiter = `--${boundary}`;
+  const parts = rawText.split(delimiter);
+
+  const out = {};
+  for (const part of parts) {
+    if (!part || part === "--\r\n" || part === "--") continue;
+
+    // Separate headers from body
+    const idx = part.indexOf("\r\n\r\n");
+    if (idx === -1) continue;
+
+    const headerBlock = part.slice(0, idx);
+    let value = part.slice(idx + 4);
+
+    // trim ending CRLF
+    value = value.replace(/\r\n$/g, "");
+    value = value.replace(/\r\n--$/g, "");
+
+    // Content-Disposition: form-data; name="..."
+    const nameMatch = /name="([^"]+)"/i.exec(headerBlock);
+    if (!nameMatch) continue;
+
+    const fieldName = nameMatch[1];
+    out[fieldName] = value;
+  }
+
+  return { parsed: out, mode: "multipart_text" };
+}
+
+function parseBody(rawBuf, contentType) {
+  const ct = (contentType || "").toLowerCase();
+  const rawText = rawBuf.toString("utf8");
+
+  // JSON
+  if (ct.includes("application/json")) {
+    try {
+      return { parsed: JSON.parse(rawText), mode: "json", rawText };
+    } catch {
+      return { parsed: null, mode: "json_invalid", rawText };
+    }
+  }
+
+  // urlencoded
+  if (ct.includes("application/x-www-form-urlencoded")) {
+    try {
+      return { parsed: querystring.parse(rawText), mode: "urlencoded", rawText };
+    } catch {
+      return { parsed: null, mode: "urlencoded_invalid", rawText };
+    }
+  }
+
+  // multipart
+  if (ct.includes("multipart/form-data")) {
+    const { parsed, mode } = parseMultipartText(rawText, contentType);
+    return { parsed, mode, rawText };
+  }
+
+  // fallback
+  return { parsed: null, mode: "raw_only", rawText };
+}
+
+function pickFirst(obj, predicate) {
+  if (!obj || typeof obj !== "object") return null;
+  for (const [k, v] of Object.entries(obj)) {
+    if (predicate(k, v)) return v;
   }
   return null;
 }
 
-function toNumberMaybe(v) {
-  if (v === undefined || v === null) return null;
-  const n = Number(String(v).replace(/[^0-9.\-]/g, ""));
+function normalizeMoney(val) {
+  if (val == null) return null;
+  const s = String(val).replace(/[^0-9.]/g, "");
+  if (!s) return null;
+  const n = Number(s);
   return Number.isFinite(n) ? n : null;
 }
 
-// Jotform payloads vary a lot. This is robust “best effort”.
-function extractFromJotform(payload) {
-  // common possibilities:
-  // - direct keys: email, first_name, last_name, plan_name, amount, currency
-  // - or nested: { submission: { answers: ... } }
-  // We’ll just try a bunch of common shapes.
+function extractEmail(payload) {
+  // direct
+  const direct = pickFirst(payload, (k, v) => /email/i.test(k) && typeof v === "string" && v.includes("@"));
+  if (direct) return String(direct).trim();
 
-  const email = pickFirst(
-    payload.email,
-    payload.Email,
-    payload.user_email,
-    payload["q3_email"] // common Jotform style
-  );
-
-  const first_name = pickFirst(
-    payload.first_name,
-    payload.firstname,
-    payload["firstName"],
-    payload["q1_name[first]"],
-    payload.first,
-    payload["first"]
-  );
-
-  const last_name = pickFirst(
-    payload.last_name,
-    payload.lastname,
-    payload["lastName"],
-    payload["q1_name[last]"],
-    payload.last,
-    payload["last"]
-  );
-
-  const plan_name = pickFirst(
-    payload.plan_name,
-    payload.plan,
-    payload.membership,
-    payload.product,
-    payload["planName"]
-  );
-
-  const amount = toNumberMaybe(
-    pickFirst(payload.amount, payload.price, payload.total, payload["plan_amount"])
-  );
-
-  const currency = pickFirst(payload.currency, payload["currency_code"], "USD");
-
-  return { email, first_name, last_name, plan_name, amount, currency };
+  // any value that looks like email
+  const any = pickFirst(payload, (_k, v) => typeof v === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()));
+  return any ? String(any).trim() : null;
 }
 
-// Authorize.Net: your capture CSV shows payload at parsed.payload
-function extractFromAuthNet(parsed) {
-  const p = parsed && typeof parsed === "object" ? parsed : {};
+function extractName(payload) {
+  let first = pickFirst(payload, (k, v) => /first/i.test(k) && typeof v === "string" && v.trim().length > 0);
+  let last = pickFirst(payload, (k, v) => /last/i.test(k) && typeof v === "string" && v.trim().length > 0);
 
-  const eventType = pickFirst(p.eventType, p.payload?.eventType);
-
-  // We’ll accept IDs from a few likely keys:
-  const authnet_subscription_id = pickFirst(
-    p.payload?.subscription?.id,
-    p.payload?.subscriptionId,
-    p.payload?.id // your TEST payload had payload.id
-  );
-
-  const authnet_transaction_id = pickFirst(
-    p.payload?.transaction?.id,
-    p.payload?.transactionId,
-    p.payload?.transId
-  );
-
-  const authnet_customer_profile_id = pickFirst(
-    p.payload?.profile?.customerProfileId,
-    p.payload?.customerProfileId
-  );
-
-  const authnet_customer_payment_profile_id = pickFirst(
-    p.payload?.profile?.customerPaymentProfileId,
-    p.payload?.customerPaymentProfileId
-  );
-
-  // Sometimes name/amount are present (your TEST payload did)
-  const plan_name = pickFirst(p.payload?.name, p.payload?.subscription?.name);
-  const amount = toNumberMaybe(p.payload?.amount);
+  // sometimes single "name" field
+  if ((!first || !last)) {
+    const full = pickFirst(payload, (k, v) => /name/i.test(k) && typeof v === "string" && v.trim().length > 0);
+    if (full && (!first || !last)) {
+      const parts = String(full).trim().split(/\s+/);
+      if (!first) first = parts[0] || null;
+      if (!last) last = parts.length > 1 ? parts.slice(1).join(" ") : null;
+    }
+  }
 
   return {
-    eventType,
-    authnet_subscription_id,
-    authnet_transaction_id,
-    authnet_customer_profile_id,
-    authnet_customer_payment_profile_id,
-    plan_name,
-    amount,
+    first_name: first ? String(first).trim() : null,
+    last_name: last ? String(last).trim() : null,
   };
 }
 
-function statusFromEventType(eventType) {
-  if (!eventType) return null;
-  const t = String(eventType).toLowerCase();
-  if (t.includes("cancel") || t.includes("terminated") || t.includes("suspended")) return "canceled";
-  if (t.includes("created") || t.includes("active") || t.includes("payment")) return "active";
-  return "active";
+function extractPlan(payload) {
+  // plan, membership, product, package, etc.
+  const plan = pickFirst(payload, (k, v) =>
+    /(plan|membership|product|package|tier)/i.test(k) && typeof v === "string" && v.trim().length > 0
+  );
+  return plan ? String(plan).trim() : null;
 }
 
-// ===================== Supabase write (with table fallback) =====================
-async function upsertMembership({ tableName, row, onConflict }) {
-  if (!supabase) return { ok: false, error: "supabase_not_configured" };
+function extractAmount(payload) {
+  const amt = pickFirst(payload, (k, v) =>
+    /(amount|price|total|payment)/i.test(k) && (typeof v === "string" || typeof v === "number")
+  );
+  return normalizeMoney(amt);
+}
 
-  const attempt = async (t) => {
-    // upsert requires a unique constraint on the onConflict column(s)
-    const { data, error } = await supabase
-      .from(t)
-      .upsert(row, { onConflict, ignoreDuplicates: false })
-      .select("id")
-      .limit(1);
+function extractCurrency(payload) {
+  const cur = pickFirst(payload, (k, v) =>
+    /(currency)/i.test(k) && typeof v === "string" && v.trim().length > 0
+  );
+  return cur ? String(cur).trim().toUpperCase() : "USD";
+}
 
-    if (error) return { ok: false, error: error.message };
-    return { ok: true, data };
-  };
+async function upsertMembership(row) {
+  // IMPORTANT: this assumes you have a UNIQUE constraint on email OR authnet_subscription_id.
+  // Best practice: unique(email) and unique(authnet_subscription_id).
+  const { data, error } = await supabase
+    .from(SUPABASE_TABLE)
+    .upsert(row, { onConflict: row.authnet_subscription_id ? "authnet_subscription_id" : "email" })
+    .select("id")
+    .maybeSingle();
 
-  // 1) try exact tableName from env
-  let r = await attempt(tableName);
-  if (r.ok) return { ...r, table_used: tableName };
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, id: data?.id ?? null };
+}
 
-  // 2) fallback to lowercase memberships
-  const lower = "memberships";
-  if (tableName !== lower) {
-    const r2 = await attempt(lower);
-    if (r2.ok) return { ...r2, table_used: lower };
-    return { ok: false, error: `${r.error} | fallback(${lower})=${r2.error}` };
+// ========= One middleware to read body ONCE =========
+app.use(async (req, res, next) => {
+  if (!["POST", "PUT", "PATCH"].includes(req.method)) return next();
+
+  try {
+    const rawBuf = await getRawBody(req, { limit: BODY_LIMIT });
+    req.rawBuf = rawBuf;
+    next();
+  } catch (e) {
+    console.error("❌ raw-body read failed:", e?.message || e);
+    res.status(400).json({ ok: false, error: "raw_body_read_failed" });
   }
+});
 
-  return r;
-}
-
-// ===================== Routes =====================
-app.get("/health", async (req, res) => {
+// ========= Health =========
+app.get("/health", (req, res) => {
   res.json({
     ok: true,
-    port: PORT,
-    supabase_configured: Boolean(supabase),
-    memberships_table_env: MEMBERSHIPS_TABLE,
-    authnet_signature_check: AUTHNET_SIGNATURE_KEY ? "enabled" : "disabled",
+    table: SUPABASE_TABLE,
   });
 });
 
-// ---- Jotform Membership ----
-app.post("/webhooks/capture-debug/jotform-membership", async (req, res) => {
+// ========= Webhooks =========
+
+// Jotform membership webhook
+app.post(["/webhooks/capture-debug/jotform-membership", "/webhooks/memberships/jotform"], async (req, res) => {
   const capture_id = crypto.randomUUID();
   const contentType = req.headers["content-type"] || "";
+  const rawBuf = req.rawBuf || Buffer.from("");
+  const { parsed, mode, rawText } = parseBody(rawBuf, contentType);
 
-  const rawBuf = Buffer.isBuffer(req.body) ? req.body : Buffer.from("");
-  const raw_body = rawBuf.length ? rawBuf.toString("utf8") : "";
+  const email = extractEmail(parsed || {});
+  const { first_name, last_name } = extractName(parsed || {});
+  const plan_name = extractPlan(parsed || {});
+  const amount = extractAmount(parsed || {});
+  const currency = extractCurrency(parsed || {});
 
-  const { parsed, mode } = parseByContentType(raw_body, contentType);
-  const extracted = extractFromJotform(parsed);
-
-  // We upsert primarily by email for Jotform
-  const email = extracted.email;
-  const onConflict = "email"; // requires unique(email)
-
+  // Jotform submission means "active" in your world (user entered flow)
   const row = {
-    updated_at: nowIso(),
-    email: email,
-    first_name: extracted.first_name,
-    last_name: extracted.last_name,
+    email,
+    first_name,
+    last_name,
     status: "active",
-    plan_name: extracted.plan_name,
-    amount: extracted.amount,
-    currency: extracted.currency || "USD",
+    plan_name,
+    amount,
+    currency,
     source: "jotform",
+
     last_event_type: "jotform_submission",
     last_event_at: nowIso(),
-    last_webhook_event_id: null,
+
+    // Store payloads for debugging/auditing
     jotform_payload: parsed || {},
-    // do not overwrite authnet_payload here
-    notes: `capture_id=${capture_id} parse=${mode} sha256=${sha256(raw_body)} ip=${getClientIp(req)}`,
+    notes: `capture_id=${capture_id} parse=${mode} sha256=${sha256(rawBuf)}`,
   };
 
-  // If email missing, we still store the payload but we can’t upsert reliably.
-  // In that case, we insert a “new row” by generating a synthetic email-like key.
-  let finalOnConflict = onConflict;
-  if (!email) {
-    row.email = `missing-email+${capture_id}@local.invalid`;
-    finalOnConflict = "email";
-  }
+  const db = await upsertMembership(row);
 
-  const db = await upsertMembership({
-    tableName: MEMBERSHIPS_TABLE,
-    row,
-    onConflict: finalOnConflict,
-  });
+  // Log hard if we didn't get core fields
+  if (!email) console.warn("⚠️ Jotform parsed but email missing. parse_mode=", mode);
+  if (!db.ok) console.error("❌ Supabase upsert failed:", db.error);
 
-  return res.status(200).json({
+  res.status(200).json({
     ok: true,
     capture_id,
-    route: "jotform_membership",
-    bytes: rawBuf.length,
     parse_mode: mode,
-    extracted,
+    extracted: { email, first_name, last_name, plan_name, amount, currency },
     supabase: db.ok ? "upsert_ok" : `upsert_failed:${db.error}`,
-    table_used: db.table_used || null,
   });
 });
 
-// ---- Authorize.Net Membership ----
-app.post("/webhooks/capture-debug/authorize-net", async (req, res) => {
+// Authorize.Net membership webhook
+app.post(["/webhooks/capture-debug/authorize-net", "/webhooks/memberships/authorize-net"], async (req, res) => {
   const capture_id = crypto.randomUUID();
   const contentType = req.headers["content-type"] || "";
+  const rawBuf = req.rawBuf || Buffer.from("");
+  const { parsed, mode, rawText } = parseBody(rawBuf, contentType);
 
-  const rawBuf = Buffer.isBuffer(req.body) ? req.body : Buffer.from("");
-  const raw_body = rawBuf.length ? rawBuf.toString("utf8") : "";
+  const sigCheck = verifyAuthorizeNetSignature(rawText, req.headers["x-anet-signature"]);
+  const rejected = !sigCheck.ok;
 
-  const { parsed, mode } = parseByContentType(raw_body, contentType);
+  // Expected structure based on your capture CSV example:
+  // parsed.eventType, parsed.eventDate, parsed.payload.id, parsed.payload.amount, parsed.payload.status, parsed.payload.profile.customerProfileId, customerPaymentProfileId
+  const eventType = parsed?.eventType || null;
+  const eventDate = parsed?.eventDate || null;
 
-  const sig = verifyAuthorizeNetSignature(raw_body, req.headers["x-anet-signature"]);
-  const extracted = extractFromAuthNet(parsed);
+  const subscriptionId = parsed?.payload?.id ? String(parsed.payload.id) : null;
+  const amount = parsed?.payload?.amount != null ? normalizeMoney(parsed.payload.amount) : null;
+  const status = parsed?.payload?.status ? String(parsed.payload.status) : "active";
 
-  // Decide upsert key:
-  // - prefer authnet_subscription_id if present
-  // - else fall back to email if present (sometimes included depending on your flow)
-  let onConflict = null;
+  const custProfileId =
+    parsed?.payload?.profile?.customerProfileId != null ? String(parsed.payload.profile.customerProfileId) : null;
 
-  const authnet_subscription_id = extracted.authnet_subscription_id;
-  const email = pickFirst(parsed.email, parsed.payload?.email); // best effort
+  const custPayProfileId =
+    parsed?.payload?.profile?.customerPaymentProfileId != null
+      ? String(parsed.payload.profile.customerPaymentProfileId)
+      : null;
 
-  if (authnet_subscription_id) onConflict = "authnet_subscription_id";
-  else if (email) onConflict = "email";
-  else onConflict = "authnet_transaction_id"; // last resort
-
-  const status = sig.ok ? (statusFromEventType(extracted.eventType) || "active") : "rejected";
-
+  // You may not have email on AuthNet webhook; that's OK—match on subscription id (best key).
   const row = {
-    updated_at: nowIso(),
-
-    // only set email if we have it
-    email: email || null,
-
-    // only set plan/amount if included
-    plan_name: extracted.plan_name || null,
-    amount: extracted.amount || null,
+    authnet_subscription_id: subscriptionId,
+    authnet_customer_profile_id: custProfileId,
+    authnet_customer_payment_profile_id: custPayProfileId,
+    amount: amount,
     currency: "USD",
+    status: rejected ? "rejected" : status,
+    source: "authnet",
 
-    status,
-    source: "authorize_net",
-
-    authnet_subscription_id: authnet_subscription_id || null,
-    authnet_transaction_id: extracted.authnet_transaction_id || (parsed.payload?.transactionId ?? null),
-    authnet_customer_profile_id: extracted.authnet_customer_profile_id || null,
-    authnet_customer_payment_profile_id: extracted.authnet_customer_payment_profile_id || null,
-
-    last_event_type: extracted.eventType || null,
-    last_event_at: nowIso(),
-    last_webhook_event_id: null,
+    last_event_type: eventType,
+    last_event_at: eventDate ? new Date(eventDate).toISOString() : nowIso(),
 
     authnet_payload: parsed || {},
-    notes: `capture_id=${capture_id} parse=${mode} sig=${sig.skipped ? "skipped" : sig.ok ? "ok" : "fail"} sha256=${sha256(raw_body)} ip=${getClientIp(req)}`,
+    notes: `capture_id=${capture_id} parse=${mode} sha256=${sha256(rawBuf)} sig=${
+      sigCheck.skipped ? "skipped" : sigCheck.ok ? "ok" : `fail:${sigCheck.reason}`
+    }`,
   };
 
-  // If our conflict key column is null, force a stable synthetic value so PostgREST upsert doesn’t break.
-  if (onConflict === "authnet_subscription_id" && !row.authnet_subscription_id) {
-    row.authnet_subscription_id = `missing-sub+${capture_id}`;
-  }
-  if (onConflict === "authnet_transaction_id" && !row.authnet_transaction_id) {
-    row.authnet_transaction_id = `missing-tx+${capture_id}`;
-  }
-  if (onConflict === "email" && !row.email) {
-    row.email = `missing-email+${capture_id}@local.invalid`;
-  }
+  const db = rejected ? { ok: true, id: null } : await upsertMembership(row);
+  if (!db.ok) console.error("❌ Supabase upsert failed:", db.error);
 
-  const db = await upsertMembership({
-    tableName: MEMBERSHIPS_TABLE,
-    row,
-    onConflict,
-  });
-
-  return res.status(200).json({
+  res.status(200).json({
     ok: true,
     capture_id,
-    route: "authorize_net_membership",
-    bytes: rawBuf.length,
     parse_mode: mode,
-    signature: sig.skipped ? "skipped" : sig.ok ? "ok" : `fail:${sig.reason}`,
-    extracted,
-    supabase: db.ok ? "upsert_ok" : `upsert_failed:${db.error}`,
-    table_used: db.table_used || null,
+    authnet_signature: sigCheck.skipped ? "skipped" : sigCheck.ok ? "ok" : `fail:${sigCheck.reason}`,
+    extracted: { subscriptionId, amount, status, custProfileId, custPayProfileId, eventType },
+    supabase: rejected ? "skipped_insert_rejected" : db.ok ? "upsert_ok" : `upsert_failed:${db.error}`,
   });
 });
 
 // 404
-app.all("*", (req, res) => {
-  res.status(404).json({ ok: false, message: "Not found" });
-});
+app.all("*", (req, res) => res.status(404).json({ ok: false, message: "Not found" }));
 
 app.listen(PORT, () => {
-  console.log(`✅ memberships server running on :${PORT}`);
-  console.log(`✅ health: GET /health`);
-  console.log(`✅ jotform: POST /webhooks/capture-debug/jotform-membership`);
-  console.log(`✅ authnet: POST /webhooks/capture-debug/authorize-net`);
+  console.log(`✅ memberships webhook server running on :${PORT}`);
+  console.log(`Health: GET /health`);
+  console.log(`Jotform: POST /webhooks/capture-debug/jotform-membership`);
+  console.log(`AuthNet: POST /webhooks/capture-debug/authorize-net`);
 });
