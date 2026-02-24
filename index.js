@@ -6,32 +6,61 @@ const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
 
+// CLOUD SETTINGS: Railway uses these to stay alive
 const PORT = process.env.PORT || 8080;
 const HOST = '0.0.0.0';
 
+// SECURITY GUARD: Ensures your database keys are present
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.error("❌ DEPLOYMENT FAILED: Missing Variables.");
+    console.error("❌ DEPLOYMENT FAILED: Missing Supabase Variables in Railway.");
     process.exit(1); 
 }
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-const TABLE = "MEMBERSHIPS"; 
+const TABLE = process.env.SUPABASE_TABLE || "MEMBERSHIPS"; 
 
-app.set("trust proxy", true);
-app.use(express.json());
+app.use(express.json()); // Essential for parsing Jotform JSON
 
-// --- HELPER ---
-const getExpiryDate = (days = 30) => {
-    return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
-};
-
+// --- HEALTH CHECK ---
 app.get("/health", (req, res) => {
-    res.status(200).json({ status: "online", service: "HVT-Backend" });
+    res.status(200).json({ status: "online", service: "Membership-Backend" });
 });
 
+// --- MEMBERSHIP WEBHOOK ---
+// URL for Jotform: https://hvt-backend-production-ec41.up.railway.app/webhooks/membership
+app.post("/webhooks/membership", async (req, res) => {
+    try {
+        const body = req.body;
+        // Normalizes email to lowercase for database consistency
+        const email = (body.email || body.q3_email || "").toLowerCase();
+        
+        if (!email) {
+            console.error("⚠️ Webhook received with no email field.");
+            return res.status(400).send("No email found");
+        }
+
+        // UPSERT: Updates existing user or creates a new one
+        const { error } = await supabase.from(TABLE).upsert({ 
+            email, 
+            status: "active",
+            // Sets a standard 31-day expiry
+            expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
+            updated_at: new Date().toISOString() 
+        }, { onConflict: "email" });
+
+        if (error) throw error;
+
+        console.log(`✅ Membership Activated: ${email}`);
+        res.status(200).send("Membership Processed");
+    } catch (err) { 
+        console.error("❌ Webhook Error:", err.message);
+        res.status(500).send("Internal Server Error"); 
+    }
+});
+
+// --- ACCESS CHECK FOR INDICATORS ---
 app.get("/check-access", async (req, res) => {
-    // 1. Lowercase the incoming email to match database
-    const email = req.query.email?.toLowerCase(); 
+    const email = req.query.email?.toLowerCase();
     if (!email) return res.status(400).json({ active: false });
 
     const { data, error } = await supabase
@@ -48,30 +77,6 @@ app.get("/check-access", async (req, res) => {
     res.json({ active: isActive && isNotExpired, expires_at: data.expires_at });
 });
 
-app.post("/webhooks/jotform", async (req, res) => {
-    try {
-        const body = req.body;
-        // 2. Lowercase the email from Jotform
-        const rawEmail = body.email || body.q3_email;
-        if (!rawEmail) return res.status(400).send("No email");
-        
-        const email = rawEmail.toLowerCase();
-
-        // 3. Automatically set an expiry date (Default 30 days)
-        await supabase.from(TABLE).upsert({ 
-            email, 
-            status: "active", 
-            expires_at: getExpiryDate(30), 
-            updated_at: new Date().toISOString() 
-        }, { onConflict: "email" });
-
-        res.status(200).send("OK");
-    } catch (err) { 
-        console.error("Webhook Error:", err);
-        res.status(500).send("Error"); 
-    }
-});
-
 app.listen(PORT, HOST, () => {
-    console.log(`🚀 HVT Backend live at http://${HOST}:${PORT}`);
+    console.log(`🚀 Membership Engine live on port ${PORT}`);
 });
