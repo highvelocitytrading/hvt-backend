@@ -1,6 +1,7 @@
 {
   "name": "hvt-backend",
   "version": "1.0.0",
+  "description": "High Velocity Trading Backend",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
