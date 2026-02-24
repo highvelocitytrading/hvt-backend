@@ -1,3 +1,9 @@
+To ensure your deployment is "perfection" and avoids the common pitfalls of moving from a local terminal to a cloud environment like Railway, we need to address Port Binding, Production-grade Error Handling, and Health Monitoring.
+
+Below is the optimized index.js.
+
+The Production-Ready index.js
+JavaScript
 "use strict";
 
 require('dotenv').config();
@@ -6,22 +12,39 @@ const crypto = require("crypto");
 const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
-const PORT = process.env.PORT || 8080;
 
-// ===================== CONFIG =====================
+/**
+ * 1. DYNAMIC PORT BINDING
+ * Railway injects the PORT variable. Using 0.0.0.0 ensures 
+ * the server is accessible outside the container.
+ */
+const PORT = process.env.PORT || 8080;
+const HOST = '0.0.0.0';
+
+// ===================== CONFIG & CLIENTS =====================
+
+/**
+ * 2. ENV VALIDATION
+ * Prevents the server from starting if critical keys are missing.
+ */
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error("❌ CRITICAL: Missing Supabase Environment Variables.");
+    process.exit(1); 
+}
+
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 const AUTHNET_SIGNATURE_KEY = process.env.AUTHNET_SIGNATURE_KEY || "";
-const TABLE = "MEMBERSHIPS"; // Ensure this matches your Supabase table name
+const TABLE = "MEMBERSHIPS"; // Confirm this is exactly as named in Supabase
 
 app.set("trust proxy", true);
-// Read body as raw to handle Jotform multipart and AuthNet signatures
 app.use(express.raw({ type: "*/*", limit: "10mb" }));
 
 // ===================== HELPERS =====================
+
 function calculateExpiry(planName) {
   const now = new Date();
   if (planName?.toUpperCase().includes('YEAR')) {
@@ -32,17 +55,30 @@ function calculateExpiry(planName) {
 
 function verifySignature(rawBody, header) {
   if (!AUTHNET_SIGNATURE_KEY) return true;
-  const expected = crypto
-    .createHmac("sha512", AUTHNET_SIGNATURE_KEY)
-    .update(rawBody, "utf8")
-    .digest("hex");
-  const provided = header?.replace("sha512=", "") || "";
-  return crypto.timingSafeEqual(Buffer.from(provided, "hex"), Buffer.from(expected, "hex"));
+  try {
+    const expected = crypto
+      .createHmac("sha512", AUTHNET_SIGNATURE_KEY)
+      .update(rawBody, "utf8")
+      .digest("hex");
+    const provided = header?.replace("sha512=", "") || "";
+    return crypto.timingSafeEqual(Buffer.from(provided, "hex"), Buffer.from(expected, "hex"));
+  } catch (err) {
+    console.error("Signature verification error:", err);
+    return false;
+  }
 }
 
 // ===================== ROUTES =====================
 
-// 1. ACCESS CHECK (For your Trading Indicators)
+/**
+ * 3. LIVENESS PROBE
+ * Used by Railway to check if the container is healthy.
+ */
+app.get("/health", (req, res) => {
+    res.status(200).json({ status: "online", timestamp: new Date().toISOString() });
+});
+
+// ACCESS CHECK (For your Trading Indicators)
 app.get("/check-access", async (req, res) => {
   const { email } = req.query;
   if (!email) return res.status(400).json({ active: false, error: "Missing email" });
@@ -61,57 +97,69 @@ app.get("/check-access", async (req, res) => {
   res.json({ active: isActive && isNotExpired, expires_at: data.expires_at });
 });
 
-// 2. JOTFORM WEBHOOK
+// JOTFORM WEBHOOK
 app.post("/webhooks/jotform", async (req, res) => {
-  const rawBody = req.body.toString("utf8");
-  // Best practice: Use JSON integration in Jotform settings
-  let parsed = {};
-  try { parsed = JSON.parse(rawBody); } catch (e) { /* handle non-json if needed */ }
+  try {
+    const rawBody = req.body.toString("utf8");
+    const parsed = JSON.parse(rawBody);
 
-  const email = parsed.email || parsed.q3_email;
-  if (!email) return res.status(400).send("No email found");
+    const email = parsed.email || parsed.q3_email;
+    if (!email) throw new Error("No email provided in Jotform payload");
 
-  const row = {
-    email,
-    first_name: parsed.first_name || parsed["q1_name[first]"],
-    last_name: parsed.last_name || parsed["q1_name[last]"],
-    plan_name: parsed.plan_name || "Monthly Membership",
-    status: "active",
-    source: "jotform",
-    updated_at: new Date().toISOString()
-  };
+    const row = {
+      email,
+      first_name: parsed.first_name || parsed["q1_name[first]"] || "",
+      last_name: parsed.last_name || parsed["q1_name[last]"] || "",
+      plan_name: parsed.plan_name || "Monthly Membership",
+      status: "active",
+      source: "jotform",
+      updated_at: new Date().toISOString()
+    };
 
-  await supabase.from(TABLE).upsert(row, { onConflict: "email" });
-  res.status(200).send("OK");
-});
+    const { error } = await supabase.from(TABLE).upsert(row, { onConflict: "email" });
+    if (error) throw error;
 
-// 3. AUTHORIZE.NET WEBHOOK (ARB)
-app.post("/webhooks/authorize-net", async (req, res) => {
-  const rawBody = req.body.toString("utf8");
-  if (!verifySignature(rawBody, req.headers["x-anet-signature"])) {
-    return res.status(401).send("Invalid Signature");
+    res.status(200).send("OK");
+  } catch (err) {
+    console.error("Jotform Error:", err.message);
+    res.status(500).send("Internal Server Error");
   }
-
-  const data = JSON.parse(rawBody);
-  const payload = data.payload;
-  const eventType = data.eventType;
-
-  // Handle successful creation or recurring payment
-  const isSuccess = eventType.includes("subscription.created") || eventType.includes("subscription.payment");
-  
-  const row = {
-    authnet_subscription_id: String(payload.id),
-    status: isSuccess ? "active" : "expired",
-    plan_name: payload.name,
-    amount: payload.amount,
-    expires_at: isSuccess ? calculateExpiry(payload.name) : new Date().toISOString(),
-    authnet_payload: data,
-    updated_at: new Date().toISOString()
-  };
-
-  // Upsert by Subscription ID to link to the user
-  await supabase.from(TABLE).upsert(row, { onConflict: "authnet_subscription_id" });
-  res.status(200).send("OK");
 });
 
-app.listen(PORT, () => console.log(`High Velocity Server running on ${PORT}`));
+// AUTHORIZE.NET WEBHOOK
+app.post("/webhooks/authorize-net", async (req, res) => {
+  try {
+    const rawBody = req.body.toString("utf8");
+    if (!verifySignature(rawBody, req.headers["x-anet-signature"])) {
+      return res.status(401).send("Unauthorized");
+    }
+
+    const data = JSON.parse(rawBody);
+    const { payload, eventType } = data;
+
+    const isSuccess = eventType.includes("subscription.created") || eventType.includes("subscription.payment");
+    
+    const row = {
+      authnet_subscription_id: String(payload.id),
+      status: isSuccess ? "active" : "expired",
+      plan_name: payload.name,
+      amount: payload.amount,
+      expires_at: isSuccess ? calculateExpiry(payload.name) : new Date().toISOString(),
+      authnet_payload: data,
+      updated_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase.from(TABLE).upsert(row, { onConflict: "authnet_subscription_id" });
+    if (error) throw error;
+
+    res.status(200).send("OK");
+  } catch (err) {
+    console.error("Authorize.Net Error:", err.message);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+// 4. START THE SERVER
+app.listen(PORT, HOST, () => {
+    console.log(`✅ HVT Production Server running on ${HOST}:${PORT}`);
+});
