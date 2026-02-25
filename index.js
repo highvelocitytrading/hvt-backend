@@ -16,34 +16,42 @@ const TABLE = process.env.SUPABASE_TABLE || 'MEMBERSHIPS';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-// -------------------- HELPERS --------------------
+// -------------------- THE PROTECTED HUNTER --------------------
 function huntMembershipData(rawString) {
-    // 1. Email Hunter (Working)
+    // 1. Email Hunter (DO NOT TOUCH - WORKING)
     const emailMatch = rawString.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
     
-    // 2. Name Hunter (Working - q3 and q4)
+    // 2. Name Hunter (DO NOT TOUCH - WORKING q3/q4)
     const firstMatch = rawString.match(/\[q3[^\]]*\]=([^\\n\r]+)/) || rawString.match(/"q3[^"]*":"([^"]+)"/);
     const lastMatch = rawString.match(/\[q4[^\]]*\]=([^\\n\r]+)/) || rawString.match(/"q4[^"]*":"([^"]+)"/);
     const first = firstMatch ? firstMatch[1].trim() : "";
     const last = lastMatch ? lastMatch[1].trim() : "";
 
-    // 3. PHONE HUNTER (The Fix)
-    // We search specifically for q7 (the phone field) and grab the value
-    const phoneMatch = rawString.match(/\[q7[^\]]*\]\[full\]=([^\\n\r]+)/) || 
-                       rawString.match(/\[q7[^\]]*\]=([^\\n\r]+)/) ||
-                       rawString.match(/"q7[^"]*":"([^"]+)"/);
-
-    const phone = phoneMatch ? phoneMatch[1].trim() : null;
+    // 3. THE 3-7 SPLIT PHONE HUNTER (PROFESSIONAL FIX)
+    // Specifically targets the separate area code and phone boxes
+    const area = rawString.match(/\[q7[^\]]*\]\[area\]=([^\\n\r]+)/);
+    const num = rawString.match(/\[q7[^\]]*\]\[phone\]=([^\\n\r]+)/);
+    
+    let phone = null;
+    if (area && num) {
+        // Welds the pieces into a clean (786) 1234567 format
+        phone = `(${area[1].trim()}) ${num[1].trim()}`; 
+    } else {
+        // Fallback Vacuum: In case the mask is accidentally toggled back on
+        const fullMatch = rawString.match(/\[q7[^\]]*\]\[full\]=([^\\n\r]+)/) || 
+                          rawString.match(/\[q7[^\]]*\]=([^\\n\r]+)/) ||
+                          rawString.match(/\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/);
+        phone = fullMatch ? (Array.isArray(fullMatch) ? fullMatch[0] : fullMatch[1]).trim() : null;
+    }
     
     return {
         email: emailMatch ? emailMatch[0].toLowerCase().trim() : null,
-        full_name: [first, last].filter(Boolean).join(' ') || null,
+        full_name: [first, last].filter(Boolean).join(' ') || "New Member",
         phone: phone
     };
 }
 
-// -------------------- ROUTES --------------------
-
+// -------------------- THE JOTFORM WEBHOOK --------------------
 app.post('/webhooks/membership-jotform', (req, res) => {
     const bb = Busboy({ headers: req.headers });
     let rawConcat = '';
@@ -56,13 +64,16 @@ app.post('/webhooks/membership-jotform', (req, res) => {
         try {
             const extracted = huntMembershipData(rawConcat);
 
-            if (!extracted.email) return res.status(400).send('No email found');
+            if (!extracted.email) {
+                console.error('❌ Missing Email');
+                return res.status(400).send('No email found');
+            }
 
-            // Save to your MEMBERSHIPS table
+            // --- THE DATABASE UPSERT ---
             const { error } = await supabase.from(TABLE).upsert({
                 email: extracted.email,
                 full_name: extracted.full_name,
-                phone: extracted.phone,         // This goes to your 'phone' column
+                "Phone": extracted.phone,         // MATCHES YOUR CAPITAL 'P' COLUMN
                 plan_name: 'membership',
                 status: 'active',
                 expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
@@ -70,9 +81,10 @@ app.post('/webhooks/membership-jotform', (req, res) => {
             }, { onConflict: 'email' });
 
             if (error) throw error;
-            console.log(`✅ Success: ${extracted.full_name} | ${extracted.phone}`);
+            console.log(`✅ SUCCESS: ${extracted.full_name} | ${extracted.phone}`);
             res.status(200).send('OK');
         } catch (err) {
+            console.error('❌ Save Failure:', err.message);
             res.status(500).send('Server Error');
         }
     });
@@ -80,7 +92,7 @@ app.post('/webhooks/membership-jotform', (req, res) => {
     req.pipe(bb);
 });
 
-// Access Check for PineScript
+// Access Check for PineScript remains untouched
 app.get('/check-access', async (req, res) => {
     const email = req.query.email?.toLowerCase().trim();
     if (!email) return res.status(400).json({ active: false });
@@ -89,4 +101,4 @@ app.get('/check-access', async (req, res) => {
     res.json({ active });
 });
 
-app.listen(PORT, () => console.log(`🚀 Membership Engine Live`));
+app.listen(PORT, () => console.log(`🚀 System Online: Name and Phone Precision Enabled`));
