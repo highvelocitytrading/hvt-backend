@@ -9,98 +9,87 @@ const app = express();
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 8080;
 
-// -------------------- CONFIG --------------------
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// -------------------- SUPABASE --------------------
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 const TABLE = process.env.SUPABASE_TABLE || 'MEMBERSHIPS';
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('[FATAL] Missing Supabase Credentials');
-    process.exit(1);
+// -------------------- Helpers --------------------
+function pickFirst(...vals) {
+    for (const v of vals) {
+        if (typeof v === 'string' && v.trim()) return v.trim();
+        if (typeof v === 'number') return String(v);
+    }
+    return null;
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-// -------------------- HELPERS --------------------
-/**
- * THE PROTECTED HUNTER: Scans the raw data to find a clean email and names
- */
-function huntMembershipData(rawString) {
-    // 1. Hunt Email (The unbreakable regex shield)
-    const emailMatch = rawString.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-    
-    // 2. Hunt Names (Looking for q3/q4 patterns from your logs)
-    const firstMatch = rawString.match(/\[q3[^\]]*\]=([^\\n]+)/) || rawString.match(/"q3[^"]*":"([^"]+)"/);
-    const lastMatch = rawString.match(/\[q4[^\]]*\]=([^\\n]+)/) || rawString.match(/"q4[^"]*":"([^"]+)"/);
-
-    const first = firstMatch ? firstMatch[1].trim() : "";
-    const last = lastMatch ? lastMatch[1].trim() : "";
-    
-    return {
-        email: emailMatch ? emailMatch[0].toLowerCase().trim() : null,
-        full_name: [first, last].filter(Boolean).join(' ') || null
-    };
-}
-
-// -------------------- ROUTES --------------------
+// -------------------- Routes --------------------
 
 app.get('/health', (req, res) => {
-    res.json({ ok: true, service: 'hvt-membership-engine', table: TABLE });
+    res.json({ ok: true, service: 'hvt-membership-busboy', table: TABLE });
 });
 
-/**
- * JOTFORM WEBHOOK: Handles Multipart/Form-Data
- */
+// Jotform webhook (Busboy Logic)
 app.post('/webhooks/membership-jotform', (req, res) => {
     const bb = Busboy({ headers: req.headers });
-    let rawConcat = '';
+    const fields = {};
 
     bb.on('field', (name, val) => {
-        rawConcat += `\n[${name}]=${val}`;
+        fields[name] = val;
     });
 
     bb.on('finish', async () => {
         try {
-            // Use the hunter on the collected raw data
-            const extracted = huntMembershipData(rawConcat);
+            // 1. DATA EXTRACTION (Locked IDs from your Jotform)
+            const first = pickFirst(fields.q3_q3_textbox1);
+            const last = pickFirst(fields.q4_q4_textbox2);
+            
+            // Extracting Email (using the same logic that's been working)
+            const email = pickFirst(fields.q11_email, fields.email); 
 
-            if (!extracted.email) {
-                console.error('❌ No email found in Jotform bundle');
-                return res.status(400).send('No email found');
+            // Extracting Phone (Direct q7 mapping)
+            const phone = pickFirst(fields['q7_q7_phone5[full]'], fields.q7_q7_phone5);
+
+            const full_name = [first, last].filter(Boolean).join(' ') || "Unknown Name";
+
+            if (!email) {
+                console.error('[ERROR] No email found in fields');
+                return res.status(400).send("No email found");
             }
 
+            // 2. SUPABASE UPSERT
             const { error } = await supabase.from(TABLE).upsert({
-                email: extracted.email,
-                full_name: extracted.full_name, // Andrew Sachs
-                plan_name: 'membership',        // Hardcoded
+                email: email.toLowerCase().trim(),
+                full_name: full_name,
+                phone: phone,
+                plan_name: 'membership', // Always hardcoded to membership
                 status: 'active',
                 expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
                 updated_at: new Date().toISOString()
             }, { onConflict: 'email' });
 
             if (error) throw error;
-            console.log(`✅ Success: ${extracted.full_name} (${extracted.email})`);
+            
+            console.log(`✅ Membership Saved: ${full_name} | ${phone} | ${email}`);
             res.status(200).send('OK');
+
         } catch (err) {
-            console.error('[Jotform Error]', err.message);
-            res.status(500).send('Server Error');
+            console.error('[Jotform Error]', err);
+            res.status(500).send('Internal Server Error');
         }
     });
 
     req.pipe(bb);
 });
 
-/**
- * AUTHORIZE.NET WEBHOOK: Handles JSON Renewals
- */
+// Authorize.Net Webhook (JSON)
 app.post('/webhooks/membership-authnet', express.json(), async (req, res) => {
     try {
         const body = req.body;
-        const email = (body.payload?.customerDetails?.email || "").toLowerCase().trim();
+        const email = pickFirst(body?.payload?.customerDetails?.email);
 
         if (email && (body.eventType.includes('success') || body.eventType.includes('created'))) {
             await supabase.from(TABLE).upsert({
-                email,
+                email: email.toLowerCase().trim(),
                 plan_name: 'membership',
                 status: 'active',
                 expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
@@ -109,13 +98,11 @@ app.post('/webhooks/membership-authnet', express.json(), async (req, res) => {
         }
         res.status(200).send('OK');
     } catch (err) {
-        res.status(500).send('Internal Error');
+        res.status(500).send('Error');
     }
 });
 
-/**
- * PINESCRIPT ACCESS CHECK
- */
+// PineScript Access Check
 app.get('/check-access', async (req, res) => {
     const email = req.query.email?.toLowerCase().trim();
     if (!email) return res.status(400).json({ active: false });
@@ -129,4 +116,4 @@ app.get('/check-access', async (req, res) => {
     res.json({ active });
 });
 
-app.listen(PORT, () => console.log(`🚀 Membership Engine live on ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Membership Engine (Busboy) listening on port ${PORT}`));
