@@ -23,34 +23,36 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // -------------------- HELPERS --------------------
 /**
- * THE PROTECTED HUNTER: Scans the raw data to find a clean email and names
+ * THE PROTECTED HUNTER: Scans the raw data to find a clean email, names, and phone
  */
 function huntMembershipData(rawString) {
     // 1. Hunt Email (The unbreakable regex shield)
     const emailMatch = rawString.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
     
-    // 2. Hunt Names (Looking for q3/q4 patterns from your logs)
-    const firstMatch = rawString.match(/\[q3[^\]]*\]=([^\\n]+)/) || rawString.match(/"q3[^"]*":"([^"]+)"/);
-    const lastMatch = rawString.match(/\[q4[^\]]*\]=([^\\n]+)/) || rawString.match(/"q4[^"]*":"([^"]+)"/);
+    // 2. Hunt Names (Looking for q3/q4 patterns)
+    const firstMatch = rawString.match(/\[q3[^\]]*\]=([^\\n\r]+)/) || rawString.match(/"q3[^"]*":"([^"]+)"/);
+    const lastMatch = rawString.match(/\[q4[^\]]*\]=([^\\n\r]+)/) || rawString.match(/"q4[^"]*":"([^"]+)"/);
 
     const first = firstMatch ? firstMatch[1].trim() : "";
     const last = lastMatch ? lastMatch[1].trim() : "";
+
+    // 3. HUNT PHONE (Looking specifically for q7 field)
+    // We look for [q7...][full]= or just [q7...]= to ensure we get the perfect number
+    const phoneMatch = rawString.match(/\[q7[^\]]*\]\[full\]=([^\\n\r]+)/) || 
+                       rawString.match(/\[q7[^\]]*\]=([^\\n\r]+)/) ||
+                       rawString.match(/"q7[^"]*":"([^"]+)"/);
+
+    const phone = phoneMatch ? phoneMatch[1].trim() : null;
     
     return {
         email: emailMatch ? emailMatch[0].toLowerCase().trim() : null,
-        full_name: [first, last].filter(Boolean).join(' ') || null
+        full_name: [first, last].filter(Boolean).join(' ') || null,
+        phone: phone // LANDS IN YOUR 'phone' COLUMN
     };
 }
 
 // -------------------- ROUTES --------------------
 
-app.get('/health', (req, res) => {
-    res.json({ ok: true, service: 'hvt-membership-engine', table: TABLE });
-});
-
-/**
- * JOTFORM WEBHOOK: Handles Multipart/Form-Data
- */
 app.post('/webhooks/membership-jotform', (req, res) => {
     const bb = Busboy({ headers: req.headers });
     let rawConcat = '';
@@ -61,7 +63,6 @@ app.post('/webhooks/membership-jotform', (req, res) => {
 
     bb.on('finish', async () => {
         try {
-            // Use the hunter on the collected raw data
             const extracted = huntMembershipData(rawConcat);
 
             if (!extracted.email) {
@@ -69,17 +70,19 @@ app.post('/webhooks/membership-jotform', (req, res) => {
                 return res.status(400).send('No email found');
             }
 
+            // --- THE SUPABASE SAVE ---
             const { error } = await supabase.from(TABLE).upsert({
                 email: extracted.email,
-                full_name: extracted.full_name, // Andrew Sachs
-                plan_name: 'membership',        // Hardcoded
+                full_name: extracted.full_name,
+                phone: extracted.phone,         // Correctly maps to your 'phone' column
+                plan_name: 'membership',        // Always hardcoded
                 status: 'active',
                 expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
                 updated_at: new Date().toISOString()
             }, { onConflict: 'email' });
 
             if (error) throw error;
-            console.log(`✅ Success: ${extracted.full_name} (${extracted.email})`);
+            console.log(`✅ Success: ${extracted.full_name} | ${extracted.phone} | ${extracted.email}`);
             res.status(200).send('OK');
         } catch (err) {
             console.error('[Jotform Error]', err.message);
@@ -90,32 +93,7 @@ app.post('/webhooks/membership-jotform', (req, res) => {
     req.pipe(bb);
 });
 
-/**
- * AUTHORIZE.NET WEBHOOK: Handles JSON Renewals
- */
-app.post('/webhooks/membership-authnet', express.json(), async (req, res) => {
-    try {
-        const body = req.body;
-        const email = (body.payload?.customerDetails?.email || "").toLowerCase().trim();
-
-        if (email && (body.eventType.includes('success') || body.eventType.includes('created'))) {
-            await supabase.from(TABLE).upsert({
-                email,
-                plan_name: 'membership',
-                status: 'active',
-                expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'email' });
-        }
-        res.status(200).send('OK');
-    } catch (err) {
-        res.status(500).send('Internal Error');
-    }
-});
-
-/**
- * PINESCRIPT ACCESS CHECK
- */
+// Access Check for TradingView/PineScript
 app.get('/check-access', async (req, res) => {
     const email = req.query.email?.toLowerCase().trim();
     if (!email) return res.status(400).json({ active: false });
@@ -129,4 +107,4 @@ app.get('/check-access', async (req, res) => {
     res.json({ active });
 });
 
-app.listen(PORT, () => console.log(`🚀 Membership Engine live on ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Membership Engine Live (Phone Support Added)`));
