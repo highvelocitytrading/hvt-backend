@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 8080;
 // -------------------- CONFIG --------------------
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const TABLE = process.env.SUPABASE_TABLE || 'MEMBERSHIPS';
+const TABLE = process.env.SUPABASE_TABLE || 'membershipstab';
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     console.error('[FATAL] Missing Supabase Credentials');
@@ -20,6 +20,8 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+console.log(`[INIT] Using Supabase table: ${TABLE}`);
 
 // -------------------- HELPERS --------------------
 function huntMembershipData(rawString) {
@@ -65,13 +67,14 @@ app.post('/webhooks/membership-jotform', (req, res) => {
         try {
             console.log('RAW DUMP:', rawConcat);
             const extracted = huntMembershipData(rawConcat);
+            console.log('[Extracted]', extracted);
 
             if (!extracted.email) {
                 console.error('❌ No email found in Jotform bundle');
                 return res.status(400).send('No email found');
             }
 
-            const { error } = await supabase.from(TABLE).upsert({
+            const payload = {
                 email: extracted.email,
                 full_name: extracted.full_name,
                 phone: extracted.phone,
@@ -80,9 +83,17 @@ app.post('/webhooks/membership-jotform', (req, res) => {
                 source: 'jotform',
                 expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
                 updated_at: new Date().toISOString()
-            }, { onConflict: 'email' });
+            };
 
-            if (error) throw error;
+            console.log('[Upserting to Supabase]', payload);
+
+            const { error } = await supabase.from(TABLE).upsert(payload, { onConflict: 'email' });
+
+            if (error) {
+                console.error('[Supabase Error]', error);
+                throw error;
+            }
+
             console.log(`✅ Success: ${extracted.full_name} (${extracted.email}) Phone: ${extracted.phone}`);
             res.status(200).send('OK');
         } catch (err) {
@@ -103,7 +114,7 @@ app.post('/webhooks/membership-authnet', express.json(), async (req, res) => {
         const email = (body.payload?.customerDetails?.email || "").toLowerCase().trim();
 
         if (email && (body.eventType.includes('success') || body.eventType.includes('created'))) {
-            await supabase.from(TABLE).upsert({
+            const { error } = await supabase.from(TABLE).upsert({
                 email,
                 plan_name: 'membership',
                 status: 'active',
@@ -111,9 +122,17 @@ app.post('/webhooks/membership-authnet', express.json(), async (req, res) => {
                 expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
                 updated_at: new Date().toISOString()
             }, { onConflict: 'email' });
+
+            if (error) {
+                console.error('[Authnet Supabase Error]', error);
+                throw error;
+            }
+
+            console.log(`✅ Authnet Success: ${email}`);
         }
         res.status(200).send('OK');
     } catch (err) {
+        console.error('[Authnet Error]', err.message);
         res.status(500).send('Internal Error');
     }
 });
@@ -125,13 +144,15 @@ app.get('/check-access', async (req, res) => {
     const email = req.query.email?.toLowerCase().trim();
     if (!email) return res.status(400).json({ active: false });
 
-    const { data } = await supabase.from(TABLE)
+    const { data, error } = await supabase.from(TABLE)
         .select('status, expires_at')
         .eq('email', email)
         .maybeSingle();
+
+    if (error) console.error('[Check-Access Error]', error);
 
     const active = data?.status === 'active' && new Date(data.expires_at) > new Date();
     res.json({ active });
 });
 
-app.listen(PORT, () => console.log(`🚀 Membership Engine live on ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Membership Engine live on ${PORT} | Table: ${TABLE}`));
