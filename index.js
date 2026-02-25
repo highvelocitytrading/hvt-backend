@@ -207,30 +207,92 @@ app.post('/webhooks/membership-jotform', (req, res) => {
 });
 
 /**
- * AUTHORIZE.NET WEBHOOK: Membership Renewals
+ * AUTHORIZE.NET WEBHOOK: Membership
+ * Handles subscription events and payment capture
+ * Captures subscription ID on created, cancels on cancelled/expired/suspended/terminated
  */
 app.post('/webhooks/membership-authnet', express.json(), async (req, res) => {
     try {
         const body = req.body;
+        const eventType = body.eventType || '';
         const email = (body.payload?.customerDetails?.email || "").toLowerCase().trim();
+        const subscriptionId = pickFirst(body.payload?.id);
 
-        if (email && (body.eventType.includes('success') || body.eventType.includes('created'))) {
-            const { error } = await supabase.from(MEMBERSHIP_TABLE).upsert({
+        console.log(`[Membership Authnet] Event: ${eventType} | Email: ${email} | SubID: ${subscriptionId}`);
+
+        // Subscription created or payment capture — activate
+        if (eventType === 'net.authorize.customer.subscription.created' ||
+            eventType === 'net.authorize.payment.capture.created') {
+
+            if (!email) {
+                console.error('[Membership Authnet] No email found');
+                return res.status(400).send('No email');
+            }
+
+            const upsertPayload = {
                 email,
                 plan_name: 'membership',
                 status: 'active',
                 source: 'authnet',
                 expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
                 updated_at: new Date().toISOString()
-            }, { onConflict: 'email' });
+            };
+
+            // Store subscription ID if present
+            if (subscriptionId) {
+                upsertPayload.authnet_subscription_id = subscriptionId;
+            }
+
+            const { error } = await supabase
+                .from(MEMBERSHIP_TABLE)
+                .upsert(upsertPayload, { onConflict: 'email' });
 
             if (error) {
                 console.error('[Membership Authnet Supabase Error]', error);
                 throw error;
             }
 
-            console.log(`✅ Membership Authnet Success: ${email}`);
+            console.log(`✅ Membership Activated: ${email} | SubID: ${subscriptionId}`);
         }
+
+        // Subscription cancelled, expired, suspended, terminated — deactivate
+        else if (
+            eventType === 'net.authorize.customer.subscription.cancelled' ||
+            eventType === 'net.authorize.customer.subscription.expired' ||
+            eventType === 'net.authorize.customer.subscription.suspended' ||
+            eventType === 'net.authorize.customer.subscription.terminated' ||
+            eventType === 'net.authorize.customer.subscription.failed'
+        ) {
+            // Look up by subscription ID first, fallback to email
+            let updateQuery;
+            if (subscriptionId) {
+                updateQuery = supabase
+                    .from(MEMBERSHIP_TABLE)
+                    .update({
+                        status: 'cancelled',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('authnet_subscription_id', subscriptionId);
+            } else if (email) {
+                updateQuery = supabase
+                    .from(MEMBERSHIP_TABLE)
+                    .update({
+                        status: 'cancelled',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('email', email);
+            }
+
+            if (updateQuery) {
+                const { error } = await updateQuery;
+                if (error) {
+                    console.error('[Membership Authnet Cancel Error]', error);
+                    throw error;
+                }
+                console.log(`🚫 Membership Cancelled: ${email || subscriptionId} | Event: ${eventType}`);
+            }
+        }
+
         res.status(200).send('OK');
     } catch (err) {
         console.error('[Membership Authnet Error]', err.message);
