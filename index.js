@@ -17,80 +17,74 @@ const TABLE = process.env.SUPABASE_TABLE || "MEMBERSHIPS";
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// --- 1. THE REINFORCED EMAIL HUNTER ---
-// This ensures the email column NEVER gets the "Wall of Text" again
-const findEmailAnywhere = (obj) => {
-    if (typeof obj === 'string') {
-        const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
-        const match = obj.match(emailRegex);
-        return match ? match[0] : null; 
-    }
-    if (typeof obj !== 'object' || obj === null) return null;
-    for (const value of Object.values(obj)) {
-        const found = findEmailAnywhere(value);
-        if (found) return found;
-    }
-    return null;
-};
+// --- 1. THE DATA DETECTORS ---
+const extractDataByOrder = (body) => {
+    const textFields = [];
+    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+    let foundEmail = null;
 
-// Helper to clean up names
-const cleanName = (name) => {
-    if (!name) return "";
-    const trimmed = name.toString().trim();
-    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+    // We scan every value in the Jotform payload
+    for (const key in body) {
+        const value = body[key];
+        if (typeof value !== 'string') continue;
+
+        // Check for email first so we don't treat it as a name
+        const emailMatch = value.match(emailRegex);
+        if (emailMatch && !foundEmail) {
+            foundEmail = emailMatch[0];
+            continue; 
+        }
+
+        // If it's short text and not an email, it's likely a name
+        if (value.length > 1 && value.length < 50 && !value.includes('{')) {
+            textFields.push(value.trim());
+        }
+    }
+
+    return {
+        email: foundEmail ? foundEmail.toLowerCase() : null,
+        // First text field found = First Name | Second text field found = Last Name
+        first: textFields[0] || "",
+        last: textFields[1] || ""
+    };
 };
 
 // --- 2. JOTFORM WEBHOOK ---
 app.post("/webhooks/membership-jotform", upload.any(), async (req, res) => {
     try {
-        const data = { ...req.body, ...req.files };
-        
-        // Step A: Find the clean email pattern
-        const rawEmail = findEmailAnywhere(data);
-        const email = (rawEmail || "").toLowerCase().trim();
+        const extracted = extractDataByOrder(req.body);
 
-        if (!email) {
-            console.error("❌ 400: No valid email address pattern found.");
+        if (!extracted.email) {
+            console.error("❌ Failed: No email address detected in submission.");
             return res.status(400).send("No email found");
         }
 
-        // Step B: Map names specifically from the IDs in your logs
-        // q3_q3_textbox1 = Andrew | q4_q4_textbox2 = Sachs
-        const first_name = cleanName(data.q3_q3_textbox1);
-        const last_name = cleanName(data.q4_q4_textbox2);
-        const plan_name = "membership"; 
-
-        // Step C: Save to database
         const { error } = await supabase.from(TABLE).upsert({
-            email,        
-            first_name,   
-            last_name,    
-            plan_name,    
+            email: extracted.email,
+            first_name: extracted.first,
+            last_name: extracted.last,
+            plan_name: "membership",
             status: "active",
             expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
             updated_at: new Date().toISOString()
         }, { onConflict: "email" });
 
         if (error) throw error;
-        console.log(`✅ Success: Saved ${first_name} ${last_name} (${email}) correctly.`);
+        console.log(`✅ Success: ${extracted.first} ${extracted.last} (${extracted.email}) saved.`);
         res.status(200).send("OK");
     } catch (err) { res.status(500).send(err.message); }
 });
 
-// --- 3. AUTHORIZE.NET WEBHOOK ---
+// --- 3. AUTHORIZE.NET WEBHOOK (Kept Simple) ---
 app.post("/webhooks/membership-authnet", async (req, res) => {
     try {
-        const body = req.body;
-        const email = (body.payload?.customerDetails?.email || "").toLowerCase().trim();
-        if (email && (body.eventType.includes("success") || body.eventType.includes("created"))) {
+        const email = (req.body.payload?.customerDetails?.email || "").toLowerCase().trim();
+        if (email && (req.body.eventType.includes("success") || req.body.eventType.includes("created"))) {
             await supabase.from(TABLE).upsert({
-                email, 
-                plan_name: "membership",
-                status: "active",
+                email, plan_name: "membership", status: "active",
                 expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
                 updated_at: new Date().toISOString()
             }, { onConflict: "email" });
-            console.log(`✅ Success: Renewal for ${email}`);
         }
         res.status(200).send("OK");
     } catch (err) { res.status(500).send("Internal Error"); }
@@ -105,4 +99,4 @@ app.get("/check-access", async (req, res) => {
     res.json({ active });
 });
 
-app.listen(PORT, HOST, () => console.log(`🚀 Membership Engine Live on Port ${PORT}`));
+app.listen(PORT, HOST, () => console.log(`🚀 System Online on Port ${PORT}`));
