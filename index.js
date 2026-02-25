@@ -2,9 +2,12 @@
 
 require('dotenv').config();
 const express = require("express");
+const multer = require("multer"); // Added to handle Multipart data
 const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
+const upload = multer(); // Initialize the decoder
+
 const PORT = process.env.PORT || 8080;
 const HOST = '0.0.0.0';
 
@@ -12,13 +15,12 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SER
 const TABLE = process.env.SUPABASE_TABLE || "MEMBERSHIPS";
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// --- HELPER: THE ULTIMATE EMAIL HUNTER ---
-// This function crawls through the entire JSON to find any email
+// --- HELPER: THE DEEP EMAIL HUNTER ---
 const findEmailAnywhere = (obj) => {
     if (typeof obj === 'string' && obj.includes('@')) return obj;
     if (typeof obj !== 'object' || obj === null) return null;
-    
     for (const value of Object.values(obj)) {
         const found = findEmailAnywhere(value);
         if (found) return found;
@@ -26,17 +28,19 @@ const findEmailAnywhere = (obj) => {
     return null;
 };
 
-app.post("/webhooks/membership-jotform", async (req, res) => {
+// --- JOTFORM WEBHOOK (Now handles Multipart) ---
+// Adding 'upload.any()' allows Express to read the fields you saw in the Excel sheet
+app.post("/webhooks/membership-jotform", upload.any(), async (req, res) => {
     try {
-        const body = req.body;
-        console.log("📥 Received Jotform Payload Keys:", Object.keys(body));
+        // Combine body and files/fields into one searchable object
+        const data = { ...req.body, ...req.files };
+        console.log("📥 Received Jotform Data. Hunting for email...");
 
-        // Use the hunter function to find the email anywhere in the payload
-        const rawEmail = findEmailAnywhere(body);
+        const rawEmail = findEmailAnywhere(data);
         const email = (rawEmail || "").toLowerCase().trim();
 
         if (!email) {
-            console.error("❌ 400 Error: No email found anywhere in the Jotform body.");
+            console.error("❌ 400 Error: Still no email found in Multipart payload.");
             return res.status(400).send("No email found");
         }
 
@@ -56,15 +60,14 @@ app.post("/webhooks/membership-jotform", async (req, res) => {
     }
 });
 
+// --- AUTHORIZE.NET WEBHOOK ---
 app.post("/webhooks/membership-authnet", async (req, res) => {
     try {
         const body = req.body;
         const email = (body.payload?.customerDetails?.email || "").toLowerCase().trim();
-
         if (email && (body.eventType.includes("success") || body.eventType.includes("created"))) {
             await supabase.from(TABLE).upsert({
-                email,
-                status: "active",
+                email, status: "active",
                 expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
                 updated_at: new Date().toISOString()
             }, { onConflict: "email" });
@@ -74,6 +77,7 @@ app.post("/webhooks/membership-authnet", async (req, res) => {
     } catch (err) { res.status(500).send("Internal Error"); }
 });
 
+// --- ACCESS CHECK ---
 app.get("/check-access", async (req, res) => {
     const email = req.query.email?.toLowerCase().trim();
     if (!email) return res.status(400).json({ active: false });
@@ -82,4 +86,4 @@ app.get("/check-access", async (req, res) => {
     res.json({ active });
 });
 
-app.listen(PORT, HOST, () => console.log(`🚀 Engine live on ${PORT}`));
+app.listen(PORT, HOST, () => console.log(`🚀 Membership Engine live on ${PORT}`));
