@@ -32,8 +32,20 @@ function huntMembershipData(rawString) {
     const firstMatch = rawString.match(/\[q3[^\]]*\]=([^\n]+)/) || rawString.match(/"q3[^"]*":"([^"]+)"/);
     const lastMatch = rawString.match(/\[q4[^\]]*\]=([^\n]+)/) || rawString.match(/"q4[^"]*":"([^"]+)"/);
 
-    // 3. Hunt Phone (q7_phone5)
-    const phoneMatch = rawString.match(/\[q7[^\]]*\]=([^\n]+)/);
+    // 3. Hunt Phone from rawRequest JSON (q7_q7_phone5":{"full":"..."})
+    let phone = null;
+    const rawRequestMatch = rawString.match(/\[rawRequest\]=(\{.*\})/s);
+    if (rawRequestMatch) {
+        try {
+            const raw = JSON.parse(rawRequestMatch[1]);
+            const phoneField = Object.keys(raw).find(k => k.startsWith('q7'));
+            if (phoneField && raw[phoneField]?.full) {
+                phone = raw[phoneField].full.trim();
+            }
+        } catch (e) {
+            console.error('[Phone Parse Error]', e.message);
+        }
+    }
 
     const first = firstMatch ? firstMatch[1].trim() : "";
     const last = lastMatch ? lastMatch[1].trim() : "";
@@ -41,7 +53,7 @@ function huntMembershipData(rawString) {
     return {
         email: emailMatch ? emailMatch[0].toLowerCase().trim() : null,
         full_name: [first, last].filter(Boolean).join(' ') || null,
-        phone: phoneMatch ? phoneMatch[1].trim() : null
+        phone
     };
 }
 
