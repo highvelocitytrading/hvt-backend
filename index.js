@@ -22,23 +22,24 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // -------------------- HELPERS --------------------
-/**
- * THE PROTECTED HUNTER: Scans the raw data to find a clean email and names
- */
 function huntMembershipData(rawString) {
-    // 1. Hunt Email (The unbreakable regex shield)
+    // 1. Hunt Email
     const emailMatch = rawString.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
     
-    // 2. Hunt Names (Looking for q3/q4 patterns from your logs)
-    const firstMatch = rawString.match(/\[q3[^\]]*\]=([^\\n]+)/) || rawString.match(/"q3[^"]*":"([^"]+)"/);
-    const lastMatch = rawString.match(/\[q4[^\]]*\]=([^\\n]+)/) || rawString.match(/"q4[^"]*":"([^"]+)"/);
+    // 2. Hunt Names
+    const firstMatch = rawString.match(/\[q3[^\]]*\]=([^\n]+)/) || rawString.match(/"q3[^"]*":"([^"]+)"/);
+    const lastMatch = rawString.match(/\[q4[^\]]*\]=([^\n]+)/) || rawString.match(/"q4[^"]*":"([^"]+)"/);
+
+    // 3. Hunt Phone (q7_phone5)
+    const phoneMatch = rawString.match(/\[q7[^\]]*\]=([^\n]+)/);
 
     const first = firstMatch ? firstMatch[1].trim() : "";
     const last = lastMatch ? lastMatch[1].trim() : "";
     
     return {
         email: emailMatch ? emailMatch[0].toLowerCase().trim() : null,
-        full_name: [first, last].filter(Boolean).join(' ') || null
+        full_name: [first, last].filter(Boolean).join(' ') || null,
+        phone: phoneMatch ? phoneMatch[1].trim() : null
     };
 }
 
@@ -56,12 +57,13 @@ app.post('/webhooks/membership-jotform', (req, res) => {
     let rawConcat = '';
 
     bb.on('field', (name, val) => {
+        console.log(`FIELD: [${name}] = ${val}`);
         rawConcat += `\n[${name}]=${val}`;
     });
 
     bb.on('finish', async () => {
         try {
-            // Use the hunter on the collected raw data
+            console.log('RAW DUMP:', rawConcat);
             const extracted = huntMembershipData(rawConcat);
 
             if (!extracted.email) {
@@ -71,15 +73,17 @@ app.post('/webhooks/membership-jotform', (req, res) => {
 
             const { error } = await supabase.from(TABLE).upsert({
                 email: extracted.email,
-                full_name: extracted.full_name, // Andrew Sachs
-                plan_name: 'membership',        // Hardcoded
+                full_name: extracted.full_name,
+                phone: extracted.phone,
+                plan_name: 'membership',
                 status: 'active',
+                source: 'jotform',
                 expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
                 updated_at: new Date().toISOString()
             }, { onConflict: 'email' });
 
             if (error) throw error;
-            console.log(`✅ Success: ${extracted.full_name} (${extracted.email})`);
+            console.log(`✅ Success: ${extracted.full_name} (${extracted.email}) Phone: ${extracted.phone}`);
             res.status(200).send('OK');
         } catch (err) {
             console.error('[Jotform Error]', err.message);
@@ -103,6 +107,7 @@ app.post('/webhooks/membership-authnet', express.json(), async (req, res) => {
                 email,
                 plan_name: 'membership',
                 status: 'active',
+                source: 'authnet',
                 expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
                 updated_at: new Date().toISOString()
             }, { onConflict: 'email' });
