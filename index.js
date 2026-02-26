@@ -213,6 +213,32 @@ async function sendWelcomeEmail(email, fullName, type) {
     console.log(`[Welcome Email] Sent ${type} welcome to ${email}`);
 }
 
+async function sendCourseAccessEmail(email, token) {
+    const url = `${APP_URL}/course/confirm?token=${token}`;
+    const content = `
+        <div style="text-align:center;margin-bottom:8px;">
+            <div style="display:inline-block;background:rgba(246,173,85,0.08);border:1px solid rgba(246,173,85,0.2);border-radius:20px;padding:6px 18px;margin-bottom:20px;">
+                <span style="color:#f6ad55;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;">Course Access</span>
+            </div>
+            <h2 style="color:#ffffff;font-size:22px;font-weight:700;margin:0 0 8px;letter-spacing:1px;">Your Course Link is Ready</h2>
+            <p style="color:#6b8db8;font-size:14px;margin:0;">Click the button below to access the HVT Course. This link expires in <strong style="color:#90b8e8;">24 hours</strong>.</p>
+        </div>
+        <div style="height:1px;background:linear-gradient(90deg,transparent,#1e3a6e,transparent);margin:28px 0;"></div>
+        <p style="color:#8aafd4;font-size:14px;line-height:1.8;margin-bottom:28px;text-align:center;">
+            Your secure access link is below. This link is personal to your account — please do not share it with others.
+        </p>
+        <div style="text-align:center;margin-bottom:28px;">
+            <a href="${url}" style="display:inline-block;background:linear-gradient(135deg,#92610a,#c97d0e);color:#fff;text-decoration:none;padding:16px 48px;border-radius:8px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;box-shadow:0 4px 24px rgba(201,125,14,0.4);">ACCESS MY COURSE</a>
+        </div>
+        <p style="text-align:center;color:#2d4a6e;font-size:12px;margin-bottom:24px;">Secure link · Expires in 24 hours</p>
+        <div style="background:rgba(74,158,255,0.04);border:1px solid rgba(74,158,255,0.12);border-radius:10px;padding:14px 18px;">
+            <p style="color:#4a6a8a;font-size:13px;line-height:1.6;margin:0;">🔒 If you did not request this, ignore this email. Your account remains secure.</p>
+        </div>
+    `;
+    await sendEmail(email, 'Access Your HVT Course', emailTemplate(content));
+    console.log(`[Course Email] Sent access link to ${email}`);
+}
+
 async function sendMagicLinkEmail(email, token, type) {
     const url = `${APP_URL}/${type}/confirm?token=${token}`;
     const isBilling = type === 'billing';
@@ -474,7 +500,6 @@ app.post('/webhooks/membership-jotform', (req, res) => {
             const { error } = await supabase.from(MEMBERSHIP_TABLE).upsert(payload, { onConflict: 'email' });
             if (error) { console.error('[Membership Supabase Error]', error); throw error; }
 
-            // Send monthly welcome email
             try {
                 await sendWelcomeEmail(extracted.email, extracted.full_name, 'monthly');
             } catch (emailErr) {
@@ -537,7 +562,6 @@ app.post('/webhooks/membership-authnet', express.json(), async (req, res) => {
                 const { error } = await query;
                 if (error) throw error;
 
-                // Remove Discord role on cancellation
                 try {
                     const { data: member } = await supabase
                         .from(MEMBERSHIP_TABLE)
@@ -656,14 +680,12 @@ app.post('/trading-room/activate', express.json(), async (req, res) => {
         if (!email) return res.status(400).json({ error: 'Email is required' });
         if (!discordUsername) return res.status(400).json({ error: 'Discord username is required' });
 
-        // Check membership table
         const { data: member, error: memberError } = await supabase
             .from(MEMBERSHIP_TABLE)
             .select('email, status, expires_at')
             .eq('email', email)
             .maybeSingle();
 
-        // Check lifetime license table
         const { data: license } = await supabase
             .from(LICENSE_TABLE)
             .select('email, status')
@@ -679,7 +701,6 @@ app.post('/trading-room/activate', express.json(), async (req, res) => {
             return res.status(403).json({ error: 'No active membership found for this email. Please check your email or contact support at 786-461-4235.' });
         }
 
-        // Find Discord user in server
         const discordMember = await findDiscordUserByUsername(discordUsername);
         if (!discordMember) {
             return res.status(404).json({ error: `Discord user "${discordUsername}" not found in the High Velocity Trading server. Make sure you have joined the server first.` });
@@ -688,10 +709,8 @@ app.post('/trading-room/activate', express.json(), async (req, res) => {
         const discordUserId = discordMember.user.id;
         const roleId = isLifetimeActive ? DISCORD_LIFETIME_ROLE_ID : DISCORD_MONTHLY_ROLE_ID;
 
-        // Assign the role
         await assignDiscordRole(discordUserId, roleId);
 
-        // Save discord_user_id for future role removal
         if (isMemberActive) {
             await supabase.from(MEMBERSHIP_TABLE)
                 .update({ discord_user_id: discordUserId, updated_at: new Date().toISOString() })
@@ -705,6 +724,270 @@ app.post('/trading-room/activate', express.json(), async (req, res) => {
     } catch (err) {
         console.error('[Trading Room Activate Error]', err.message);
         res.status(500).json({ error: 'Server error. Please try again or call us at 786-461-4235.' });
+    }
+});
+
+// ==================== COURSE ====================
+
+// GET /course — gate page (public, shows sales pitch to non-members)
+app.get('/course', (req, res) => {
+    res.send(pageShell('HVT Course', `
+        <div style="width:100%;max-width:560px;">
+
+            <!-- GATE CARD -->
+            <div class="card" style="max-width:560px;">
+                <div class="card-top" style="background:linear-gradient(90deg,#92610a,#c97d0e,#92610a);"></div>
+                <div class="card-body">
+                    <div style="text-align:center;margin-bottom:24px;">
+                        <div style="display:inline-block;background:rgba(246,173,85,0.08);border:1px solid rgba(246,173,85,0.2);border-radius:20px;padding:6px 18px;margin-bottom:16px;">
+                            <span style="color:#f6ad55;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;">Member Access Only</span>
+                        </div>
+                        <div class="card-title" style="margin-bottom:8px;">HVT Trading Course</div>
+                        <div class="card-sub" style="margin-bottom:0;">Enter your membership email below and we will send you a secure access link to watch the course instantly.</div>
+                    </div>
+                    <div class="divider"></div>
+                    <label for="email">Membership Email</label>
+                    <input type="email" id="email" placeholder="your@email.com" />
+                    <button class="btn" id="btn" style="background:linear-gradient(135deg,#92610a,#c97d0e);box-shadow:0 4px 20px rgba(201,125,14,0.35);" onclick="requestAccess()">Send My Course Link</button>
+                    <div class="msg" id="msg"></div>
+                </div>
+            </div>
+
+            <!-- SALES PITCH — shown to non-members / people browsing -->
+            <div style="margin-top:28px;background:linear-gradient(145deg,#0d1f42,#091526);border:1px solid #1a3060;border-radius:20px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.5);">
+                <div style="height:3px;background:linear-gradient(90deg,#92610a,#f6ad55,#92610a);"></div>
+                <div style="padding:32px;">
+                    <div style="text-align:center;margin-bottom:24px;">
+                        <div style="font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#c97d0e;margin-bottom:10px;">Not a Member Yet?</div>
+                        <div style="font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;color:#fff;letter-spacing:1px;line-height:1.3;">Get Full Access to the<br>HVT Course & Trading Room</div>
+                    </div>
+
+                    <div style="height:1px;background:linear-gradient(90deg,transparent,#1e3a6e,transparent);margin-bottom:24px;"></div>
+
+                    <!-- Feature list -->
+                    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:28px;">
+                        <div style="display:flex;align-items:flex-start;gap:12px;">
+                            <div style="width:28px;height:28px;border-radius:50%;background:rgba(246,173,85,0.1);border:1px solid rgba(246,173,85,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">📹</div>
+                            <div>
+                                <div style="color:#fff;font-size:14px;font-weight:600;margin-bottom:2px;">Full Video Course</div>
+                                <div style="color:#4a6a8a;font-size:12px;line-height:1.5;">Step-by-step training videos teaching you how to trade at high velocity with our proven strategies.</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:flex-start;gap:12px;">
+                            <div style="width:28px;height:28px;border-radius:50%;background:rgba(74,158,255,0.1);border:1px solid rgba(74,158,255,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">📊</div>
+                            <div>
+                                <div style="color:#fff;font-size:14px;font-weight:600;margin-bottom:2px;">Proprietary Indicators & Software</div>
+                                <div style="color:#4a6a8a;font-size:12px;line-height:1.5;">Exclusive HVT indicators and tools built to give you a professional edge in every session.</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:flex-start;gap:12px;">
+                            <div style="width:28px;height:28px;border-radius:50%;background:rgba(104,211,145,0.1);border:1px solid rgba(104,211,145,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">🎙️</div>
+                            <div>
+                                <div style="color:#fff;font-size:14px;font-weight:600;margin-bottom:2px;">Live Trading Room Access</div>
+                                <div style="color:#4a6a8a;font-size:12px;line-height:1.5;">Join our Discord trading room and trade alongside the HVT team in real time, every market day.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="height:1px;background:linear-gradient(90deg,transparent,#1e3a6e,transparent);margin-bottom:24px;"></div>
+
+                    <div style="text-align:center;">
+                        <p style="color:#4a6a8a;font-size:13px;margin-bottom:16px;">Ready to get started? View all available packages on our website.</p>
+                        <a href="https://highvelocitytrading.com" style="display:inline-block;background:linear-gradient(135deg,#92610a,#c97d0e);color:#fff;text-decoration:none;padding:14px 40px;border-radius:10px;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;box-shadow:0 4px 20px rgba(201,125,14,0.4);">VIEW PACKAGES →</a>
+                        <p style="color:#2d4a6e;font-size:11px;margin-top:14px;">Questions? Call us at <strong style="color:#4a6a8a;">786-461-4235</strong></p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <script>
+            async function requestAccess() {
+                const email = document.getElementById('email').value.trim();
+                const msg = document.getElementById('msg');
+                const btn = document.getElementById('btn');
+                msg.className = 'msg'; msg.textContent = '';
+                if (!email) { msg.className='msg error show'; msg.textContent='Please enter your email.'; return; }
+                btn.disabled = true; btn.textContent = 'Sending...';
+                try {
+                    const res = await fetch('/course/request', {
+                        method: 'POST',
+                        headers: {'Content-Type':'application/json'},
+                        body: JSON.stringify({ email })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        msg.className = 'msg success show';
+                        msg.textContent = '✓ Check your email! Your secure course link has been sent.';
+                        btn.textContent = 'Link Sent ✓';
+                    } else {
+                        msg.className = 'msg error show';
+                        msg.textContent = data.error || 'Something went wrong.';
+                        btn.disabled = false; btn.textContent = 'Send My Course Link';
+                    }
+                } catch(e) {
+                    msg.className = 'msg error show';
+                    msg.textContent = 'Network error. Please try again.';
+                    btn.disabled = false; btn.textContent = 'Send My Course Link';
+                }
+            }
+            document.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('email').addEventListener('keypress', e => { if (e.key==='Enter') requestAccess(); });
+            });
+        </script>
+    `));
+});
+
+// POST /course/request — verify membership, send magic link
+app.post('/course/request', express.json(), async (req, res) => {
+    try {
+        const email = (req.body.email || '').toLowerCase().trim();
+        if (!email) return res.status(400).json({ error: 'Email is required' });
+
+        // Check monthly membership
+        const { data: member } = await supabase
+            .from(MEMBERSHIP_TABLE)
+            .select('email, status, expires_at')
+            .eq('email', email)
+            .maybeSingle();
+
+        // Check lifetime license
+        const { data: license } = await supabase
+            .from(LICENSE_TABLE)
+            .select('email, status')
+            .eq('email', email)
+            .maybeSingle();
+
+        const isMemberActive = member?.status === 'active' && new Date(member.expires_at) > new Date();
+        const isLifetimeActive = license?.status === 'active';
+
+        if (!isMemberActive && !isLifetimeActive) {
+            return res.status(403).json({ error: 'No active membership found for this email. Visit highvelocitytrading.com to view our packages, or call us at 786-461-4235.' });
+        }
+
+        // Generate token — store in membership or license table
+        const token = crypto.randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
+
+        if (isMemberActive) {
+            await supabase.from(MEMBERSHIP_TABLE)
+                .update({ course_token: token, course_token_expires: expires, updated_at: new Date().toISOString() })
+                .eq('email', email);
+        } else {
+            await supabase.from(LICENSE_TABLE)
+                .update({ course_token: token, course_token_expires: expires, updated_at: new Date().toISOString() })
+                .eq('email', email);
+        }
+
+        await sendCourseAccessEmail(email, token);
+
+        console.log(`[Course] Access link sent to ${email}`);
+        res.json({ ok: true });
+    } catch (err) {
+        console.error('[Course Request Error]', err.message);
+        res.status(500).json({ error: 'Server error. Please try again or call us at 786-461-4235.' });
+    }
+});
+
+// GET /course/confirm?token=xxx — verify token, show course
+app.get('/course/confirm', async (req, res) => {
+    const token = req.query.token;
+    if (!token) return res.send(resultPage('error', 'Invalid Link', 'This course link is invalid.'));
+
+    try {
+        // Check monthly table first
+        let memberData = null;
+        const { data: mData } = await supabase
+            .from(MEMBERSHIP_TABLE)
+            .select('email, full_name, status, expires_at, course_token_expires')
+            .eq('course_token', token)
+            .maybeSingle();
+
+        // Check lifetime table
+        let licenseData = null;
+        const { data: lData } = await supabase
+            .from(LICENSE_TABLE)
+            .select('email, full_name, status, course_token_expires')
+            .eq('course_token', token)
+            .maybeSingle();
+
+        memberData = mData;
+        licenseData = lData;
+
+        const record = memberData || licenseData;
+        if (!record) return res.send(resultPage('error', 'Invalid Link', 'This link is invalid or has already been used.'));
+
+        const tokenExpires = record.course_token_expires;
+        if (!tokenExpires || new Date(tokenExpires) < new Date()) {
+            return res.send(resultPage('error', 'Link Expired', 'This link has expired. <a href="/course" style="color:#f6ad55;">Request a new one</a>.'));
+        }
+
+        // Verify still active
+        const isMemberActive = memberData?.status === 'active' && new Date(memberData.expires_at) > new Date();
+        const isLifetimeActive = licenseData?.status === 'active';
+
+        if (!isMemberActive && !isLifetimeActive) {
+            return res.send(resultPage('error', 'Access Revoked', 'Your membership is no longer active. Visit <a href="https://highvelocitytrading.com" style="color:#f6ad55;">highvelocitytrading.com</a> to renew.'));
+        }
+
+        const name = (record.full_name || 'Trader').split(' ')[0];
+        const planLabel = isLifetimeActive ? 'Lifetime Access' : 'Monthly Membership';
+        const planColor = isLifetimeActive ? '#f6ad55' : '#4a9eff';
+        const planBg = isLifetimeActive ? 'rgba(246,173,85,0.08)' : 'rgba(74,158,255,0.08)';
+        const planBorder = isLifetimeActive ? 'rgba(246,173,85,0.2)' : 'rgba(74,158,255,0.2)';
+
+        res.send(pageShell('HVT Course', `
+            <div style="width:100%;max-width:680px;">
+
+                <!-- HEADER -->
+                <div style="text-align:center;margin-bottom:32px;">
+                    <div style="display:inline-block;background:${planBg};border:1px solid ${planBorder};border-radius:20px;padding:6px 18px;margin-bottom:12px;">
+                        <span style="color:${planColor};font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;">${planLabel}</span>
+                    </div>
+                    <div style="font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;color:#fff;letter-spacing:1px;">Welcome back, ${name}.</div>
+                    <div style="color:#4a6a8a;font-size:14px;margin-top:6px;">Your course content is ready below.</div>
+                </div>
+
+                <!-- COMING SOON CARD -->
+                <div class="card" style="max-width:680px;">
+                    <div class="card-top" style="background:linear-gradient(90deg,#92610a,#f6ad55,#92610a);"></div>
+                    <div class="card-body" style="text-align:center;padding:56px 32px;">
+
+                        <!-- Icon -->
+                        <div style="width:72px;height:72px;border-radius:50%;background:rgba(246,173,85,0.08);border:1px solid rgba(246,173,85,0.25);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:30px;">🎬</div>
+
+                        <div style="font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;letter-spacing:2px;color:#fff;margin-bottom:8px;">COURSE COMING SOON</div>
+
+                        <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(246,173,85,0.3),transparent);margin:20px 0;"></div>
+
+                        <p style="color:#8aafd4;font-size:14px;line-height:1.8;max-width:420px;margin:0 auto 28px;">
+                            We are putting the finishing touches on your training videos. As a valued member, you will receive an email notification the moment your course goes live.
+                        </p>
+
+                        <!-- Checklist of what's coming -->
+                        <div style="background:rgba(255,255,255,0.02);border:1px solid #1a3060;border-radius:12px;padding:20px 24px;text-align:left;max-width:380px;margin:0 auto 28px;">
+                            <div style="font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#c97d0e;margin-bottom:14px;">What's included in your course</div>
+                            <div style="display:flex;flex-direction:column;gap:10px;">
+                                <div style="display:flex;align-items:center;gap:10px;color:#6b8db8;font-size:13px;"><span style="color:#f6ad55;">▸</span> High Velocity Trading Strategy Fundamentals</div>
+                                <div style="display:flex;align-items:center;gap:10px;color:#6b8db8;font-size:13px;"><span style="color:#f6ad55;">▸</span> Indicator Setup & Configuration Walkthrough</div>
+                                <div style="display:flex;align-items:center;gap:10px;color:#6b8db8;font-size:13px;"><span style="color:#f6ad55;">▸</span> Live Trade Examples & Market Analysis</div>
+                                <div style="display:flex;align-items:center;gap:10px;color:#6b8db8;font-size:13px;"><span style="color:#f6ad55;">▸</span> Risk Management & Position Sizing</div>
+                                <div style="display:flex;align-items:center;gap:10px;color:#6b8db8;font-size:13px;"><span style="color:#f6ad55;">▸</span> Advanced Entry & Exit Techniques</div>
+                            </div>
+                        </div>
+
+                        <div style="background:rgba(74,158,255,0.04);border:1px solid rgba(74,158,255,0.12);border-radius:10px;padding:14px 20px;">
+                            <p style="color:#4a6a8a;font-size:13px;margin:0 0 6px;">Have questions in the meantime? We are here for you.</p>
+                            <p style="color:#90b8e8;font-size:15px;font-weight:700;margin:0;">📞 786-461-4235</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        `));
+
+    } catch (err) {
+        console.error('[Course Confirm Error]', err.message);
+        return res.send(resultPage('error', 'Error', 'Something went wrong. Please try again.'));
     }
 });
 
@@ -996,7 +1279,6 @@ app.get('/cancel/confirm', async (req, res) => {
             }
         }
 
-        // Remove Discord role on cancel
         if (data.discord_user_id) {
             try {
                 await removeDiscordRole(data.discord_user_id, DISCORD_MONTHLY_ROLE_ID);
@@ -1126,7 +1408,6 @@ app.post('/webhooks/jotform', (req, res) => {
                     status: 'active'
                 });
 
-                // Send lifetime welcome email
                 try {
                     await sendWelcomeEmail(activated.email, activated.full_name, 'lifetime');
                 } catch (emailErr) {
