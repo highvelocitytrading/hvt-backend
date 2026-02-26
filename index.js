@@ -22,6 +22,12 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'support@support.highvelocitytrading.com';
 const APP_URL = process.env.APP_URL || 'https://hvt-backend-production-ec41.up.railway.app';
 
+// Discord
+const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID || '1460694720090083483';
+const DISCORD_MONTHLY_ROLE_ID = process.env.DISCORD_MONTHLY_ROLE_ID || '1476634274424819897';
+const DISCORD_LIFETIME_ROLE_ID = process.env.DISCORD_LIFETIME_ROLE_ID || '1476634362811384001';
+
 const MEMBERSHIP_TABLE = process.env.SUPABASE_TABLE || 'membershipstab';
 const LICENSE_TABLE = 'license_keys';
 
@@ -80,6 +86,47 @@ function verifyAuthorizeSignature(rawBody, signatureHeader) {
     }
 }
 
+// -------------------- DISCORD HELPERS --------------------
+async function discordRequest(method, path, body) {
+    const res = await fetch(`https://discord.com/api/v10${path}`, {
+        method,
+        headers: {
+            'Authorization': `Bot ${DISCORD_BOT_TOKEN}`,
+            'Content-Type': 'application/json'
+        },
+        body: body ? JSON.stringify(body) : undefined
+    });
+    if (res.status === 204) return null;
+    const data = await res.json();
+    if (!res.ok) throw new Error(`Discord API error: ${JSON.stringify(data)}`);
+    return data;
+}
+
+async function findDiscordUserByUsername(username) {
+    try {
+        const members = await discordRequest('GET', `/guilds/${DISCORD_GUILD_ID}/members/search?query=${encodeURIComponent(username)}&limit=5`);
+        if (!members || members.length === 0) return null;
+        const exact = members.find(m =>
+            m.user.username.toLowerCase() === username.toLowerCase() ||
+            (m.nick && m.nick.toLowerCase() === username.toLowerCase())
+        );
+        return exact || members[0];
+    } catch (err) {
+        console.error('[Discord Search Error]', err.message);
+        return null;
+    }
+}
+
+async function assignDiscordRole(discordUserId, roleId) {
+    await discordRequest('PUT', `/guilds/${DISCORD_GUILD_ID}/members/${discordUserId}/roles/${roleId}`);
+    console.log(`[Discord] Role ${roleId} assigned to user ${discordUserId}`);
+}
+
+async function removeDiscordRole(discordUserId, roleId) {
+    await discordRequest('DELETE', `/guilds/${DISCORD_GUILD_ID}/members/${discordUserId}/roles/${roleId}`);
+    console.log(`[Discord] Role ${roleId} removed from user ${discordUserId}`);
+}
+
 // -------------------- EMAIL HELPERS --------------------
 async function sendEmail(to, subject, html) {
     const response = await fetch('https://api.resend.com/emails', {
@@ -121,10 +168,54 @@ function emailTemplate(content) {
 </body></html>`;
 }
 
+async function sendWelcomeEmail(email, fullName, type) {
+    const isMonthly = type === 'monthly';
+    const name = fullName ? fullName.split(' ')[0] : 'Trader';
+    const subject = isMonthly ? 'Welcome to HVT Monthly Membership!' : 'Welcome to HVT Lifetime Access!';
+    const activationLabel = isMonthly ? 'Monthly Membership Activation' : 'Lifetime Access Activation';
+    const accentColor = isMonthly ? '#4a9eff' : '#f6ad55';
+    const badgeBg = isMonthly ? 'rgba(74,158,255,0.08)' : 'rgba(246,173,85,0.08)';
+    const badgeBorder = isMonthly ? 'rgba(74,158,255,0.2)' : 'rgba(246,173,85,0.2)';
+
+    const monthlyNote = isMonthly ? `
+        <div style="background:rgba(229,62,62,0.06);border:1px solid rgba(229,62,62,0.15);border-radius:10px;padding:14px 18px;margin-bottom:24px;">
+            <p style="color:#fc8181;font-size:13px;line-height:1.6;margin:0;">
+                ⚠️ <strong>Please note:</strong> Your Trading Room and indicator access are tied to your active monthly membership. If your payment stops, access will be removed at the end of your current billing period.
+            </p>
+        </div>
+    ` : '';
+
+    const content = `
+        <div style="text-align:center;margin-bottom:8px;">
+            <div style="display:inline-block;background:${badgeBg};border:1px solid ${badgeBorder};border-radius:20px;padding:6px 18px;margin-bottom:20px;">
+                <span style="color:${accentColor};font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;">${activationLabel}</span>
+            </div>
+            <h2 style="color:#ffffff;font-size:22px;font-weight:700;margin:0 0 8px;letter-spacing:1px;">Welcome, ${name}!</h2>
+            <p style="color:#6b8db8;font-size:14px;margin:0;">We're grateful to have you with us.</p>
+        </div>
+        <div style="height:1px;background:linear-gradient(90deg,transparent,#1e3a6e,transparent);margin:28px 0;"></div>
+        <p style="color:#8aafd4;font-size:14px;line-height:1.8;margin-bottom:24px;text-align:center;">
+            Thank you for your purchase. You now have access to everything High Velocity Trading has to offer. We are here to support you every step of the way.
+        </p>
+        ${monthlyNote}
+        <div style="text-align:center;margin-bottom:28px;">
+            <a href="${APP_URL}/trading-room" style="display:inline-block;background:linear-gradient(135deg,#1a3a8e,#2a5aae);color:#fff;text-decoration:none;padding:16px 48px;border-radius:8px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;box-shadow:0 4px 24px rgba(42,90,174,0.4);">ACTIVATE TRADING ROOM</a>
+        </div>
+        <div style="height:1px;background:linear-gradient(90deg,transparent,#1e3a6e,transparent);margin-bottom:24px;"></div>
+        <div style="background:rgba(74,158,255,0.04);border:1px solid rgba(74,158,255,0.12);border-radius:10px;padding:16px 20px;text-align:center;">
+            <p style="color:#4a6a8a;font-size:13px;line-height:1.6;margin:0 0 8px;">Need help getting set up?</p>
+            <p style="color:#90b8e8;font-size:15px;font-weight:700;margin:0;letter-spacing:0.5px;">📞 786-461-4235</p>
+            <p style="color:#4a6a8a;font-size:12px;margin:4px 0 0;">We are happy to walk you through everything.</p>
+        </div>
+    `;
+
+    await sendEmail(email, subject, emailTemplate(content));
+    console.log(`[Welcome Email] Sent ${type} welcome to ${email}`);
+}
+
 async function sendMagicLinkEmail(email, token, type) {
     const url = `${APP_URL}/${type}/confirm?token=${token}`;
     const isBilling = type === 'billing';
-
     const subject = isBilling ? 'Access Your HVT Billing Portal' : 'Cancel Your HVT Membership';
     const title = isBilling ? 'Billing Portal Access' : 'Membership Cancellation';
     const btnText = isBilling ? 'VIEW MY BILLING' : 'CONFIRM CANCELLATION';
@@ -163,16 +254,13 @@ async function cancelAuthorizeSubscription(subscriptionId) {
             subscriptionId: String(subscriptionId)
         }
     };
-
     const response = await fetch('https://api.authorize.net/xml/v1/request.api', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
     });
-
     const data = await response.json();
     console.log('[Authnet Cancel Response]', JSON.stringify(data));
-
     const resultCode = data?.messages?.resultCode;
     if (resultCode !== 'Ok') {
         const msg = data?.messages?.message?.[0]?.text || 'Unknown error';
@@ -278,7 +366,7 @@ function pageShell(title, bodyContent) {
         .card-sub{color:#4a6a8a;font-size:13px;line-height:1.6;margin-bottom:28px;}
         .divider{height:1px;background:linear-gradient(90deg,transparent,#1a3060,transparent);margin-bottom:28px;}
         label{display:block;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#3a6a9a;margin-bottom:8px;}
-        input[type=email]{
+        input[type=email],input[type=text]{
             width:100%;padding:13px 16px;
             background:rgba(255,255,255,0.03);
             border:1px solid #1a3060;
@@ -289,8 +377,8 @@ function pageShell(title, bodyContent) {
             margin-bottom:20px;
             font-family:'Inter',sans-serif;
         }
-        input[type=email]:focus{border-color:#2a5aae;box-shadow:0 0 0 3px rgba(42,90,174,0.15);}
-        input[type=email]::placeholder{color:#1e3a5e;}
+        input[type=email]:focus,input[type=text]:focus{border-color:#2a5aae;box-shadow:0 0 0 3px rgba(42,90,174,0.15);}
+        input[type=email]::placeholder,input[type=text]::placeholder{color:#1e3a5e;}
         .btn{
             width:100%;padding:13px;
             background:linear-gradient(135deg,#1a3a8e,#2a5aae);
@@ -386,6 +474,13 @@ app.post('/webhooks/membership-jotform', (req, res) => {
             const { error } = await supabase.from(MEMBERSHIP_TABLE).upsert(payload, { onConflict: 'email' });
             if (error) { console.error('[Membership Supabase Error]', error); throw error; }
 
+            // Send monthly welcome email
+            try {
+                await sendWelcomeEmail(extracted.email, extracted.full_name, 'monthly');
+            } catch (emailErr) {
+                console.error('[Monthly Welcome Email Error]', emailErr.message);
+            }
+
             console.log(`✅ Membership Success: ${extracted.full_name} (${extracted.email})`);
             res.status(200).send('OK');
         } catch (err) {
@@ -441,6 +536,23 @@ app.post('/webhooks/membership-authnet', express.json(), async (req, res) => {
             if (query) {
                 const { error } = await query;
                 if (error) throw error;
+
+                // Remove Discord role on cancellation
+                try {
+                    const { data: member } = await supabase
+                        .from(MEMBERSHIP_TABLE)
+                        .select('discord_user_id')
+                        .eq(subscriptionId ? 'authnet_subscription_id' : 'email', subscriptionId || email)
+                        .maybeSingle();
+
+                    if (member?.discord_user_id) {
+                        await removeDiscordRole(member.discord_user_id, DISCORD_MONTHLY_ROLE_ID);
+                        console.log(`[Discord] Monthly role removed on cancellation`);
+                    }
+                } catch (discordErr) {
+                    console.error('[Discord Remove Role Error]', discordErr.message);
+                }
+
                 console.log(`🚫 Membership Cancelled: ${email || subscriptionId}`);
             }
         }
@@ -467,9 +579,133 @@ app.get('/check-access', async (req, res) => {
     res.json({ active });
 });
 
+// ==================== TRADING ROOM ====================
+
+app.get('/trading-room', (req, res) => {
+    res.send(pageShell('Join Trading Room', `
+        <div class="card">
+            <div class="card-top" style="background:linear-gradient(90deg,#1a3a8e,#4a9eff,#1a3a8e);"></div>
+            <div class="card-body">
+                <div style="text-align:center;margin-bottom:24px;">
+                    <div style="display:inline-block;background:rgba(74,158,255,0.08);border:1px solid rgba(74,158,255,0.2);border-radius:20px;padding:6px 18px;margin-bottom:16px;">
+                        <span style="color:#4a9eff;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;">Discord Access Activation</span>
+                    </div>
+                    <div class="card-title" style="margin-bottom:8px;">Join the Trading Room</div>
+                    <div class="card-sub" style="margin-bottom:0;">Enter your purchase email and Discord username to activate your Trading Room access instantly.</div>
+                </div>
+                <div class="divider"></div>
+                <label for="email">Purchase Email</label>
+                <input type="email" id="email" placeholder="your@email.com" />
+                <label for="discord">Discord Username</label>
+                <input type="text" id="discord" placeholder="yourUsername" />
+                <div style="background:rgba(74,158,255,0.04);border:1px solid rgba(74,158,255,0.1);border-radius:8px;padding:10px 14px;margin-bottom:20px;">
+                    <p style="color:#4a6a8a;font-size:12px;margin:0;">You must already be a member of the <strong style="color:#90b8e8;">High Velocity Trading</strong> Discord server before activating.</p>
+                </div>
+                <button class="btn" id="btn" onclick="activate()">Activate Trading Room Access</button>
+                <div class="msg" id="msg"></div>
+            </div>
+        </div>
+        <script>
+            async function activate() {
+                const email = document.getElementById('email').value.trim();
+                const discord = document.getElementById('discord').value.trim();
+                const msg = document.getElementById('msg');
+                const btn = document.getElementById('btn');
+                msg.className = 'msg'; msg.textContent = '';
+                if (!email) { msg.className='msg error show'; msg.textContent='Please enter your email.'; return; }
+                if (!discord) { msg.className='msg error show'; msg.textContent='Please enter your Discord username.'; return; }
+                btn.disabled = true; btn.textContent = 'Activating...';
+                try {
+                    const res = await fetch('/trading-room/activate', {
+                        method: 'POST',
+                        headers: {'Content-Type':'application/json'},
+                        body: JSON.stringify({ email, discord_username: discord })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        msg.className = 'msg success show';
+                        msg.textContent = '✓ Access granted! Check Discord — your Trading Room role has been assigned.';
+                        btn.textContent = 'Access Granted ✓';
+                    } else {
+                        msg.className = 'msg error show';
+                        msg.textContent = data.error || 'Something went wrong.';
+                        btn.disabled = false; btn.textContent = 'Activate Trading Room Access';
+                    }
+                } catch(e) {
+                    msg.className = 'msg error show';
+                    msg.textContent = 'Network error. Please try again.';
+                    btn.disabled = false; btn.textContent = 'Activate Trading Room Access';
+                }
+            }
+            document.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('discord').addEventListener('keypress', e => { if (e.key==='Enter') activate(); });
+            });
+        </script>
+    `));
+});
+
+app.post('/trading-room/activate', express.json(), async (req, res) => {
+    try {
+        const email = (req.body.email || '').toLowerCase().trim();
+        const discordUsername = (req.body.discord_username || '').trim();
+
+        if (!email) return res.status(400).json({ error: 'Email is required' });
+        if (!discordUsername) return res.status(400).json({ error: 'Discord username is required' });
+
+        // Check membership table
+        const { data: member, error: memberError } = await supabase
+            .from(MEMBERSHIP_TABLE)
+            .select('email, status, expires_at')
+            .eq('email', email)
+            .maybeSingle();
+
+        // Check lifetime license table
+        const { data: license } = await supabase
+            .from(LICENSE_TABLE)
+            .select('email, status')
+            .eq('email', email)
+            .maybeSingle();
+
+        if (memberError) throw memberError;
+
+        const isMemberActive = member?.status === 'active' && new Date(member.expires_at) > new Date();
+        const isLifetimeActive = license?.status === 'active';
+
+        if (!isMemberActive && !isLifetimeActive) {
+            return res.status(403).json({ error: 'No active membership found for this email. Please check your email or contact support at 786-461-4235.' });
+        }
+
+        // Find Discord user in server
+        const discordMember = await findDiscordUserByUsername(discordUsername);
+        if (!discordMember) {
+            return res.status(404).json({ error: `Discord user "${discordUsername}" not found in the High Velocity Trading server. Make sure you have joined the server first.` });
+        }
+
+        const discordUserId = discordMember.user.id;
+        const roleId = isLifetimeActive ? DISCORD_LIFETIME_ROLE_ID : DISCORD_MONTHLY_ROLE_ID;
+
+        // Assign the role
+        await assignDiscordRole(discordUserId, roleId);
+
+        // Save discord_user_id for future role removal
+        if (isMemberActive) {
+            await supabase.from(MEMBERSHIP_TABLE)
+                .update({ discord_user_id: discordUserId, updated_at: new Date().toISOString() })
+                .eq('email', email);
+        }
+
+        const roleType = isLifetimeActive ? 'Lifetime' : 'Monthly';
+        console.log(`✅ Discord ${roleType} role assigned to ${discordUsername} (${discordUserId}) for ${email}`);
+
+        res.json({ ok: true, role: roleType });
+    } catch (err) {
+        console.error('[Trading Room Activate Error]', err.message);
+        res.status(500).json({ error: 'Server error. Please try again or call us at 786-461-4235.' });
+    }
+});
+
 // ==================== BILLING PORTAL ====================
 
-// GET /billing — email entry page
 app.get('/billing', (req, res) => {
     res.send(pageShell('Billing Portal', `
         <div class="card">
@@ -521,7 +757,6 @@ app.get('/billing', (req, res) => {
     `));
 });
 
-// POST /billing/request — send magic link
 app.post('/billing/request', express.json(), async (req, res) => {
     try {
         const email = (req.body.email || '').toLowerCase().trim();
@@ -556,7 +791,6 @@ app.post('/billing/request', express.json(), async (req, res) => {
     }
 });
 
-// GET /billing/confirm?token=xxx — show dashboard
 app.get('/billing/confirm', async (req, res) => {
     const token = req.query.token;
     if (!token) return res.send(resultPage('error', 'Invalid Link', 'This billing link is invalid.'));
@@ -578,26 +812,18 @@ app.get('/billing/confirm', async (req, res) => {
         const status = data.status || 'unknown';
         const expiresAt = data.expires_at ? new Date(data.expires_at) : null;
         const email = data.email;
-
         const statusColor = status === 'active' ? '#68d391' : '#fc8181';
         const statusBg = status === 'active' ? 'rgba(56,161,105,0.08)' : 'rgba(229,62,62,0.08)';
         const statusBorder = status === 'active' ? 'rgba(56,161,105,0.2)' : 'rgba(229,62,62,0.2)';
         const statusLabel = status === 'active' ? '● Active' : status.charAt(0).toUpperCase() + status.slice(1);
-
-        const nextBilling = expiresAt
-            ? expiresAt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-            : 'N/A';
-
-        const daysLeft = expiresAt
-            ? Math.max(0, Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24)))
-            : 0;
+        const nextBilling = expiresAt ? expiresAt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
+        const daysLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24))) : 0;
 
         const cancelSection = status === 'active' ? `
             <div style="margin-top:24px;padding-top:24px;border-top:1px solid #1a3060;">
-                <p style="color:#2d4a6e;font-size:12px;text-align:center;margin-bottom:16px;letter-spacing:0.5px;">Want to cancel your membership?</p>
-                <a href="/cancel" style="display:block;width:100%;padding:12px;background:transparent;border:1px solid rgba(229,62,62,0.3);color:#fc8181;border-radius:10px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-align:center;text-decoration:none;transition:all 0.2s;"
-                   onmouseover="this.style.background='rgba(229,62,62,0.08)'"
-                   onmouseout="this.style.background='transparent'">
+                <p style="color:#2d4a6e;font-size:12px;text-align:center;margin-bottom:16px;">Want to cancel your membership?</p>
+                <a href="/cancel" style="display:block;width:100%;padding:12px;background:transparent;border:1px solid rgba(229,62,62,0.3);color:#fc8181;border-radius:10px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-align:center;text-decoration:none;"
+                   onmouseover="this.style.background='rgba(229,62,62,0.08)'" onmouseout="this.style.background='transparent'">
                     Cancel Membership
                 </a>
             </div>
@@ -616,15 +842,10 @@ app.get('/billing/confirm', async (req, res) => {
                             <div style="font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#2d5a8e;margin-bottom:4px;">Welcome back</div>
                             <div style="font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:#fff;letter-spacing:1px;">${name}</div>
                         </div>
-                        <div style="background:${statusBg};border:1px solid ${statusBorder};border-radius:20px;padding:6px 14px;font-size:12px;color:${statusColor};font-family:'Rajdhani',sans-serif;letter-spacing:1px;font-weight:600;">
-                            ${statusLabel}
-                        </div>
+                        <div style="background:${statusBg};border:1px solid ${statusBorder};border-radius:20px;padding:6px 14px;font-size:12px;color:${statusColor};font-family:'Rajdhani',sans-serif;letter-spacing:1px;font-weight:600;">${statusLabel}</div>
                     </div>
-
                     <div class="divider"></div>
-
                     <div style="font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#2d5a8e;margin-bottom:16px;">Membership Details</div>
-
                     <div style="background:rgba(255,255,255,0.02);border:1px solid #1a3060;border-radius:12px;overflow:hidden;margin-bottom:16px;">
                         <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #1a3060;">
                             <span style="color:#4a6a8a;font-size:13px;">Plan</span>
@@ -643,7 +864,6 @@ app.get('/billing/confirm', async (req, res) => {
                             <span style="color:${daysLeft > 7 ? '#68d391' : '#f6ad55'};font-size:13px;font-weight:600;">${daysLeft} days</span>
                         </div>
                     </div>
-
                     ${cancelSection}
                 </div>
             </div>
@@ -750,7 +970,7 @@ app.get('/cancel/confirm', async (req, res) => {
     try {
         const { data, error } = await supabase
             .from(MEMBERSHIP_TABLE)
-            .select('email, full_name, status, authnet_subscription_id, cancel_token_expires')
+            .select('email, full_name, status, authnet_subscription_id, cancel_token_expires, discord_user_id')
             .eq('cancel_token', token)
             .maybeSingle();
 
@@ -770,8 +990,16 @@ app.get('/cancel/confirm', async (req, res) => {
             } catch (authErr) {
                 console.error('[Cancel] Authnet error:', authErr.message);
             }
-        } else {
-            console.warn(`[Cancel] No subscription ID for ${data.email}`);
+        }
+
+        // Remove Discord role on cancel
+        if (data.discord_user_id) {
+            try {
+                await removeDiscordRole(data.discord_user_id, DISCORD_MONTHLY_ROLE_ID);
+                console.log(`[Discord] Role removed on cancel for ${data.email}`);
+            } catch (discordErr) {
+                console.error('[Discord Remove Error]', discordErr.message);
+            }
         }
 
         const { error: updateError } = await supabase
@@ -893,6 +1121,14 @@ app.post('/webhooks/jotform', (req, res) => {
                     jotform_body_json: rr,
                     status: 'active'
                 });
+
+                // Send lifetime welcome email
+                try {
+                    await sendWelcomeEmail(activated.email, activated.full_name, 'lifetime');
+                } catch (emailErr) {
+                    console.error('[Lifetime Welcome Email Error]', emailErr.message);
+                }
+
                 console.log(`✅ License activated: ${activated.email} | Key: ${activated.license_key}`);
                 return res.status(200).json({ ok: true, transaction_id, license_key: activated.license_key, status: activated.status });
             }
