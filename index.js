@@ -493,7 +493,7 @@ app.post('/webhooks/membership-jotform', (req, res) => {
                 plan_name: 'membership',
                 status: 'active',
                 source: 'jotform',
-                expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
+                expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
                 updated_at: new Date().toISOString()
             };
 
@@ -536,7 +536,7 @@ app.post('/webhooks/membership-authnet', express.json(), async (req, res) => {
                 plan_name: 'membership',
                 status: 'active',
                 source: 'authnet',
-                expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
+                expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
                 updated_at: new Date().toISOString()
             };
 
