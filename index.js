@@ -793,7 +793,7 @@ app.get('/course', (req, res) => {
 
                     <div style="text-align:center;">
                         <p style="color:#4a6a8a;font-size:13px;margin-bottom:16px;">Ready to get started? View all available packages on our website.</p>
-                        <a href="https://highvelocitytrading.com" style="display:inline-block;background:linear-gradient(135deg,#92610a,#c97d0e);color:#fff;text-decoration:none;padding:14px 40px;border-radius:10px;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;box-shadow:0 4px 20px rgba(201,125,14,0.4);">VIEW PACKAGES →</a>
+                        <a href="https://highvelocitytrading.com/#packages" style="display:inline-block;background:linear-gradient(135deg,#92610a,#c97d0e);color:#fff;text-decoration:none;padding:14px 40px;border-radius:10px;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;box-shadow:0 4px 20px rgba(201,125,14,0.4);">VIEW PACKAGES →</a>
                         <p style="color:#2d4a6e;font-size:11px;margin-top:14px;">Questions? Call us at <strong style="color:#4a6a8a;">786-461-4235</strong></p>
                     </div>
                 </div>
