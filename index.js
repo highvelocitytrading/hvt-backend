@@ -1428,6 +1428,353 @@ app.post('/webhooks/jotform', (req, res) => {
     req.pipe(bb);
 });
 
+// ==================== ADMIN PANEL ====================
+
+const ADMIN_SECRET = process.env.ADMIN_SECRET || 'HVT-ADMIN-FADBC551B512718D76F4B8744E54B621';
+
+function adminAuth(req, res, next) {
+    const key = req.query.key || req.body?.key;
+    if (!key || key !== ADMIN_SECRET) {
+        return res.status(403).send(resultPage('error', 'Access Denied', 'Invalid or missing admin key.'));
+    }
+    next();
+}
+
+// GET /admin?key=xxx — admin dashboard
+app.get('/admin', adminAuth, async (req, res) => {
+    const key = req.query.key;
+
+    // Fetch recent members for display
+    const { data: members } = await supabase
+        .from(MEMBERSHIP_TABLE)
+        .select('email, full_name, status, plan_name, expires_at, discord_user_id')
+        .order('updated_at', { ascending: false })
+        .limit(50);
+
+    const { data: licenses } = await supabase
+        .from(LICENSE_TABLE)
+        .select('email, full_name, status, license_key')
+        .order('updated_at', { ascending: false })
+        .limit(50);
+
+    const memberRows = (members || []).map(m => {
+        const isActive = m.status === 'active';
+        const statusColor = isActive ? '#68d391' : '#fc8181';
+        const statusBg = isActive ? 'rgba(56,161,105,0.08)' : 'rgba(229,62,62,0.08)';
+        const statusBorder = isActive ? 'rgba(56,161,105,0.2)' : 'rgba(229,62,62,0.2)';
+        const expires = m.expires_at ? new Date(m.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+        return `
+            <tr style="border-bottom:1px solid #0f2040;">
+                <td style="padding:12px 14px;color:#90b8e8;font-size:13px;">${m.full_name || '—'}</td>
+                <td style="padding:12px 14px;color:#6b8db8;font-size:13px;">${m.email}</td>
+                <td style="padding:12px 14px;">
+                    <span style="background:${statusBg};border:1px solid ${statusBorder};border-radius:20px;padding:3px 10px;font-size:11px;color:${statusColor};font-family:'Rajdhani',sans-serif;letter-spacing:1px;font-weight:600;">${m.status}</span>
+                </td>
+                <td style="padding:12px 14px;color:#4a6a8a;font-size:12px;">${expires}</td>
+                <td style="padding:12px 14px;color:#4a6a8a;font-size:12px;">${m.discord_user_id ? '✓ Linked' : '—'}</td>
+                <td style="padding:12px 14px;">
+                    ${isActive ? `<button onclick="fireUser('${m.email}', 'monthly')" style="background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;">CANCEL</button>` : '<span style="color:#2d4a6e;font-size:12px;">Inactive</span>'}
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    const licenseRows = (licenses || []).map(l => {
+        const isActive = l.status === 'active';
+        const statusColor = isActive ? '#f6ad55' : '#fc8181';
+        const statusBg = isActive ? 'rgba(246,173,85,0.08)' : 'rgba(229,62,62,0.08)';
+        const statusBorder = isActive ? 'rgba(246,173,85,0.2)' : 'rgba(229,62,62,0.2)';
+        return `
+            <tr style="border-bottom:1px solid #0f2040;">
+                <td style="padding:12px 14px;color:#90b8e8;font-size:13px;">${l.full_name || '—'}</td>
+                <td style="padding:12px 14px;color:#6b8db8;font-size:13px;">${l.email}</td>
+                <td style="padding:12px 14px;">
+                    <span style="background:${statusBg};border:1px solid ${statusBorder};border-radius:20px;padding:3px 10px;font-size:11px;color:${statusColor};font-family:'Rajdhani',sans-serif;letter-spacing:1px;font-weight:600;">${l.status}</span>
+                </td>
+                <td style="padding:12px 14px;color:#4a6a8a;font-size:12px;font-family:monospace;">${l.license_key}</td>
+                <td style="padding:12px 14px;">
+                    ${isActive ? `<button onclick="fireUser('${l.email}', 'lifetime')" style="background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;">REVOKE</button>` : '<span style="color:#2d4a6e;font-size:12px;">Inactive</span>'}
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HVT Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:'Inter',sans-serif;background:radial-gradient(ellipse at 50% 0%,#0d2150 0%,#060e1f 55%,#020810 100%);min-height:100vh;padding:32px 24px;color:#fff;}
+        .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid #1a3060;}
+        .brand{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;letter-spacing:3px;text-transform:uppercase;}
+        .badge{background:rgba(229,62,62,0.1);border:1px solid rgba(229,62,62,0.3);border-radius:20px;padding:5px 14px;font-family:'Rajdhani',sans-serif;font-size:11px;color:#fc8181;letter-spacing:2px;font-weight:700;}
+        .section{margin-bottom:36px;}
+        .section-title{font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#2d5a8e;margin-bottom:16px;}
+        .card{background:linear-gradient(145deg,#0d1f42,#091526);border:1px solid #1a3060;border-radius:16px;overflow:hidden;}
+        .card-top{height:3px;background:linear-gradient(90deg,#1a3a8e,#4a9eff,#1a3a8e);}
+        table{width:100%;border-collapse:collapse;}
+        th{padding:12px 14px;text-align:left;font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#1e3a6e;border-bottom:1px solid #1a3060;}
+        tr:last-child td{border-bottom:none;}
+        .manual-fire{background:linear-gradient(145deg,#0d1f42,#091526);border:1px solid #1a3060;border-radius:16px;padding:28px;margin-bottom:36px;}
+        .manual-top{height:3px;background:linear-gradient(90deg,#7f1d1d,#dc2626,#7f1d1d);border-radius:16px 16px 0 0;margin:-28px -28px 24px;}
+        input[type=email]{width:100%;padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid #1a3060;border-radius:10px;color:#fff;font-size:14px;outline:none;font-family:'Inter',sans-serif;margin-bottom:12px;}
+        input[type=email]:focus{border-color:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,0.1);}
+        input[type=email]::placeholder{color:#1e3a5e;}
+        .fire-btn{padding:12px 32px;background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:10px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 20px rgba(220,38,38,0.3);}
+        .fire-btn:hover{opacity:0.9;}
+        .msg{margin-top:12px;padding:12px 16px;border-radius:10px;font-size:13px;display:none;line-height:1.5;}
+        .msg.show{display:block;}
+        .msg.success{background:rgba(56,161,105,0.08);color:#68d391;border:1px solid rgba(56,161,105,0.2);}
+        .msg.error{background:rgba(229,62,62,0.08);color:#fc8181;border:1px solid rgba(229,62,62,0.2);}
+        .select-type{padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid #1a3060;border-radius:10px;color:#fff;font-size:14px;outline:none;font-family:'Inter',sans-serif;margin-bottom:12px;width:100%;}
+        .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1000;align-items:center;justify-content:center;}
+        .modal-overlay.show{display:flex;}
+        .modal{background:linear-gradient(145deg,#0d1f42,#091526);border:1px solid #1a3060;border-radius:16px;padding:32px;max-width:400px;width:90%;text-align:center;}
+        .modal-title{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:#fff;margin-bottom:12px;}
+        .modal-sub{color:#6b8db8;font-size:14px;line-height:1.6;margin-bottom:24px;}
+        .modal-email{color:#fc8181;font-weight:600;}
+        .modal-btns{display:flex;gap:12px;}
+        .modal-confirm{flex:1;padding:12px;background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:10px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;cursor:pointer;}
+        .modal-cancel{flex:1;padding:12px;background:transparent;color:#6b8db8;border:1px solid #1a3060;border-radius:10px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;cursor:pointer;}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <div class="brand">High Velocity Trading</div>
+            <div style="font-family:'Rajdhani',sans-serif;font-size:10px;color:#1e3a6e;letter-spacing:4px;text-transform:uppercase;margin-top:3px;">Admin Control Panel</div>
+        </div>
+        <div class="badge">⚠ RESTRICTED ACCESS</div>
+    </div>
+
+    <!-- MANUAL FIRE BY EMAIL -->
+    <div class="section">
+        <div class="section-title">Manual Access Removal</div>
+        <div class="manual-fire">
+            <div class="manual-top"></div>
+            <div style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:#fff;margin-bottom:6px;">Cancel / Revoke Member by Email</div>
+            <div style="color:#4a6a8a;font-size:13px;margin-bottom:20px;">Immediately cancels membership, removes Discord role, and marks account as cancelled in Supabase.</div>
+            <label style="display:block;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#3a6a9a;margin-bottom:8px;">Member Email</label>
+            <input type="email" id="manualEmail" placeholder="member@email.com" />
+            <label style="display:block;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#3a6a9a;margin-bottom:8px;">Membership Type</label>
+            <select class="select-type" id="manualType">
+                <option value="monthly">Monthly Membership</option>
+                <option value="lifetime">Lifetime License</option>
+            </select>
+            <button class="fire-btn" onclick="openModal()">🔥 CANCEL ACCESS</button>
+            <div class="msg" id="manualMsg"></div>
+        </div>
+    </div>
+
+    <!-- MONTHLY MEMBERS TABLE -->
+    <div class="section">
+        <div class="section-title">Monthly Members (${(members || []).length} records)</div>
+        <div class="card">
+            <div class="card-top"></div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Expires</th>
+                            <th>Discord</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>${memberRows || '<tr><td colspan="6" style="padding:20px;text-align:center;color:#2d4a6e;">No records found</td></tr>'}</tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- LIFETIME LICENSES TABLE -->
+    <div class="section">
+        <div class="section-title">Lifetime Licenses (${(licenses || []).length} records)</div>
+        <div class="card">
+            <div class="card-top" style="background:linear-gradient(90deg,#92610a,#f6ad55,#92610a);"></div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>License Key</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>${licenseRows || '<tr><td colspan="5" style="padding:20px;text-align:center;color:#2d4a6e;">No records found</td></tr>'}</tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONFIRMATION MODAL -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <div style="font-size:32px;margin-bottom:16px;">⚠️</div>
+            <div class="modal-title">Confirm Cancellation</div>
+            <div class="modal-sub">You are about to cancel access for:<br><span class="modal-email" id="modalEmail"></span><br><br>This will remove their Discord role and mark their account as cancelled immediately.</div>
+            <div class="modal-btns">
+                <button class="modal-cancel" onclick="closeModal()">CANCEL</button>
+                <button class="modal-confirm" onclick="confirmFire()">CONFIRM</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ADMIN_KEY = '${key}';
+        let pendingEmail = null;
+        let pendingType = null;
+
+        function openModal() {
+            const email = document.getElementById('manualEmail').value.trim();
+            const type = document.getElementById('manualType').value;
+            if (!email) { 
+                const msg = document.getElementById('manualMsg');
+                msg.className = 'msg error show';
+                msg.textContent = 'Please enter an email address.';
+                return;
+            }
+            pendingEmail = email;
+            pendingType = type;
+            document.getElementById('modalEmail').textContent = email;
+            document.getElementById('modal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('show');
+            pendingEmail = null;
+            pendingType = null;
+        }
+
+        async function confirmFire() {
+            closeModal();
+            await executeCancel(pendingEmail || document.getElementById('manualEmail').value.trim(), pendingType || document.getElementById('manualType').value);
+        }
+
+        async function fireUser(email, type) {
+            pendingEmail = email;
+            pendingType = type;
+            document.getElementById('manualEmail').value = email;
+            document.getElementById('manualType').value = type;
+            document.getElementById('modalEmail').textContent = email;
+            document.getElementById('modal').classList.add('show');
+        }
+
+        async function executeCancel(email, type) {
+            const msg = document.getElementById('manualMsg');
+            msg.className = 'msg'; msg.textContent = '';
+            try {
+                const res = await fetch('/admin/cancel', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ email, type, key: ADMIN_KEY })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    msg.className = 'msg success show';
+                    msg.textContent = '✓ Access cancelled for ' + email + '. Discord role removed.';
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    msg.className = 'msg error show';
+                    msg.textContent = data.error || 'Something went wrong.';
+                }
+            } catch(e) {
+                msg.className = 'msg error show';
+                msg.textContent = 'Network error. Please try again.';
+            }
+        }
+
+        document.getElementById('modal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+    </script>
+</body>
+</html>`);
+});
+
+// POST /admin/cancel — execute the cancellation
+app.post('/admin/cancel', express.json(), async (req, res) => {
+    const key = req.body?.key;
+    if (!key || key !== ADMIN_SECRET) {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    try {
+        const email = (req.body.email || '').toLowerCase().trim();
+        const type = req.body.type || 'monthly';
+
+        if (!email) return res.status(400).json({ error: 'Email is required' });
+
+        if (type === 'lifetime') {
+            // Revoke lifetime license
+            const { data: license } = await supabase
+                .from(LICENSE_TABLE)
+                .select('email, status')
+                .eq('email', email)
+                .maybeSingle();
+
+            if (!license) return res.status(404).json({ error: 'No lifetime license found for this email' });
+
+            await supabase.from(LICENSE_TABLE)
+                .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+                .eq('email', email);
+
+            console.log(`[Admin] Lifetime license revoked: ${email}`);
+            return res.json({ ok: true, message: `Lifetime license revoked for ${email}` });
+
+        } else {
+            // Cancel monthly membership
+            const { data: member } = await supabase
+                .from(MEMBERSHIP_TABLE)
+                .select('email, status, authnet_subscription_id, discord_user_id')
+                .eq('email', email)
+                .maybeSingle();
+
+            if (!member) return res.status(404).json({ error: 'No membership found for this email' });
+
+            // Cancel Authorize.net subscription if exists
+            if (member.authnet_subscription_id) {
+                try {
+                    await cancelAuthorizeSubscription(member.authnet_subscription_id);
+                    console.log(`[Admin] Authnet subscription cancelled: ${member.authnet_subscription_id}`);
+                } catch (authErr) {
+                    console.error('[Admin] Authnet cancel error:', authErr.message);
+                }
+            }
+
+            // Remove Discord role
+            if (member.discord_user_id) {
+                try {
+                    await removeDiscordRole(member.discord_user_id, DISCORD_MONTHLY_ROLE_ID);
+                    console.log(`[Admin] Discord role removed for ${email}`);
+                } catch (discordErr) {
+                    console.error('[Admin] Discord error:', discordErr.message);
+                }
+            }
+
+            // Update Supabase
+            await supabase.from(MEMBERSHIP_TABLE)
+                .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+                .eq('email', email);
+
+            console.log(`[Admin] Monthly membership cancelled: ${email}`);
+            return res.json({ ok: true, message: `Membership cancelled for ${email}` });
+        }
+
+    } catch (err) {
+        console.error('[Admin Cancel Error]', err.message);
+        res.status(500).json({ error: 'Server error: ' + err.message });
+    }
+});
+
 // -------------------- 404 --------------------
 app.use((req, res) => res.status(404).json({ ok: false, error: 'not_found' }));
 
