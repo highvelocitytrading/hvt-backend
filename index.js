@@ -80,6 +80,78 @@ function verifyAuthorizeSignature(rawBody, signatureHeader) {
     }
 }
 
+// -------------------- EMAIL HELPERS --------------------
+async function sendEmail(to, subject, html) {
+    const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${RESEND_API_KEY}`
+        },
+        body: JSON.stringify({ from: FROM_EMAIL, to, subject, html })
+    });
+    const data = await response.json();
+    console.log('[Resend Response]', JSON.stringify(data));
+    if (!response.ok) throw new Error(`Resend failed: ${JSON.stringify(data)}`);
+    return data;
+}
+
+function emailTemplate(content) {
+    return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#060e1f;font-family:Arial,sans-serif;">
+<div style="max-width:560px;margin:40px auto;padding:20px;">
+    <div style="text-align:center;margin-bottom:32px;">
+        <div style="display:inline-block;border-bottom:1px solid #1e3a6e;border-top:1px solid #1e3a6e;padding:12px 32px;">
+            <span style="font-size:18px;font-weight:700;color:#fff;letter-spacing:3px;text-transform:uppercase;">HIGH VELOCITY TRADING</span><br>
+            <span style="font-size:10px;color:#3a6ea8;letter-spacing:4px;text-transform:uppercase;">Member Services</span>
+        </div>
+    </div>
+    <div style="background:linear-gradient(145deg,#0d1f42,#091526);border:1px solid #1a3060;border-radius:16px;overflow:hidden;">
+        <div style="height:3px;background:linear-gradient(90deg,#1a3a8e,#4a9eff,#1a3a8e);"></div>
+        <div style="padding:36px 32px;">
+            ${content}
+        </div>
+    </div>
+    <div style="text-align:center;margin-top:24px;color:#1e3a5e;font-size:11px;letter-spacing:0.3px;line-height:1.8;">
+        © 2026 High Velocity Trading. All rights reserved.<br>
+        <a href="https://highvelocitytrading.com" style="color:#2d4a6e;text-decoration:none;">highvelocitytrading.com</a>
+    </div>
+</div>
+</body></html>`;
+}
+
+async function sendMagicLinkEmail(email, token, type) {
+    const url = `${APP_URL}/${type}/confirm?token=${token}`;
+    const isBilling = type === 'billing';
+
+    const subject = isBilling ? 'Access Your HVT Billing Portal' : 'Cancel Your HVT Membership';
+    const title = isBilling ? 'Billing Portal Access' : 'Membership Cancellation';
+    const btnText = isBilling ? 'VIEW MY BILLING' : 'CONFIRM CANCELLATION';
+    const btnColor = isBilling ? 'linear-gradient(135deg,#1a3a8e,#2a5aae)' : 'linear-gradient(135deg,#b91c1c,#dc2626)';
+    const btnShadow = isBilling ? 'rgba(42,90,174,0.4)' : 'rgba(220,38,38,0.35)';
+    const desc = isBilling
+        ? 'Click the button below to securely access your billing dashboard. This link expires in <strong style="color:#90b8e8;">1 hour</strong>.'
+        : 'We received a request to cancel your <strong style="color:#90b8e8;">HVT Monthly Membership</strong>. Click below to confirm. This link expires in <strong style="color:#90b8e8;">1 hour</strong>.';
+
+    const content = `
+        <div style="text-align:center;margin-bottom:24px;">
+            <span style="font-size:20px;font-weight:700;color:#fff;letter-spacing:1px;">${title}</span>
+        </div>
+        <p style="color:#6b8db8;font-size:14px;line-height:1.7;text-align:center;margin-bottom:32px;">${desc}</p>
+        <div style="height:1px;background:linear-gradient(90deg,transparent,#1e3a6e,transparent);margin-bottom:32px;"></div>
+        <div style="text-align:center;margin-bottom:24px;">
+            <a href="${url}" style="display:inline-block;background:${btnColor};color:#fff;text-decoration:none;padding:16px 48px;border-radius:8px;font-size:14px;font-weight:700;letter-spacing:2px;box-shadow:0 4px 24px ${btnShadow};">${btnText}</a>
+        </div>
+        <p style="text-align:center;color:#2d4a6e;font-size:12px;margin-bottom:20px;">Secure link · Expires in 1 hour</p>
+        <div style="background:rgba(74,158,255,0.04);border:1px solid rgba(74,158,255,0.12);border-radius:10px;padding:14px 18px;">
+            <p style="color:#4a6a8a;font-size:13px;line-height:1.6;margin:0;">🔒 If you did not request this, ignore this email. No changes will be made to your account.</p>
+        </div>
+    `;
+
+    await sendEmail(email, subject, emailTemplate(content));
+}
+
 // -------------------- CANCEL HELPERS --------------------
 async function cancelAuthorizeSubscription(subscriptionId) {
     const payload = {
@@ -106,49 +178,12 @@ async function cancelAuthorizeSubscription(subscriptionId) {
         const msg = data?.messages?.message?.[0]?.text || 'Unknown error';
         throw new Error(`Authnet cancel failed: ${msg}`);
     }
-
-    return data;
-}
-
-async function sendMagicLinkEmail(email, token) {
-    const cancelUrl = `${APP_URL}/cancel/confirm?token=${token}`;
-
-    const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${RESEND_API_KEY}`
-        },
-        body: JSON.stringify({
-            from: FROM_EMAIL,
-            to: email,
-            subject: 'Cancel Your HVT Membership',
-            html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h2 style="color: #333;">Cancel Your HVT Membership</h2>
-                    <p>We received a request to cancel your High Velocity Trading membership.</p>
-                    <p>Click the button below to confirm your cancellation. This link expires in <strong>1 hour</strong>.</p>
-                    <a href="${cancelUrl}" style="display: inline-block; background-color: #e53e3e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;">
-                        Confirm Cancellation
-                    </a>
-                    <p style="color: #666; font-size: 14px;">If you did not request this, please ignore this email. Your membership will remain active.</p>
-                    <p style="color: #666; font-size: 14px;">Or copy this link: ${cancelUrl}</p>
-                </div>
-            `
-        })
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-        throw new Error(`Resend failed: ${JSON.stringify(data)}`);
-    }
     return data;
 }
 
 // -------------------- MEMBERSHIP HELPERS --------------------
 function huntMembershipData(rawString) {
     const emailMatch = rawString.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-
     const firstMatch = rawString.match(/\[q3[^\]]*\]=([^\n]+)/) || rawString.match(/"q3[^"]*":"([^"]+)"/);
     const lastMatch = rawString.match(/\[q4[^\]]*\]=([^\n]+)/) || rawString.match(/"q4[^"]*":"([^"]+)"/);
 
@@ -158,9 +193,7 @@ function huntMembershipData(rawString) {
         try {
             const raw = JSON.parse(rawRequestMatch[1]);
             const phoneField = Object.keys(raw).find(k => k.startsWith('q7'));
-            if (phoneField && raw[phoneField]?.full) {
-                phone = raw[phoneField].full.trim();
-            }
+            if (phoneField && raw[phoneField]?.full) phone = raw[phoneField].full.trim();
         } catch (e) {
             console.error('[Membership Phone Parse Error]', e.message);
         }
@@ -206,19 +239,118 @@ async function upsertSaleRow(transaction_id, patch) {
     return data;
 }
 
+// -------------------- PAGE HELPERS --------------------
+function pageShell(title, bodyContent) {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title} – High Velocity Trading</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{
+            font-family:'Inter',sans-serif;
+            background:radial-gradient(ellipse at 50% 0%,#0d2150 0%,#060e1f 55%,#020810 100%);
+            min-height:100vh;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content:center;
+            padding:24px 20px;
+            color:#fff;
+        }
+        .brand{text-align:center;margin-bottom:36px;}
+        .brand h1{font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#fff;}
+        .brand p{font-family:'Rajdhani',sans-serif;font-size:10px;color:#2d5a8e;letter-spacing:5px;text-transform:uppercase;margin-top:4px;}
+        .card{
+            width:100%;max-width:460px;
+            background:linear-gradient(145deg,#0d1f42 0%,#091526 100%);
+            border:1px solid #1a3060;
+            border-radius:20px;
+            overflow:hidden;
+            box-shadow:0 24px 64px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.04);
+        }
+        .card-top{height:3px;background:linear-gradient(90deg,#1a3a8e,#4a9eff,#1a3a8e);}
+        .card-body{padding:36px 32px;}
+        .card-title{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;letter-spacing:1px;color:#fff;margin-bottom:8px;}
+        .card-sub{color:#4a6a8a;font-size:13px;line-height:1.6;margin-bottom:28px;}
+        .divider{height:1px;background:linear-gradient(90deg,transparent,#1a3060,transparent);margin-bottom:28px;}
+        label{display:block;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#3a6a9a;margin-bottom:8px;}
+        input[type=email]{
+            width:100%;padding:13px 16px;
+            background:rgba(255,255,255,0.03);
+            border:1px solid #1a3060;
+            border-radius:10px;
+            color:#fff;font-size:15px;
+            outline:none;
+            transition:border-color 0.2s,box-shadow 0.2s;
+            margin-bottom:20px;
+            font-family:'Inter',sans-serif;
+        }
+        input[type=email]:focus{border-color:#2a5aae;box-shadow:0 0 0 3px rgba(42,90,174,0.15);}
+        input[type=email]::placeholder{color:#1e3a5e;}
+        .btn{
+            width:100%;padding:13px;
+            background:linear-gradient(135deg,#1a3a8e,#2a5aae);
+            color:#fff;border:none;border-radius:10px;
+            font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+            cursor:pointer;
+            box-shadow:0 4px 20px rgba(42,90,174,0.3);
+            transition:opacity 0.2s,transform 0.1s;
+        }
+        .btn:hover{opacity:0.9;transform:translateY(-1px);}
+        .btn:active{transform:translateY(0);}
+        .btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+        .msg{margin-top:16px;padding:12px 16px;border-radius:10px;font-size:13px;text-align:center;display:none;line-height:1.5;}
+        .msg.show{display:block;}
+        .msg.success{background:rgba(56,161,105,0.08);color:#68d391;border:1px solid rgba(56,161,105,0.2);}
+        .msg.error{background:rgba(229,62,62,0.08);color:#fc8181;border:1px solid rgba(229,62,62,0.2);}
+        .footer-link{text-align:center;margin-top:20px;font-size:12px;color:#1e3a5e;}
+        .footer-link a{color:#2d5a8e;text-decoration:none;}
+        .footer-link a:hover{color:#4a9eff;}
+    </style>
+</head>
+<body>
+    <div class="brand">
+        <h1>High Velocity Trading</h1>
+        <p>Member Portal</p>
+    </div>
+    ${bodyContent}
+    <div class="footer-link" style="margin-top:20px;">
+        <a href="https://highvelocitytrading.com">← highvelocitytrading.com</a>
+    </div>
+</body>
+</html>`;
+}
+
+function resultPage(type, title, message) {
+    const t = {
+        success: { icon: '✓', color: '#68d391', bg: 'rgba(56,161,105,0.08)', border: 'rgba(56,161,105,0.2)' },
+        error:   { icon: '✕', color: '#fc8181', bg: 'rgba(229,62,62,0.08)',   border: 'rgba(229,62,62,0.2)' },
+        info:    { icon: 'ℹ', color: '#90cdf4', bg: 'rgba(74,158,255,0.08)',  border: 'rgba(74,158,255,0.2)' }
+    }[type] || { icon: '✕', color: '#fc8181', bg: 'rgba(229,62,62,0.08)', border: 'rgba(229,62,62,0.2)' };
+
+    return pageShell(title, `
+        <div class="card" style="max-width:460px;width:100%;">
+            <div class="card-top"></div>
+            <div class="card-body" style="text-align:center;">
+                <div style="width:56px;height:56px;border-radius:50%;background:${t.bg};border:1px solid ${t.border};display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:22px;color:${t.color};">${t.icon}</div>
+                <div class="card-title" style="margin-bottom:16px;">${title}</div>
+                <div style="background:${t.bg};border:1px solid ${t.border};border-radius:10px;padding:16px;color:${t.color};font-size:14px;line-height:1.6;">${message}</div>
+            </div>
+        </div>
+    `);
+}
+
 // ==================== ROUTES ====================
 
-// -------------------- HEALTH --------------------
 app.get('/health', (req, res) => {
-    res.json({
-        ok: true,
-        service: 'hvt-unified-backend',
-        membershipTable: MEMBERSHIP_TABLE,
-        licenseTable: LICENSE_TABLE
-    });
+    res.json({ ok: true, service: 'hvt-unified-backend', membershipTable: MEMBERSHIP_TABLE, licenseTable: LICENSE_TABLE });
 });
 
-// ==================== MEMBERSHIP ROUTES ====================
+// ==================== MEMBERSHIP WEBHOOKS ====================
 
 app.post('/webhooks/membership-jotform', (req, res) => {
     const bb = Busboy({ headers: req.headers });
@@ -251,18 +383,10 @@ app.post('/webhooks/membership-jotform', (req, res) => {
                 updated_at: new Date().toISOString()
             };
 
-            console.log('[Membership Upserting]', payload);
+            const { error } = await supabase.from(MEMBERSHIP_TABLE).upsert(payload, { onConflict: 'email' });
+            if (error) { console.error('[Membership Supabase Error]', error); throw error; }
 
-            const { error } = await supabase
-                .from(MEMBERSHIP_TABLE)
-                .upsert(payload, { onConflict: 'email' });
-
-            if (error) {
-                console.error('[Membership Supabase Error]', error);
-                throw error;
-            }
-
-            console.log(`✅ Membership Success: ${extracted.full_name} (${extracted.email}) Phone: ${extracted.phone}`);
+            console.log(`✅ Membership Success: ${extracted.full_name} (${extracted.email})`);
             res.status(200).send('OK');
         } catch (err) {
             console.error('[Membership Jotform Error]', err.message);
@@ -285,10 +409,7 @@ app.post('/webhooks/membership-authnet', express.json(), async (req, res) => {
         if (eventType === 'net.authorize.customer.subscription.created' ||
             eventType === 'net.authorize.payment.capture.created') {
 
-            if (!email) {
-                console.error('[Membership Authnet] No email found');
-                return res.status(400).send('No email');
-            }
+            if (!email) return res.status(400).send('No email');
 
             const upsertPayload = {
                 email,
@@ -299,49 +420,28 @@ app.post('/webhooks/membership-authnet', express.json(), async (req, res) => {
                 updated_at: new Date().toISOString()
             };
 
-            if (subscriptionId) {
-                upsertPayload.authnet_subscription_id = subscriptionId;
-            }
+            if (subscriptionId) upsertPayload.authnet_subscription_id = subscriptionId;
 
-            const { error } = await supabase
-                .from(MEMBERSHIP_TABLE)
-                .upsert(upsertPayload, { onConflict: 'email' });
-
-            if (error) {
-                console.error('[Membership Authnet Supabase Error]', error);
-                throw error;
-            }
+            const { error } = await supabase.from(MEMBERSHIP_TABLE).upsert(upsertPayload, { onConflict: 'email' });
+            if (error) throw error;
 
             console.log(`✅ Membership Activated: ${email} | SubID: ${subscriptionId}`);
-        }
-
-        else if (
+        } else if (
             eventType === 'net.authorize.customer.subscription.cancelled' ||
             eventType === 'net.authorize.customer.subscription.expired' ||
             eventType === 'net.authorize.customer.subscription.suspended' ||
             eventType === 'net.authorize.customer.subscription.terminated' ||
             eventType === 'net.authorize.customer.subscription.failed'
         ) {
-            let updateQuery;
-            if (subscriptionId) {
-                updateQuery = supabase
-                    .from(MEMBERSHIP_TABLE)
-                    .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-                    .eq('authnet_subscription_id', subscriptionId);
-            } else if (email) {
-                updateQuery = supabase
-                    .from(MEMBERSHIP_TABLE)
-                    .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-                    .eq('email', email);
-            }
+            const updateData = { status: 'cancelled', updated_at: new Date().toISOString() };
+            const query = subscriptionId
+                ? supabase.from(MEMBERSHIP_TABLE).update(updateData).eq('authnet_subscription_id', subscriptionId)
+                : email ? supabase.from(MEMBERSHIP_TABLE).update(updateData).eq('email', email) : null;
 
-            if (updateQuery) {
-                const { error } = await updateQuery;
-                if (error) {
-                    console.error('[Membership Authnet Cancel Error]', error);
-                    throw error;
-                }
-                console.log(`🚫 Membership Cancelled: ${email || subscriptionId} | Event: ${eventType}`);
+            if (query) {
+                const { error } = await query;
+                if (error) throw error;
+                console.log(`🚫 Membership Cancelled: ${email || subscriptionId}`);
             }
         }
 
@@ -363,82 +463,256 @@ app.get('/check-access', async (req, res) => {
         .maybeSingle();
 
     if (error) console.error('[Check-Access Error]', error);
-
     const active = data?.status === 'active' && new Date(data.expires_at) > new Date();
     res.json({ active });
 });
 
-// ==================== CANCEL SYSTEM ====================
+// ==================== BILLING PORTAL ====================
 
-/**
- * STEP 1: Customer submits email to request cancellation
- * GET /cancel — shows the cancel request form
- */
-app.get('/cancel', (req, res) => {
-    res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Cancel Membership - High Velocity Trading</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <style>
-                * { box-sizing: border-box; margin: 0; padding: 0; }
-                body { font-family: Arial, sans-serif; background: #0f0f0f; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-                .card { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 40px; max-width: 440px; width: 90%; }
-                h1 { font-size: 22px; margin-bottom: 8px; }
-                p { color: #aaa; font-size: 14px; margin-bottom: 24px; }
-                input { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; font-size: 16px; margin-bottom: 16px; }
-                button { width: 100%; padding: 12px; background: #e53e3e; color: #fff; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
-                button:hover { background: #c53030; }
-                .msg { margin-top: 16px; padding: 12px; border-radius: 6px; font-size: 14px; text-align: center; }
-                .success { background: #1a3a1a; color: #68d391; border: 1px solid #2f6b2f; }
-                .error { background: #3a1a1a; color: #fc8181; border: 1px solid #6b2f2f; }
-            </style>
-        </head>
-        <body>
-            <div class="card">
-                <h1>Cancel Membership</h1>
-                <p>Enter your email address and we'll send you a secure link to cancel your membership.</p>
+// GET /billing — email entry page
+app.get('/billing', (req, res) => {
+    res.send(pageShell('Billing Portal', `
+        <div class="card">
+            <div class="card-top"></div>
+            <div class="card-body">
+                <div class="card-title">Billing Portal</div>
+                <div class="card-sub">Enter your email address and we'll send you a secure link to access your billing dashboard.</div>
+                <div class="divider"></div>
+                <label for="email">Email Address</label>
                 <input type="email" id="email" placeholder="your@email.com" />
-                <button onclick="requestCancel()">Send Cancellation Link</button>
-                <div id="msg"></div>
+                <button class="btn" id="btn" onclick="submit()">Send Access Link</button>
+                <div class="msg" id="msg"></div>
             </div>
-            <script>
-                async function requestCancel() {
-                    const email = document.getElementById('email').value.trim();
-                    const msg = document.getElementById('msg');
-                    if (!email) { msg.className = 'msg error'; msg.textContent = 'Please enter your email.'; return; }
-                    msg.className = 'msg'; msg.textContent = 'Sending...';
-                    const res = await fetch('/cancel/request', {
+        </div>
+        <script>
+            async function submit() {
+                const email = document.getElementById('email').value.trim();
+                const msg = document.getElementById('msg');
+                const btn = document.getElementById('btn');
+                msg.className = 'msg'; msg.textContent = '';
+                if (!email) { msg.className='msg error show'; msg.textContent='Please enter your email.'; return; }
+                btn.disabled = true; btn.textContent = 'Sending...';
+                try {
+                    const res = await fetch('/billing/request', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {'Content-Type':'application/json'},
                         body: JSON.stringify({ email })
                     });
                     const data = await res.json();
                     if (res.ok) {
-                        msg.className = 'msg success';
-                        msg.textContent = 'Check your email for a cancellation link!';
+                        msg.className = 'msg success show';
+                        msg.textContent = '✓ Check your email! A secure access link has been sent.';
+                        btn.textContent = 'Email Sent';
                     } else {
-                        msg.className = 'msg error';
-                        msg.textContent = data.error || 'Something went wrong. Please try again.';
+                        msg.className = 'msg error show';
+                        msg.textContent = data.error || 'Something went wrong.';
+                        btn.disabled = false; btn.textContent = 'Send Access Link';
                     }
+                } catch(e) {
+                    msg.className = 'msg error show';
+                    msg.textContent = 'Network error. Please try again.';
+                    btn.disabled = false; btn.textContent = 'Send Access Link';
                 }
-            </script>
-        </body>
-        </html>
-    `);
+            }
+            document.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('email').addEventListener('keypress', e => { if (e.key==='Enter') submit(); });
+            });
+        </script>
+    `));
 });
 
-/**
- * STEP 2: Server receives email, generates token, sends magic link
- * POST /cancel/request
- */
+// POST /billing/request — send magic link
+app.post('/billing/request', express.json(), async (req, res) => {
+    try {
+        const email = (req.body.email || '').toLowerCase().trim();
+        if (!email) return res.status(400).json({ error: 'Email is required' });
+
+        const { data, error } = await supabase
+            .from(MEMBERSHIP_TABLE)
+            .select('email, status')
+            .eq('email', email)
+            .maybeSingle();
+
+        if (error) throw error;
+        if (!data) return res.status(404).json({ error: 'No membership found for this email' });
+
+        const token = crypto.randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+        const { error: updateError } = await supabase
+            .from(MEMBERSHIP_TABLE)
+            .update({ billing_token: token, billing_token_expires: expires, updated_at: new Date().toISOString() })
+            .eq('email', email);
+
+        if (updateError) throw updateError;
+
+        await sendMagicLinkEmail(email, token, 'billing');
+
+        console.log(`[Billing] Magic link sent to ${email}`);
+        res.json({ ok: true });
+    } catch (err) {
+        console.error('[Billing Request Error]', err.message);
+        res.status(500).json({ error: 'Server error. Please try again.' });
+    }
+});
+
+// GET /billing/confirm?token=xxx — show dashboard
+app.get('/billing/confirm', async (req, res) => {
+    const token = req.query.token;
+    if (!token) return res.send(resultPage('error', 'Invalid Link', 'This billing link is invalid.'));
+
+    try {
+        const { data, error } = await supabase
+            .from(MEMBERSHIP_TABLE)
+            .select('email, full_name, status, plan_name, expires_at, billing_token_expires')
+            .eq('billing_token', token)
+            .maybeSingle();
+
+        if (error) throw error;
+        if (!data) return res.send(resultPage('error', 'Invalid Link', 'This link is invalid or has already been used.'));
+        if (new Date(data.billing_token_expires) < new Date()) {
+            return res.send(resultPage('error', 'Link Expired', 'This link has expired. <a href="/billing" style="color:#fc8181;">Request a new one</a>.'));
+        }
+
+        const name = data.full_name || 'Member';
+        const status = data.status || 'unknown';
+        const expiresAt = data.expires_at ? new Date(data.expires_at) : null;
+        const email = data.email;
+
+        const statusColor = status === 'active' ? '#68d391' : '#fc8181';
+        const statusBg = status === 'active' ? 'rgba(56,161,105,0.08)' : 'rgba(229,62,62,0.08)';
+        const statusBorder = status === 'active' ? 'rgba(56,161,105,0.2)' : 'rgba(229,62,62,0.2)';
+        const statusLabel = status === 'active' ? '● Active' : status.charAt(0).toUpperCase() + status.slice(1);
+
+        const nextBilling = expiresAt
+            ? expiresAt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+            : 'N/A';
+
+        const daysLeft = expiresAt
+            ? Math.max(0, Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24)))
+            : 0;
+
+        const cancelSection = status === 'active' ? `
+            <div style="margin-top:24px;padding-top:24px;border-top:1px solid #1a3060;">
+                <p style="color:#2d4a6e;font-size:12px;text-align:center;margin-bottom:16px;letter-spacing:0.5px;">Want to cancel your membership?</p>
+                <a href="/cancel" style="display:block;width:100%;padding:12px;background:transparent;border:1px solid rgba(229,62,62,0.3);color:#fc8181;border-radius:10px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-align:center;text-decoration:none;transition:all 0.2s;"
+                   onmouseover="this.style.background='rgba(229,62,62,0.08)'"
+                   onmouseout="this.style.background='transparent'">
+                    Cancel Membership
+                </a>
+            </div>
+        ` : `
+            <div style="margin-top:24px;padding-top:24px;border-top:1px solid #1a3060;text-align:center;">
+                <p style="color:#4a6a8a;font-size:13px;">Your membership is no longer active.</p>
+            </div>
+        `;
+
+        res.send(pageShell('My Billing', `
+            <div class="card" style="max-width:480px;width:100%;">
+                <div class="card-top"></div>
+                <div class="card-body">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+                        <div>
+                            <div style="font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#2d5a8e;margin-bottom:4px;">Welcome back</div>
+                            <div style="font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:#fff;letter-spacing:1px;">${name}</div>
+                        </div>
+                        <div style="background:${statusBg};border:1px solid ${statusBorder};border-radius:20px;padding:6px 14px;font-size:12px;color:${statusColor};font-family:'Rajdhani',sans-serif;letter-spacing:1px;font-weight:600;">
+                            ${statusLabel}
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <div style="font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#2d5a8e;margin-bottom:16px;">Membership Details</div>
+
+                    <div style="background:rgba(255,255,255,0.02);border:1px solid #1a3060;border-radius:12px;overflow:hidden;margin-bottom:16px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #1a3060;">
+                            <span style="color:#4a6a8a;font-size:13px;">Plan</span>
+                            <span style="color:#90b8e8;font-size:13px;font-weight:500;">HVT Monthly Membership</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #1a3060;">
+                            <span style="color:#4a6a8a;font-size:13px;">Email</span>
+                            <span style="color:#90b8e8;font-size:13px;font-weight:500;">${email}</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #1a3060;">
+                            <span style="color:#4a6a8a;font-size:13px;">${status === 'active' ? 'Next Billing Date' : 'Expired'}</span>
+                            <span style="color:#90b8e8;font-size:13px;font-weight:500;">${nextBilling}</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;">
+                            <span style="color:#4a6a8a;font-size:13px;">Days Remaining</span>
+                            <span style="color:${daysLeft > 7 ? '#68d391' : '#f6ad55'};font-size:13px;font-weight:600;">${daysLeft} days</span>
+                        </div>
+                    </div>
+
+                    ${cancelSection}
+                </div>
+            </div>
+        `));
+
+    } catch (err) {
+        console.error('[Billing Confirm Error]', err.message);
+        return res.send(resultPage('error', 'Error', 'Something went wrong. Please try again.'));
+    }
+});
+
+// ==================== CANCEL SYSTEM ====================
+
+app.get('/cancel', (req, res) => {
+    res.send(pageShell('Cancel Membership', `
+        <div class="card">
+            <div class="card-top" style="background:linear-gradient(90deg,#7f1d1d,#dc2626,#7f1d1d);"></div>
+            <div class="card-body">
+                <div class="card-title">Cancel Membership</div>
+                <div class="card-sub">Enter your email address and we'll send you a secure one-time link to cancel your membership.</div>
+                <div class="divider"></div>
+                <label for="email">Email Address</label>
+                <input type="email" id="email" placeholder="your@email.com" />
+                <button class="btn" id="btn" style="background:linear-gradient(135deg,#991b1b,#dc2626);box-shadow:0 4px 20px rgba(220,38,38,0.3);" onclick="submit()">Send Cancellation Link</button>
+                <div class="msg" id="msg"></div>
+            </div>
+        </div>
+        <script>
+            async function submit() {
+                const email = document.getElementById('email').value.trim();
+                const msg = document.getElementById('msg');
+                const btn = document.getElementById('btn');
+                msg.className = 'msg'; msg.textContent = '';
+                if (!email) { msg.className='msg error show'; msg.textContent='Please enter your email.'; return; }
+                btn.disabled = true; btn.textContent = 'Sending...';
+                try {
+                    const res = await fetch('/cancel/request', {
+                        method: 'POST',
+                        headers: {'Content-Type':'application/json'},
+                        body: JSON.stringify({ email })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        msg.className = 'msg success show';
+                        msg.textContent = '✓ Check your email! A secure cancellation link has been sent.';
+                        btn.textContent = 'Email Sent';
+                    } else {
+                        msg.className = 'msg error show';
+                        msg.textContent = data.error || 'Something went wrong.';
+                        btn.disabled = false; btn.textContent = 'Send Cancellation Link';
+                    }
+                } catch(e) {
+                    msg.className = 'msg error show';
+                    msg.textContent = 'Network error. Please try again.';
+                    btn.disabled = false; btn.textContent = 'Send Cancellation Link';
+                }
+            }
+            document.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('email').addEventListener('keypress', e => { if (e.key==='Enter') submit(); });
+            });
+        </script>
+    `));
+});
+
 app.post('/cancel/request', express.json(), async (req, res) => {
     try {
         const email = (req.body.email || '').toLowerCase().trim();
         if (!email) return res.status(400).json({ error: 'Email is required' });
 
-        // Look up membership
         const { data, error } = await supabase
             .from(MEMBERSHIP_TABLE)
             .select('email, full_name, status, authnet_subscription_id')
@@ -446,55 +720,34 @@ app.post('/cancel/request', express.json(), async (req, res) => {
             .maybeSingle();
 
         if (error) throw error;
+        if (!data) return res.status(404).json({ error: 'No membership found for this email' });
+        if (data.status === 'cancelled') return res.status(400).json({ error: 'This membership is already cancelled' });
 
-        if (!data) {
-            return res.status(404).json({ error: 'No membership found for this email' });
-        }
-
-        if (data.status === 'cancelled') {
-            return res.status(400).json({ error: 'This membership is already cancelled' });
-        }
-
-        // Generate secure token
         const token = crypto.randomBytes(32).toString('hex');
-        const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+        const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
-        // Store token in Supabase
         const { error: updateError } = await supabase
             .from(MEMBERSHIP_TABLE)
-            .update({
-                cancel_token: token,
-                cancel_token_expires: expires,
-                updated_at: new Date().toISOString()
-            })
+            .update({ cancel_token: token, cancel_token_expires: expires, updated_at: new Date().toISOString() })
             .eq('email', email);
 
         if (updateError) throw updateError;
 
-        // Send magic link email
-        await sendMagicLinkEmail(email, token);
+        await sendMagicLinkEmail(email, token, 'cancel');
 
         console.log(`[Cancel Request] Magic link sent to ${email}`);
-        res.json({ ok: true, message: 'Cancellation link sent' });
+        res.json({ ok: true });
     } catch (err) {
         console.error('[Cancel Request Error]', err.message);
         res.status(500).json({ error: 'Server error. Please try again.' });
     }
 });
 
-/**
- * STEP 3: Customer clicks magic link, server confirms and cancels
- * GET /cancel/confirm?token=xxx
- */
 app.get('/cancel/confirm', async (req, res) => {
     const token = req.query.token;
-
-    if (!token) {
-        return res.send(cancelPage('error', 'Invalid cancellation link.'));
-    }
+    if (!token) return res.send(resultPage('error', 'Invalid Link', 'This cancellation link is invalid.'));
 
     try {
-        // Look up token
         const { data, error } = await supabase
             .from(MEMBERSHIP_TABLE)
             .select('email, full_name, status, authnet_subscription_id, cancel_token_expires')
@@ -502,154 +755,90 @@ app.get('/cancel/confirm', async (req, res) => {
             .maybeSingle();
 
         if (error) throw error;
-
-        if (!data) {
-            return res.send(cancelPage('error', 'Invalid or expired cancellation link.'));
-        }
-
-        // Check expiry
+        if (!data) return res.send(resultPage('error', 'Invalid Link', 'This link is invalid or has already been used.'));
         if (new Date(data.cancel_token_expires) < new Date()) {
-            return res.send(cancelPage('error', 'This cancellation link has expired. Please request a new one.'));
+            return res.send(resultPage('error', 'Link Expired', 'This link has expired. <a href="/cancel" style="color:#fc8181;">Request a new one</a>.'));
         }
-
         if (data.status === 'cancelled') {
-            return res.send(cancelPage('already', 'Your membership is already cancelled.'));
+            return res.send(resultPage('info', 'Already Cancelled', 'Your membership is already cancelled.'));
         }
 
-        // Cancel in Authorize.net if we have subscription ID
         if (data.authnet_subscription_id) {
             try {
                 await cancelAuthorizeSubscription(data.authnet_subscription_id);
                 console.log(`[Cancel] Authnet subscription ${data.authnet_subscription_id} cancelled`);
             } catch (authErr) {
                 console.error('[Cancel] Authnet error:', authErr.message);
-                // Continue anyway — still update Supabase
             }
         } else {
-            console.warn(`[Cancel] No subscription ID for ${data.email} — skipping Authnet call`);
+            console.warn(`[Cancel] No subscription ID for ${data.email}`);
         }
 
-        // Update Supabase
         const { error: updateError } = await supabase
             .from(MEMBERSHIP_TABLE)
-            .update({
-                status: 'cancelled',
-                cancel_token: null,
-                cancel_token_expires: null,
-                updated_at: new Date().toISOString()
-            })
+            .update({ status: 'cancelled', cancel_token: null, cancel_token_expires: null, updated_at: new Date().toISOString() })
             .eq('cancel_token', token);
 
         if (updateError) throw updateError;
 
         console.log(`🚫 Membership cancelled: ${data.email}`);
-        return res.send(cancelPage('success', `Your membership has been cancelled successfully. You will retain access until your current billing period ends.`));
+        return res.send(resultPage('success', 'Membership Cancelled', 'Your membership has been successfully cancelled.<br><br>You will retain access until the end of your current billing period.'));
 
     } catch (err) {
         console.error('[Cancel Confirm Error]', err.message);
-        return res.send(cancelPage('error', 'Something went wrong. Please contact support.'));
+        return res.send(resultPage('error', 'Error', 'Something went wrong. Please contact support.'));
     }
 });
 
-function cancelPage(type, message) {
-    const colors = {
-        success: { bg: '#1a3a1a', text: '#68d391', border: '#2f6b2f', title: '✅ Cancelled' },
-        error: { bg: '#3a1a1a', text: '#fc8181', border: '#6b2f2f', title: '❌ Error' },
-        already: { bg: '#1a1a3a', text: '#90cdf4', border: '#2f4f6b', title: 'ℹ️ Already Cancelled' }
-    };
-    const c = colors[type] || colors.error;
-    return `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Membership Cancellation - High Velocity Trading</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <style>
-                * { box-sizing: border-box; margin: 0; padding: 0; }
-                body { font-family: Arial, sans-serif; background: #0f0f0f; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-                .card { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 40px; max-width: 440px; width: 90%; text-align: center; }
-                h1 { font-size: 22px; margin-bottom: 16px; }
-                .msg { padding: 16px; border-radius: 8px; background: ${c.bg}; color: ${c.text}; border: 1px solid ${c.border}; font-size: 15px; line-height: 1.5; }
-                a { display: inline-block; margin-top: 24px; color: #aaa; font-size: 14px; }
-            </style>
-        </head>
-        <body>
-            <div class="card">
-                <h1>${c.title}</h1>
-                <div class="msg">${message}</div>
-                <a href="https://highvelocitytrading.com">← Return to High Velocity Trading</a>
-            </div>
-        </body>
-        </html>
-    `;
-}
-
 // ==================== LIFETIME LICENSE ROUTES ====================
 
-app.post(
-    '/webhooks/authorize-net',
-    express.raw({ type: '*/*', limit: '2mb' }),
-    async (req, res) => {
-        try {
-            const rawBody = req.body ? req.body.toString('utf8') : '';
-            const sigHeader = req.headers['x-anet-signature'];
+app.post('/webhooks/authorize-net', express.raw({ type: '*/*', limit: '2mb' }), async (req, res) => {
+    try {
+        const rawBody = req.body ? req.body.toString('utf8') : '';
+        const sigHeader = req.headers['x-anet-signature'];
 
-            const sigCheck = verifyAuthorizeSignature(rawBody, sigHeader);
-            if (!sigCheck.ok) {
-                return res.status(401).json({ ok: false, error: 'invalid_signature', reason: sigCheck.reason });
-            }
+        const sigCheck = verifyAuthorizeSignature(rawBody, sigHeader);
+        if (!sigCheck.ok) return res.status(401).json({ ok: false, error: 'invalid_signature', reason: sigCheck.reason });
 
-            let body = {};
-            try {
-                body = rawBody ? JSON.parse(rawBody) : {};
-            } catch {
-                body = {};
-            }
+        let body = {};
+        try { body = rawBody ? JSON.parse(rawBody) : {}; } catch { body = {}; }
 
-            const transaction_id = pickFirst(body?.payload?.id);
-            const eventType = pickFirst(body?.eventType) || 'authorize_net';
+        const transaction_id = pickFirst(body?.payload?.id);
+        const eventType = pickFirst(body?.eventType) || 'authorize_net';
 
-            if (!transaction_id) {
-                return res.status(400).json({ ok: false, error: 'missing_transaction_id_from_authorize' });
-            }
+        if (!transaction_id) return res.status(400).json({ ok: false, error: 'missing_transaction_id_from_authorize' });
 
-            const row = await upsertSaleRow(transaction_id, {
+        const row = await upsertSaleRow(transaction_id, {
+            authorize_received: true,
+            last_source: 'authorize',
+            authorize_event_type: eventType,
+            raw_authorize: rawBody,
+            authorize_body_json: body,
+            status: 'pending_jotform'
+        });
+
+        if (row.email && row.full_name) {
+            const activated = await upsertSaleRow(transaction_id, {
                 authorize_received: true,
                 last_source: 'authorize',
                 authorize_event_type: eventType,
                 raw_authorize: rawBody,
                 authorize_body_json: body,
-                status: 'pending_jotform'
+                status: 'active'
             });
-
-            if (row.email && row.full_name) {
-                const activated = await upsertSaleRow(transaction_id, {
-                    authorize_received: true,
-                    last_source: 'authorize',
-                    authorize_event_type: eventType,
-                    raw_authorize: rawBody,
-                    authorize_body_json: body,
-                    status: 'active'
-                });
-                console.log(`✅ License Authorize activated: ${activated.email} (${transaction_id})`);
-                return res.status(200).json({ ok: true, transaction_id, status: activated.status });
-            }
-
-            console.log(`[License Authorize] Row created: ${transaction_id} | status: ${row.status}`);
-            return res.status(200).json({ ok: true, transaction_id, status: row.status, eventType });
-        } catch (err) {
-            console.error('[License authorize webhook error]', err);
-            return res.status(500).json({ ok: false, error: 'server_error', details: err.message });
+            console.log(`✅ License Authorize activated: ${activated.email} (${transaction_id})`);
+            return res.status(200).json({ ok: true, transaction_id, status: activated.status });
         }
+
+        return res.status(200).json({ ok: true, transaction_id, status: row.status, eventType });
+    } catch (err) {
+        console.error('[License authorize webhook error]', err);
+        return res.status(500).json({ ok: false, error: 'server_error', details: err.message });
     }
-);
+});
 
 app.post('/webhooks/jotform', (req, res) => {
-    const bb = Busboy({
-        headers: req.headers,
-        limits: { fieldSize: 5 * 1024 * 1024 }
-    });
-
+    const bb = Busboy({ headers: req.headers, limits: { fieldSize: 5 * 1024 * 1024 } });
     const fields = {};
     let rawConcat = '';
 
@@ -667,15 +856,9 @@ app.post('/webhooks/jotform', (req, res) => {
     bb.on('finish', async () => {
         try {
             let rawRequest = null;
-            try {
-                rawRequest = fields.rawRequest ? JSON.parse(fields.rawRequest) : null;
-            } catch {
-                rawRequest = null;
-            }
+            try { rawRequest = fields.rawRequest ? JSON.parse(fields.rawRequest) : null; } catch { rawRequest = null; }
 
             const rr = rawRequest || {};
-            console.log('[License RAW REQUEST KEYS]', Object.keys(rr));
-
             const first = pickFirst(rr?.q8_q8_fullname6?.first);
             const last = pickFirst(rr?.q8_q8_fullname6?.last);
             const email = pickFirst(rr?.q11_email);
@@ -684,15 +867,9 @@ app.post('/webhooks/jotform', (req, res) => {
 
             let phone = null;
             const phoneField = Object.keys(rr).find(k => k.startsWith('q12'));
-            if (phoneField && rr[phoneField]?.full) {
-                phone = rr[phoneField].full.trim();
-            }
+            if (phoneField && rr[phoneField]?.full) phone = rr[phoneField].full.trim();
 
-            console.log('[License Extracted]', { email, full_name, phone, transaction_id });
-
-            if (!transaction_id) {
-                return res.status(400).json({ ok: false, error: 'missing_transaction_id_from_jotform' });
-            }
+            if (!transaction_id) return res.status(400).json({ ok: false, error: 'missing_transaction_id_from_jotform' });
 
             const row = await upsertSaleRow(transaction_id, {
                 jotform_received: true,
@@ -716,23 +893,11 @@ app.post('/webhooks/jotform', (req, res) => {
                     jotform_body_json: rr,
                     status: 'active'
                 });
-
-                console.log(`✅ License Jotform activated: ${activated.email} | Phone: ${activated.phone} | Key: ${activated.license_key}`);
-                return res.status(200).json({
-                    ok: true,
-                    transaction_id,
-                    license_key: activated.license_key,
-                    status: activated.status
-                });
+                console.log(`✅ License activated: ${activated.email} | Key: ${activated.license_key}`);
+                return res.status(200).json({ ok: true, transaction_id, license_key: activated.license_key, status: activated.status });
             }
 
-            console.log(`[License Jotform] Row saved: ${transaction_id} | status: ${row.status} | Phone: ${row.phone}`);
-            return res.status(200).json({
-                ok: true,
-                transaction_id,
-                license_key: row.license_key,
-                status: row.status
-            });
+            return res.status(200).json({ ok: true, transaction_id, license_key: row.license_key, status: row.status });
         } catch (err) {
             console.error('[License jotform webhook error]', err);
             return res.status(500).json({ ok: false, error: 'server_error', details: err.message });
