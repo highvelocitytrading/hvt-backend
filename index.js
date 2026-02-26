@@ -598,8 +598,12 @@ app.get('/trading-room', (req, res) => {
                 <input type="email" id="email" placeholder="your@email.com" />
                 <label for="discord">Discord Username</label>
                 <input type="text" id="discord" placeholder="yourUsername" />
-                <div style="background:rgba(74,158,255,0.04);border:1px solid rgba(74,158,255,0.1);border-radius:8px;padding:10px 14px;margin-bottom:20px;">
-                    <p style="color:#4a6a8a;font-size:12px;margin:0;">You must already be a member of the <strong style="color:#90b8e8;">High Velocity Trading</strong> Discord server before activating.</p>
+                <div style="background:rgba(74,158,255,0.07);border:1px solid rgba(74,158,255,0.25);border-radius:10px;padding:16px 18px;margin-bottom:20px;">
+                    <p style="color:#4a6a8a;font-size:12px;margin:0 0 10px;">You must already be a member of the <strong style="color:#90b8e8;">High Velocity Trading</strong> Discord server before activating.</p>
+                    <div style="height:1px;background:rgba(74,158,255,0.15);margin-bottom:10px;"></div>
+                    <p style="color:#c8dcf5;font-size:14px;font-weight:600;margin:0;line-height:1.6;">
+                        📌 <strong style="color:#fff;">Not in the server yet?</strong> Visit <strong style="color:#4a9eff;">highvelocitytrading.com</strong> and click the <strong style="color:#fff;">Join Discord</strong> button in the top right corner of the website. Join first, then come back here to activate.
+                    </p>
                 </div>
                 <button class="btn" id="btn" onclick="activate()">Activate Trading Room Access</button>
                 <div class="msg" id="msg"></div>
