@@ -708,19 +708,6 @@ app.get('/course/confirm', async (req, res) => {
                 <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#2563eb;opacity:0.7;">OPEN <span style="font-size:13px;">&rarr;</span></div>
               </div>
             </a>
-            <a href="/cancel" style="text-decoration:none;display:block;border-radius:16px;border:1px solid rgba(248,113,113,0.15);background:rgba(255,255,255,0.03);backdrop-filter:blur(8px);overflow:hidden;transition:all .2s;" onmouseover="this.style.borderColor='rgba(248,113,113,0.4)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 32px rgba(248,113,113,0.08)'" onmouseout="this.style.borderColor='rgba(248,113,113,0.15)';this.style.transform='none';this.style.boxShadow='none'">
-              <div style="height:2px;background:linear-gradient(90deg,#7f1d1d,#dc2626,#7f1d1d);"></div>
-              <div style="padding:24px;">
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-                  <div style="width:36px;height:36px;border-radius:10px;background:rgba(248,113,113,0.1);display:flex;align-items:center;justify-content:center;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
-                  </div>
-                  <div style="font-size:15px;font-weight:700;color:#fff;">Cancel</div>
-                </div>
-                <p style="color:#64748b;font-size:13px;line-height:1.5;margin-bottom:16px;">Request membership cancellation</p>
-                <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#f87171;opacity:0.7;">OPEN <span style="font-size:13px;">&rarr;</span></div>
-              </div>
-            </a>
           </div>
           <div style="text-align:center;">
             <p style="color:#64748b;font-size:12px;margin-bottom:4px;">Need help?</p>
