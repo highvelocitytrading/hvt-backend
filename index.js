@@ -780,51 +780,100 @@ app.get('/check-access', frm, async (req, res) => {
 
 // ─── TRADING ROOM ─────────────────────────────────────────────────────────────
 app.get('/trading-room', (req, res) => {
-    res.send(shell('Activate Member Access', `
-    <div class="card">
-      <div class="ct"></div>
-      <div class="cb">
-        <div style="text-align:center;margin-bottom:24px;">
-          <div style="display:inline-block;background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.2);border-radius:20px;padding:6px 18px;margin-bottom:16px;">
-            <span style="color:#2563eb;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;">Member Access Activation</span>
-          </div>
-          <div class="ttl" style="margin-bottom:8px;">Activate Your Member Access</div>
-          <div class="sub" style="margin-bottom:0;">Takes less than 2 minutes. Please enter the information exactly.</div>
+    res.send(shell('Activate Your Access', `
+    <div style="max-width:560px;width:100%;margin:0 auto;">
+
+      <!-- Header -->
+      <div style="text-align:center;margin-bottom:32px;">
+        <div style="display:inline-block;background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.25);border-radius:20px;padding:5px 18px;margin-bottom:18px;">
+          <span style="color:#60a5fa;font-size:10px;letter-spacing:3px;text-transform:uppercase;font-weight:700;">Access Activation</span>
         </div>
-        <div class="div"></div>
-        <div class="ntBadge">
-          <div class="ntIcon">${ninjaLogoSVG()}</div>
-          <div style="flex:1;">
-            <div class="ntTitle">NinjaTrader Activation</div>
-            <div class="ntDesc">Enter the email tied to your <strong style="color:#fff;">NinjaTrader account</strong>. <strong style="color:#94a3b8;">You must have a NinjaTrader account created first</strong> before submitting this.</div>
-          </div>
-        </div>
-        <label for="ntemail">NinjaTrader Account Email</label>
-        <input type="email" id="ntemail" placeholder="email used for NinjaTrader" />
-        <div style="background:rgba(37,99,235,0.05);border:1px solid rgba(37,99,235,0.15);border-radius:12px;padding:18px 20px;margin-bottom:24px;">
-          <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;margin-bottom:14px;font-weight:700;">Discord Trading Room</div>
-          <div style="display:flex;gap:12px;margin-bottom:12px;">
-            <div style="width:24px;height:24px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;margin-top:1px;">1</div>
-            <div style="color:#94a3b8;font-size:13px;line-height:1.5;">Go to <strong style="color:#2563eb;">highvelocitytrading.com</strong>, click <strong style="color:#fff;">Join Discord</strong>, and join the server.</div>
-          </div>
-          <div style="display:flex;gap:12px;">
-            <div style="width:24px;height:24px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;margin-top:1px;">2</div>
-            <div style="color:#94a3b8;font-size:13px;line-height:1.5;">Once you have joined, enter your <strong style="color:#fff;">purchase email</strong> and <strong style="color:#fff;">Discord username</strong> below and click Activate.</div>
-          </div>
-        </div>
-        <label for="email">Purchase Email</label>
-        <input type="email" id="email" placeholder="your@email.com" />
-        <label for="discord">Discord Username</label>
-        <input type="text" id="discord" placeholder="e.g. johntrader22" />
-        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:12px 16px;margin-bottom:20px;">
-          <p style="color:#475569;font-size:12px;margin:0;line-height:1.7;">&#128161; <strong style="color:#94a3b8;">Where to find your username:</strong> Open Discord &rarr; click your profile picture at the <strong style="color:#94a3b8;">bottom-left</strong> &rarr; your username is the text below your display name (lowercase, may have numbers). <strong style="color:#94a3b8;">Not your display name &mdash; the actual username.</strong></p>
-        </div>
-        <button class="btn" id="btn" onclick="go()">Activate Member Access</button>
-        <div class="msg" id="msg"></div>
+        <div class="ttl" style="font-size:24px;margin-bottom:8px;">Activate Your Indicators &amp; Discord</div>
+        <div class="sub">This is where your NinjaTrader indicators get turned on and your Discord Trading Room role gets assigned. Takes 2 minutes.</div>
       </div>
+
+      <!-- BEFORE YOU START -->
+      <div style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.2);border-radius:14px;padding:20px 22px;margin-bottom:28px;">
+        <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#fbbf24;font-weight:700;margin-bottom:14px;">&#9888;&#65039; Before You Fill This Out</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:28px;height:28px;border-radius:7px;background:rgba(251,191,36,0.12);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fbbf24;flex-shrink:0;">1</div>
+            <div>
+              <div style="color:#e2e8f0;font-size:13px;font-weight:700;margin-bottom:3px;">You need a NinjaTrader account first</div>
+              <div style="color:#64748b;font-size:12px;line-height:1.6;margin-bottom:8px;">Don't have one? Download NinjaTrader 8 for free — it only takes a few minutes to set up. Use our link below.</div>
+              <a href="https://ninjatraderus.pxf.io/Pz0bWN" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);color:#fbbf24;text-decoration:none;padding:8px 16px;border-radius:8px;font-size:11px;font-weight:700;letter-spacing:1px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                DOWNLOAD NINJATRADER 8 — FREE
+              </a>
+            </div>
+          </div>
+
+          <div style="height:1px;background:rgba(255,255,255,0.05);"></div>
+
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:28px;height:28px;border-radius:7px;background:rgba(251,191,36,0.12);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fbbf24;flex-shrink:0;">2</div>
+            <div>
+              <div style="color:#e2e8f0;font-size:13px;font-weight:700;margin-bottom:3px;">You need to join our Discord server first</div>
+              <div style="color:#64748b;font-size:12px;line-height:1.6;margin-bottom:8px;">Join via the button at the top of our website. Once you're in the server, come back here to activate your Trading Room role.</div>
+              <a href="https://highvelocitytrading.com" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:rgba(88,101,242,0.08);border:1px solid rgba(88,101,242,0.25);color:#a5b4fc;text-decoration:none;padding:8px 16px;border-radius:8px;font-size:11px;font-weight:700;letter-spacing:1px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
+                JOIN HVT DISCORD SERVER
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- FORM CARD -->
+      <div class="card" style="margin-bottom:0;">
+        <div class="ct"></div>
+        <div class="cb">
+          <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#475569;font-weight:700;margin-bottom:20px;">Activation Form — Fill Out Once</div>
+
+          <!-- NT section -->
+          <div style="background:rgba(37,99,235,0.04);border:1px solid rgba(37,99,235,0.12);border-radius:10px;padding:14px 16px;margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+              <div style="width:28px;height:28px;border-radius:7px;background:rgba(37,99,235,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">${ninjaLogoSVG()}</div>
+              <div>
+                <div style="color:#fff;font-size:13px;font-weight:700;">NinjaTrader Indicator Activation</div>
+                <div style="color:#475569;font-size:11px;">Enter the email tied to your NinjaTrader account</div>
+              </div>
+            </div>
+          </div>
+          <label for="ntemail">NinjaTrader Account Email</label>
+          <input type="email" id="ntemail" placeholder="email used on NinjaTrader" />
+
+          <!-- Discord section -->
+          <div style="background:rgba(88,101,242,0.04);border:1px solid rgba(88,101,242,0.12);border-radius:10px;padding:14px 16px;margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+              <div style="width:28px;height:28px;border-radius:7px;background:rgba(88,101,242,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#a5b4fc"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+              </div>
+              <div>
+                <div style="color:#fff;font-size:13px;font-weight:700;">Discord Trading Room Role</div>
+                <div style="color:#475569;font-size:11px;">Must have joined the server already</div>
+              </div>
+            </div>
+          </div>
+          <label for="email">Purchase Email</label>
+          <input type="email" id="email" placeholder="email you used to purchase" />
+          <label for="discord">Discord Username</label>
+          <input type="text" id="discord" placeholder="e.g. johntrader22" />
+
+          <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:12px 16px;margin-bottom:20px;">
+            <p style="color:#475569;font-size:12px;margin:0;line-height:1.7;">&#128161; <strong style="color:#64748b;">Finding your Discord username:</strong> Open Discord &rarr; click your profile picture at the <strong style="color:#94a3b8;">bottom-left</strong> &rarr; your username is shown below your display name (lowercase, may include numbers). <strong style="color:#94a3b8;">Use the username, not your display name.</strong></p>
+          </div>
+
+          <button class="btn" id="btn" onclick="go()">Activate My Access</button>
+          <div class="msg" id="msg"></div>
+        </div>
+      </div>
+
     </div>
     <script>
-      async function go(){const email=document.getElementById('email').value.trim();const disc=document.getElementById('discord').value.trim();const ntEmail=document.getElementById('ntemail').value.trim();const msg=document.getElementById('msg');const btn=document.getElementById('btn');msg.className='msg';if(!ntEmail){msg.className='msg er show';msg.textContent='Please enter your NinjaTrader account email.';return}if(!email){msg.className='msg er show';msg.textContent='Please enter your purchase email.';return}if(!disc){msg.className='msg er show';msg.textContent='Please enter your Discord username.';return}btn.disabled=true;btn.textContent='Activating...';try{const r=await fetch('/trading-room/activate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,discord_username:disc,ninjatrader_email:ntEmail})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\\u2713 Done! Check Discord \\u2014 your role has been assigned. NinjaTrader indicators will activate automatically.';btn.textContent='Access Granted \\u2713'}else{msg.className='msg er show';msg.textContent=d.error||'Something went wrong.';btn.disabled=false;btn.textContent='Activate Member Access'}}catch{msg.className='msg er show';msg.textContent='Network error. Please try again.';btn.disabled=false;btn.textContent='Activate Member Access'}}
+      async function go(){const email=document.getElementById('email').value.trim();const disc=document.getElementById('discord').value.trim();const ntEmail=document.getElementById('ntemail').value.trim();const msg=document.getElementById('msg');const btn=document.getElementById('btn');msg.className='msg';if(!ntEmail){msg.className='msg er show';msg.textContent='Please enter your NinjaTrader account email.';return}if(!email){msg.className='msg er show';msg.textContent='Please enter your purchase email.';return}if(!disc){msg.className='msg er show';msg.textContent='Please enter your Discord username.';return}btn.disabled=true;btn.textContent='Activating...';try{const r=await fetch('/trading-room/activate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,discord_username:disc,ninjatrader_email:ntEmail})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\u2713 Done! Check Discord \u2014 your role has been assigned. Your NinjaTrader indicators are now active.';btn.textContent='Access Granted \u2713'}else{msg.className='msg er show';msg.textContent=d.error||'Something went wrong.';btn.disabled=false;btn.textContent='Activate My Access'}}catch{msg.className='msg er show';msg.textContent='Network error. Please try again.';btn.disabled=false;btn.textContent='Activate My Access'}}
     </script>`));
 });
 
@@ -1024,15 +1073,20 @@ body{background:#080c14;color:#fff;font-family:-apple-system,BlinkMacSystemFont,
         <div class="arrow">Watch Now &rarr;</div>
       </div>
     </a>
-    <a class="pcard" href="/trading-room" style="--c:#2563eb;--c2:#1e3a8a;--cb:rgba(37,99,235,0.08);">
+    <a class="pcard" href="/trading-room" style="--c:#2563eb;--c2:#1e3a8a;--cb:rgba(37,99,235,0.08);position:relative;">
       <div class="bar"></div>
       <div class="inner">
+        <div style="position:absolute;top:16px;right:16px;background:rgba(37,99,235,0.15);border:1px solid rgba(37,99,235,0.35);border-radius:20px;padding:3px 10px;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#60a5fa;">ACTION REQUIRED</div>
         <div class="icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
         </div>
-        <h3>Trading Room</h3>
-        <p>Activate your Discord access and trade live with the HVT team every market day.</p>
-        <div class="arrow">Activate &rarr;</div>
+        <h3>Activate Your Access</h3>
+        <p style="color:#64748b;font-size:13px;line-height:1.6;margin-bottom:10px;">Connect your <strong style="color:#93c5fd;">NinjaTrader indicators</strong> and <strong style="color:#93c5fd;">Discord Trading Room</strong> access here. Do this first — your indicators won't work until activated.</p>
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+          <span style="background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.2);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:600;color:#60a5fa;letter-spacing:0.5px;">NinjaTrader</span>
+          <span style="background:rgba(88,101,242,0.1);border:1px solid rgba(88,101,242,0.2);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:600;color:#a5b4fc;letter-spacing:0.5px;">Discord</span>
+        </div>
+        <div class="arrow">Activate Now &rarr;</div>
       </div>
     </a>
     <a class="pcard" href="/billing/confirm-session" style="--c:#4ade80;--c2:#166534;--cb:rgba(74,222,128,0.08);">
