@@ -173,12 +173,20 @@ async function ntCreateLicense(email, type) {
             })
         });
         const d = await r.json();
-        if (d?.errorText !== '') {
+        console.log(`[NT] License API response for ${email}:`, JSON.stringify(d));
+        // d.result = NT license ID (number), d.errorText = '' on success
+        if (d?.errorText && d.errorText !== '') {
             console.error(`[NT] License creation failed for ${email}:`, JSON.stringify(d));
             return null;
         }
-        console.log(`[NT] ✅ License created for ${email} | type=${type} | id=${d.result}`);
-        return d.result; // NT license ID
+        if (!d?.result) {
+            console.error(`[NT] License creation no result for ${email}:`, JSON.stringify(d));
+            return null;
+        }
+        // The "license key" users enter in NinjaTrader is their EMAIL ADDRESS
+        // d.result is the internal NT license ID used for revocation
+        console.log(`[NT] ✅ License created for ${email} | type=${type} | nt_id=${d.result}`);
+        return d.result; // NT license ID (store in nt_license_id column)
     } catch (e) {
         console.error(`[NT] License creation error for ${email}:`, e.message);
         return null;
@@ -284,33 +292,170 @@ function wrap(content) {
 }
 
 async function sendWelcome(email, fullName, type) {
-    const name     = fullName?.split(' ')[0] || 'Trader';
-    const monthly  = type === 'monthly';
-    const subject  = monthly ? 'Welcome to HVT Monthly Membership!' : 'Welcome to HVT Lifetime Access!';
-    const badge    = monthly ? 'Monthly Membership Activation' : 'Lifetime Access Activation';
-    const accent   = monthly ? '#2563eb' : '#f6ad55';
-    const badgeBg  = monthly ? 'rgba(37,99,235,0.08)'  : 'rgba(246,173,85,0.08)';
-    const badgeBrd = monthly ? 'rgba(37,99,235,0.2)'   : 'rgba(246,173,85,0.2)';
-    const note     = monthly ? `<div style="background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.15);border-radius:10px;padding:14px 18px;margin-bottom:24px;">
-      <p style="color:#f87171;font-size:13px;line-height:1.6;margin:0;">&#9888;&#65039; <strong>Please note:</strong> Your Trading Room and indicator access are tied to your active monthly membership. Access will be removed if payment stops.</p></div>` : '';
-    const html = wrap(`
-      <div style="text-align:center;margin-bottom:8px;">
-        <div style="display:inline-block;background:${badgeBg};border:1px solid ${badgeBrd};border-radius:20px;padding:6px 18px;margin-bottom:20px;">
-          <span style="color:${accent};font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;">${badge}</span>
+    const name    = fullName?.split(' ')[0] || 'Trader';
+    const monthly = type === 'monthly';
+    const subject = monthly
+        ? `Welcome to the Team, ${name} — Your HVT Membership is Active`
+        : `Welcome to the Team, ${name} — Your HVT Lifetime Access is Active`;
+
+    // ── MONTHLY EMAIL ─────────────────────────────────────────────────────────
+    const monthlyHtml = wrap(`
+      <div style="text-align:center;padding-bottom:8px;">
+        <div style="display:inline-block;background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.25);border-radius:20px;padding:5px 18px;margin-bottom:22px;">
+          <span style="color:#60a5fa;font-size:10px;letter-spacing:3px;text-transform:uppercase;font-weight:700;">Monthly Membership — Active</span>
         </div>
-        <h2 style="color:#fff;font-size:22px;font-weight:700;margin:0 0 8px;letter-spacing:1px;">Welcome, ${name}!</h2>
-        <p style="color:#94a3b8;font-size:14px;margin:0;">We're grateful to have you with us.</p>
+        <h1 style="color:#ffffff;font-size:26px;font-weight:800;margin:0 0 10px;letter-spacing:-0.5px;">Welcome to the Team, ${name}.</h1>
+        <p style="color:#64748b;font-size:14px;margin:0;">Thank you for joining High Velocity Trading. We're glad to have you.</p>
       </div>
-      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);margin:28px 0;"></div>
-      <p style="color:#94a3b8;font-size:14px;line-height:1.8;margin-bottom:24px;text-align:center;">Thank you for your purchase. You now have access to everything High Velocity Trading has to offer.</p>
-      ${note}
-      <div style="text-align:center;margin-bottom:28px;">
-        <a href="${APP_URL}/trading-room" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:16px 48px;border-radius:999px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;box-shadow:0 4px 24px rgba(37,99,235,0.4);">ACTIVATE TRADING ROOM</a>
+
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);margin:28px 0;"></div>
+
+      <p style="color:#94a3b8;font-size:14px;line-height:1.9;margin:0 0 28px;">Your monthly membership is now live. You have full access to our proprietary NinjaTrader indicator suite, the member course library, and the option to join our live Trading Room. Everything you need to get started is outlined below — take it one step at a time.</p>
+
+      <div style="text-align:center;margin-bottom:32px;">
+        <a href="${APP_URL}/login" style="display:inline-block;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;text-decoration:none;padding:16px 44px;border-radius:10px;font-size:15px;font-weight:700;letter-spacing:1px;box-shadow:0 4px 20px rgba(37,99,235,0.45);">ACCESS YOUR MEMBER PORTAL &rarr;</a>
+        <p style="color:#334155;font-size:11px;margin-top:10px;">Enter your email on the portal to receive your secure login link.</p>
       </div>
-      <div style="background:rgba(37,99,235,0.04);border:1px solid rgba(37,99,235,0.12);border-radius:10px;padding:16px 20px;text-align:center;">
-        <p style="color:#475569;font-size:13px;margin:0 0 8px;">Need help getting set up?</p>
-        <p style="color:#94a3b8;font-size:15px;font-weight:700;margin:0;">&#128222; 786-461-4235</p>
+
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);margin:0 0 28px;"></div>
+
+      <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#475569;font-weight:700;margin-bottom:18px;">How to Get Set Up</div>
+
+      <div style="border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;margin-bottom:28px;">
+
+        <div style="padding:20px 22px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:#1e3a8a;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#93c5fd;margin-top:1px;">1</div>
+            <div>
+              <div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Log into Your Member Portal</div>
+              <div style="color:#64748b;font-size:13px;line-height:1.7;">Go to your member portal, enter your email, and click the secure link we send you. From there you can access the course library and your account at any time.</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:20px 22px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:#1e3a8a;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#93c5fd;margin-top:1px;">2</div>
+            <div>
+              <div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Set Up NinjaTrader &amp; Activate Your Indicators</div>
+              <div style="color:#64748b;font-size:13px;line-height:1.7;margin-bottom:12px;">If you don't have NinjaTrader 8 yet, download it using our affiliate link below — it's free to get started. Once installed, your indicators are activated by simply entering the email address you used to purchase.</div>
+              <a href="https://ninjatraderus.pxf.io/Pz0bWN" style="display:inline-block;background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.3);color:#60a5fa;text-decoration:none;padding:10px 22px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:1px;">DOWNLOAD NINJATRADER FREE &rarr;</a>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:20px 22px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:#1e3a8a;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#93c5fd;margin-top:1px;">3</div>
+            <div>
+              <div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Join the HVT Discord Server</div>
+              <div style="color:#64748b;font-size:13px;line-height:1.7;margin-bottom:12px;">Our Discord is where the community lives. Join the server using the button at the top of our website, then head to your member portal to activate your Trading Room role — you'll need your Discord username to complete this step.</div>
+              <a href="https://highvelocitytrading.com" style="display:inline-block;background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.3);color:#60a5fa;text-decoration:none;padding:10px 22px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:1px;">JOIN DISCORD &rarr;</a>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:20px 22px;">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:#1e3a8a;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#93c5fd;margin-top:1px;">4</div>
+            <div>
+              <div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Watch the Course &amp; Learn the System</div>
+              <div style="color:#64748b;font-size:13px;line-height:1.7;">Your member portal includes full access to our course library. Start from the beginning — the foundation videos will make everything else click faster.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="background:rgba(248,113,113,0.05);border:1px solid rgba(248,113,113,0.15);border-radius:10px;padding:14px 18px;margin-bottom:28px;">
+        <p style="color:#fca5a5;font-size:12px;line-height:1.7;margin:0;"><strong>Membership Note:</strong> Your Trading Room access and indicator license are tied to your active monthly subscription. Should your payment lapse, access will be paused automatically.</p>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:16px 20px;text-align:center;">
+        <p style="color:#475569;font-size:13px;margin:0 0 4px;">Questions? We're here.</p>
+        <p style="color:#94a3b8;font-size:15px;font-weight:700;margin:0;">&#128222;&nbsp; 786-461-4235</p>
       </div>`);
+
+    // ── LIFETIME EMAIL ────────────────────────────────────────────────────────
+    const lifetimeHtml = wrap(`
+      <div style="text-align:center;padding-bottom:8px;">
+        <div style="display:inline-block;background:rgba(246,173,85,0.1);border:1px solid rgba(246,173,85,0.3);border-radius:20px;padding:5px 18px;margin-bottom:22px;">
+          <span style="color:#f6ad55;font-size:10px;letter-spacing:3px;text-transform:uppercase;font-weight:700;">Lifetime Access — Active</span>
+        </div>
+        <h1 style="color:#ffffff;font-size:26px;font-weight:800;margin:0 0 10px;letter-spacing:-0.5px;">Welcome to the Team, ${name}.</h1>
+        <p style="color:#64748b;font-size:14px;margin:0;">Thank you for investing in yourself. This is just the beginning.</p>
+      </div>
+
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(246,173,85,0.15),transparent);margin:28px 0;"></div>
+
+      <p style="color:#94a3b8;font-size:14px;line-height:1.9;margin:0 0 28px;">Your lifetime membership is active — you now have permanent access to our full NinjaTrader indicator suite and the complete course library. As a lifetime member, you also receive <strong style="color:#f6ad55;">3 months of Trading Room access completely free</strong>. After that, you can continue at our monthly rate if you'd like to stay in the room. Everything you need to get going is below.</p>
+
+      <div style="text-align:center;margin-bottom:32px;">
+        <a href="${APP_URL}/login" style="display:inline-block;background:linear-gradient(135deg,#b45309,#d97706,#f6ad55);color:#0f172a;text-decoration:none;padding:16px 44px;border-radius:10px;font-size:15px;font-weight:800;letter-spacing:1px;box-shadow:0 4px 24px rgba(246,173,85,0.4);">ACCESS YOUR MEMBER PORTAL &rarr;</a>
+        <p style="color:#334155;font-size:11px;margin-top:10px;">Enter your email on the portal to receive your secure login link.</p>
+      </div>
+
+      <div style="background:rgba(246,173,85,0.06);border:1px solid rgba(246,173,85,0.15);border-radius:12px;padding:16px 20px;margin-bottom:28px;text-align:center;">
+        <div style="color:#f6ad55;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">&#127775; Lifetime Benefit</div>
+        <div style="color:#e2e8f0;font-size:14px;line-height:1.7;">Your first <strong style="color:#f6ad55;">3 months of Trading Room access are included free</strong> with your lifetime membership. After 3 months, you can continue at the standard monthly rate — no obligation.</div>
+      </div>
+
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);margin:0 0 28px;"></div>
+
+      <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#475569;font-weight:700;margin-bottom:18px;">How to Get Set Up</div>
+
+      <div style="border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;margin-bottom:28px;">
+
+        <div style="padding:20px 22px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(246,173,85,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#f6ad55;margin-top:1px;">1</div>
+            <div>
+              <div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Log into Your Member Portal</div>
+              <div style="color:#64748b;font-size:13px;line-height:1.7;">Visit your member portal, enter your email, and click the secure link we send you. From there you have lifetime access to the full course library and your account dashboard.</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:20px 22px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(246,173,85,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#f6ad55;margin-top:1px;">2</div>
+            <div>
+              <div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Set Up NinjaTrader &amp; Activate Your Indicators</div>
+              <div style="color:#64748b;font-size:13px;line-height:1.7;margin-bottom:12px;">No NinjaTrader yet? Download it for free using our link below. Once installed, your lifetime indicator license activates automatically — just enter the email address you used at checkout.</div>
+              <a href="https://ninjatraderus.pxf.io/Pz0bWN" style="display:inline-block;background:rgba(246,173,85,0.1);border:1px solid rgba(246,173,85,0.3);color:#f6ad55;text-decoration:none;padding:10px 22px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:1px;">DOWNLOAD NINJATRADER FREE &rarr;</a>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:20px 22px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(246,173,85,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#f6ad55;margin-top:1px;">3</div>
+            <div>
+              <div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Join the HVT Discord &amp; Activate Your Free Trading Room Access</div>
+              <div style="color:#64748b;font-size:13px;line-height:1.7;margin-bottom:12px;">Join the server from the button at the top of our website, then head to your member portal to activate your Trading Room role. You'll need your Discord username — it's found by clicking your profile picture at the bottom left of Discord.</div>
+              <a href="https://highvelocitytrading.com" style="display:inline-block;background:rgba(246,173,85,0.1);border:1px solid rgba(246,173,85,0.3);color:#f6ad55;text-decoration:none;padding:10px 22px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:1px;">JOIN DISCORD &rarr;</a>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:20px 22px;">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(246,173,85,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#f6ad55;margin-top:1px;">4</div>
+            <div>
+              <div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Start the Course</div>
+              <div style="color:#64748b;font-size:13px;line-height:1.7;">Your portal has the complete course library waiting for you. Start from Module 1 — even experienced traders find the foundation material changes how they see the market.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:16px 20px;text-align:center;">
+        <p style="color:#475569;font-size:13px;margin:0 0 4px;">Questions? We're here.</p>
+        <p style="color:#94a3b8;font-size:15px;font-weight:700;margin:0;">&#128222;&nbsp; 786-461-4235</p>
+      </div>`);
+
+    const html = monthly ? monthlyHtml : lifetimeHtml;
     await sendEmail(email, subject, html);
     console.log(`[Email] ${type} welcome → ${email}`);
 }
@@ -1534,6 +1679,145 @@ app.post('/admin/god-add', adm, express.json(), async (req, res) => {
         console.log(`[GodMode] ✅ ${email} | role=${role} | NT=${result.nt_license} | Discord=${result.discord} | Email=${result.email_sent}`);
         res.json(result);
     } catch (e) { console.error('[GodMode]', e.message); res.status(500).json({ error: e.message }); }
+});
+
+
+// ─── EMAIL PREVIEW (admin only) ──────────────────────────────────────────────
+app.get('/admin/email-preview', adm, adminGuard, (req, res) => {
+    const type = req.query.type || 'monthly';
+    const name = 'Alex';
+    const monthly = type === 'monthly';
+
+    const wrapPreview = (content) => `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#000000;font-family:'DM Sans',Arial,sans-serif;">
+<div style="max-width:600px;margin:40px auto;padding:20px;">
+  <div style="text-align:center;margin-bottom:32px;">
+    <div style="display:inline-block;border-top:1px solid rgba(255,255,255,0.1);border-bottom:1px solid rgba(255,255,255,0.1);padding:12px 32px;">
+      <span style="font-size:18px;font-weight:700;color:#fff;letter-spacing:3px;text-transform:uppercase;">HIGH VELOCITY TRADING</span><br>
+      <span style="font-size:10px;color:#64748b;letter-spacing:4px;text-transform:uppercase;">Member Services</span>
+    </div>
+  </div>
+  <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;overflow:hidden;">
+    <div style="height:3px;background:linear-gradient(90deg,#1e3a8a,#2563eb,#1e3a8a);"></div>
+    <div style="padding:36px 32px;">${content}</div>
+  </div>
+  <div style="text-align:center;margin-top:24px;color:#334155;font-size:11px;line-height:1.8;">
+    &copy; 2026 High Velocity Trading. All rights reserved.<br>
+    <a href="https://highvelocitytrading.com" style="color:#64748b;text-decoration:none;">highvelocitytrading.com</a>
+  </div>
+</div></body></html>`;
+
+    // Toggle bar
+    const toggleBar = `<div style="background:#0f172a;border-bottom:1px solid #1e293b;padding:12px 20px;display:flex;gap:12px;align-items:center;position:sticky;top:0;z-index:100;">
+      <span style="color:#64748b;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Preview:</span>
+      <a href="/admin/email-preview?type=monthly" style="padding:6px 16px;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;${monthly ? 'background:#1d4ed8;color:#fff;' : 'background:#1e293b;color:#64748b;'}">Monthly</a>
+      <a href="/admin/email-preview?type=lifetime" style="padding:6px 16px;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;${!monthly ? 'background:#d97706;color:#fff;' : 'background:#1e293b;color:#64748b;'}">Lifetime</a>
+      <span style="color:#334155;font-size:11px;margin-left:auto;">Admin preview only — not a real email</span>
+    </div>`;
+
+    const monthlyContent = `
+      <div style="text-align:center;padding-bottom:8px;">
+        <div style="display:inline-block;background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.25);border-radius:20px;padding:5px 18px;margin-bottom:22px;">
+          <span style="color:#60a5fa;font-size:10px;letter-spacing:3px;text-transform:uppercase;font-weight:700;">Monthly Membership — Active</span>
+        </div>
+        <h1 style="color:#ffffff;font-size:26px;font-weight:800;margin:0 0 10px;letter-spacing:-0.5px;">Welcome to the Team, ${name}.</h1>
+        <p style="color:#64748b;font-size:14px;margin:0;">Thank you for joining High Velocity Trading. We're glad to have you.</p>
+      </div>
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);margin:28px 0;"></div>
+      <p style="color:#94a3b8;font-size:14px;line-height:1.9;margin:0 0 28px;">Your monthly membership is now live. You have full access to our proprietary NinjaTrader indicator suite, the member course library, and the option to join our live Trading Room. Everything you need to get started is outlined below — take it one step at a time.</p>
+      <div style="text-align:center;margin-bottom:32px;">
+        <a href="#" style="display:inline-block;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;text-decoration:none;padding:16px 44px;border-radius:10px;font-size:15px;font-weight:700;letter-spacing:1px;box-shadow:0 4px 20px rgba(37,99,235,0.45);">ACCESS YOUR MEMBER PORTAL &rarr;</a>
+        <p style="color:#334155;font-size:11px;margin-top:10px;">Enter your email on the portal to receive your secure login link.</p>
+      </div>
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);margin:0 0 28px;"></div>
+      <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#475569;font-weight:700;margin-bottom:18px;">How to Get Set Up</div>
+      <div style="border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;margin-bottom:28px;">
+        <div style="padding:20px 22px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:#1e3a8a;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#93c5fd;margin-top:1px;">1</div>
+            <div><div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Log into Your Member Portal</div><div style="color:#64748b;font-size:13px;line-height:1.7;">Go to your member portal, enter your email, and click the secure link we send you. From there you can access the course library and your account at any time.</div></div>
+          </div>
+        </div>
+        <div style="padding:20px 22px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:#1e3a8a;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#93c5fd;margin-top:1px;">2</div>
+            <div><div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Set Up NinjaTrader &amp; Activate Your Indicators</div><div style="color:#64748b;font-size:13px;line-height:1.7;margin-bottom:12px;">If you don't have NinjaTrader 8 yet, download it using our affiliate link below — it's free to get started. Once installed, your indicators are activated by simply entering the email address you used to purchase.</div><a href="https://ninjatraderus.pxf.io/Pz0bWN" style="display:inline-block;background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.3);color:#60a5fa;text-decoration:none;padding:10px 22px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:1px;">DOWNLOAD NINJATRADER FREE &rarr;</a></div>
+          </div>
+        </div>
+        <div style="padding:20px 22px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:#1e3a8a;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#93c5fd;margin-top:1px;">3</div>
+            <div><div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Join the HVT Discord Server</div><div style="color:#64748b;font-size:13px;line-height:1.7;margin-bottom:12px;">Our Discord is where the community lives. Join the server using the button at the top of our website, then head to your member portal to activate your Trading Room role — you'll need your Discord username to complete this step.</div><a href="https://highvelocitytrading.com" style="display:inline-block;background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.3);color:#60a5fa;text-decoration:none;padding:10px 22px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:1px;">JOIN DISCORD &rarr;</a></div>
+          </div>
+        </div>
+        <div style="padding:20px 22px;">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:#1e3a8a;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#93c5fd;margin-top:1px;">4</div>
+            <div><div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Watch the Course &amp; Learn the System</div><div style="color:#64748b;font-size:13px;line-height:1.7;">Your member portal includes full access to our course library. Start from the beginning — the foundation videos will make everything else click faster.</div></div>
+          </div>
+        </div>
+      </div>
+      <div style="background:rgba(248,113,113,0.05);border:1px solid rgba(248,113,113,0.15);border-radius:10px;padding:14px 18px;margin-bottom:28px;">
+        <p style="color:#fca5a5;font-size:12px;line-height:1.7;margin:0;"><strong>Membership Note:</strong> Your Trading Room access and indicator license are tied to your active monthly subscription. Should your payment lapse, access will be paused automatically.</p>
+      </div>
+      <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:16px 20px;text-align:center;">
+        <p style="color:#475569;font-size:13px;margin:0 0 4px;">Questions? We're here.</p>
+        <p style="color:#94a3b8;font-size:15px;font-weight:700;margin:0;">&#128222;&nbsp; 786-461-4235</p>
+      </div>`;
+
+    const lifetimeContent = `
+      <div style="text-align:center;padding-bottom:8px;">
+        <div style="display:inline-block;background:rgba(246,173,85,0.1);border:1px solid rgba(246,173,85,0.3);border-radius:20px;padding:5px 18px;margin-bottom:22px;">
+          <span style="color:#f6ad55;font-size:10px;letter-spacing:3px;text-transform:uppercase;font-weight:700;">Lifetime Access — Active</span>
+        </div>
+        <h1 style="color:#ffffff;font-size:26px;font-weight:800;margin:0 0 10px;letter-spacing:-0.5px;">Welcome to the Team, ${name}.</h1>
+        <p style="color:#64748b;font-size:14px;margin:0;">Thank you for investing in yourself. This is just the beginning.</p>
+      </div>
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(246,173,85,0.15),transparent);margin:28px 0;"></div>
+      <p style="color:#94a3b8;font-size:14px;line-height:1.9;margin:0 0 28px;">Your lifetime membership is active — you now have permanent access to our full NinjaTrader indicator suite and the complete course library. As a lifetime member, you also receive <strong style="color:#f6ad55;">3 months of Trading Room access completely free</strong>. After that, you can continue at our monthly rate if you'd like to stay in the room.</p>
+      <div style="text-align:center;margin-bottom:32px;">
+        <a href="#" style="display:inline-block;background:linear-gradient(135deg,#b45309,#d97706,#f6ad55);color:#0f172a;text-decoration:none;padding:16px 44px;border-radius:10px;font-size:15px;font-weight:800;letter-spacing:1px;box-shadow:0 4px 24px rgba(246,173,85,0.4);">ACCESS YOUR MEMBER PORTAL &rarr;</a>
+        <p style="color:#334155;font-size:11px;margin-top:10px;">Enter your email on the portal to receive your secure login link.</p>
+      </div>
+      <div style="background:rgba(246,173,85,0.06);border:1px solid rgba(246,173,85,0.15);border-radius:12px;padding:16px 20px;margin-bottom:28px;text-align:center;">
+        <div style="color:#f6ad55;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">&#127775; Lifetime Benefit</div>
+        <div style="color:#e2e8f0;font-size:14px;line-height:1.7;">Your first <strong style="color:#f6ad55;">3 months of Trading Room access are included free</strong> with your lifetime membership. After 3 months, you can continue at the standard monthly rate — no obligation.</div>
+      </div>
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);margin:0 0 28px;"></div>
+      <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#475569;font-weight:700;margin-bottom:18px;">How to Get Set Up</div>
+      <div style="border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;margin-bottom:28px;">
+        <div style="padding:20px 22px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(246,173,85,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#f6ad55;margin-top:1px;">1</div>
+            <div><div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Log into Your Member Portal</div><div style="color:#64748b;font-size:13px;line-height:1.7;">Visit your member portal, enter your email, and click the secure link we send you. From there you have lifetime access to the full course library and your account dashboard.</div></div>
+          </div>
+        </div>
+        <div style="padding:20px 22px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(246,173,85,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#f6ad55;margin-top:1px;">2</div>
+            <div><div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Set Up NinjaTrader &amp; Activate Your Indicators</div><div style="color:#64748b;font-size:13px;line-height:1.7;margin-bottom:12px;">No NinjaTrader yet? Download it for free using our link below. Once installed, your lifetime indicator license activates automatically — just enter the email address you used at checkout.</div><a href="https://ninjatraderus.pxf.io/Pz0bWN" style="display:inline-block;background:rgba(246,173,85,0.1);border:1px solid rgba(246,173,85,0.3);color:#f6ad55;text-decoration:none;padding:10px 22px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:1px;">DOWNLOAD NINJATRADER FREE &rarr;</a></div>
+          </div>
+        </div>
+        <div style="padding:20px 22px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(246,173,85,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#f6ad55;margin-top:1px;">3</div>
+            <div><div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Join the HVT Discord &amp; Activate Your Free Trading Room Access</div><div style="color:#64748b;font-size:13px;line-height:1.7;margin-bottom:12px;">Join the server from the button at the top of our website, then head to your member portal to activate your Trading Room role. You'll need your Discord username — found by clicking your profile picture at the bottom left of Discord.</div><a href="https://highvelocitytrading.com" style="display:inline-block;background:rgba(246,173,85,0.1);border:1px rgba(246,173,85,0.3);border-style:solid;color:#f6ad55;text-decoration:none;padding:10px 22px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:1px;">JOIN DISCORD &rarr;</a></div>
+          </div>
+        </div>
+        <div style="padding:20px 22px;">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(246,173,85,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#f6ad55;margin-top:1px;">4</div>
+            <div><div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Start the Course</div><div style="color:#64748b;font-size:13px;line-height:1.7;">Your portal has the complete course library waiting for you. Start from Module 1 — even experienced traders find the foundation material changes how they see the market.</div></div>
+          </div>
+        </div>
+      </div>
+      <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:16px 20px;text-align:center;">
+        <p style="color:#475569;font-size:13px;margin:0 0 4px;">Questions? We're here.</p>
+        <p style="color:#94a3b8;font-size:15px;font-weight:700;margin:0;">&#128222;&nbsp; 786-461-4235</p>
+      </div>`;
+
+    const emailBody = wrapPreview(monthly ? monthlyContent : lifetimeContent);
+    res.send(toggleBar + emailBody);
 });
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
