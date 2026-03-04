@@ -90,7 +90,7 @@ function ntBuildPayload(name, password) {
     const deviceId = 'hvt-backend-railway';
     const appId = 'arena';
     const hmac = crypto.createHmac('sha256', '035a1259-11e7-485a-aeae-9b6016579351');
-    const data = [chl, deviceId, name, scrambled, appId].join('');
+    const data = [chl, deviceId, name, password, appId].join(''); // HMAC uses raw password, not scrambled
     hmac.update(data);
     const sec = hmac.digest('hex');
     return { name, password: scrambled, enc: true, environment: 'live', appId, appVersion: '0.1.0', cid: '1', chl, deviceId, sec };
