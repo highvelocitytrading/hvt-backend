@@ -69,29 +69,74 @@ const DISCORD_TABLE    = 'discord_members';
 
 // ─── NINJATRADER ECOSYSTEM API ────────────────────────────────────────────────
 const NT_PRODUCT_ID = process.env.NT_PRODUCT_ID || '1196';
-let   ntToken       = process.env.NT_ACCESS_TOKEN || null;
+const NT_USERNAME   = process.env.NT_USERNAME   || '';
+const NT_PASSWORD   = process.env.NT_PASSWORD   || '';
+let   ntToken       = null;
+let   ntAuthFails   = 0;
 
-async function ntRenewToken() {
-    if (!ntToken) { console.warn('[NT] No token configured — skipping renewal'); return; }
+async function ntLogin() {
+    if (!NT_USERNAME || !NT_PASSWORD) {
+        console.warn('[NT] No credentials configured (NT_USERNAME / NT_PASSWORD missing)');
+        return false;
+    }
     try {
-        const r = await fetchFn('https://live.tradovateapi.com/v1/auth/renewaccesstoken', {
+        console.log('[NT] Logging in with username/password...');
+        const r = await fetchFn('https://live.tradovateapi.com/v1/auth/accesstokenrequest', {
             method: 'POST',
-            headers: { Authorization: `Bearer ${ntToken}`, 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name:       NT_USERNAME,
+                password:   NT_PASSWORD,
+                appId:      'NinjaTrader 8',
+                appVersion: '1.0',
+                cid:        0,
+                sec:        ''
+            })
         });
         const d = await r.json();
         if (d?.accessToken) {
-            ntToken = d.accessToken;
-            console.log(`[NT] Token renewed ✓ expires ${d.expirationTime}`);
-        } else {
-            console.error('[NT] Renewal failed:', JSON.stringify(d));
+            ntToken    = d.accessToken;
+            ntAuthFails = 0;
+            console.log(`[NT] ✅ Logged in successfully — token expires ${d.expirationTime}`);
+            return true;
         }
-    } catch (e) { console.error('[NT] Renewal error:', e.message); }
+        console.error('[NT] Login failed:', JSON.stringify(d));
+        ntAuthFails++;
+        return false;
+    } catch (e) {
+        console.error('[NT] Login error:', e.message);
+        ntAuthFails++;
+        return false;
+    }
 }
 
-// Auto-renew every 45 minutes
+async function ntRenewToken() {
+    // Try to renew existing token first; fall back to full re-login
+    if (ntToken) {
+        try {
+            const r = await fetchFn('https://live.tradovateapi.com/v1/auth/renewaccesstoken', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${ntToken}`, 'Content-Type': 'application/json' }
+            });
+            const d = await r.json();
+            if (d?.accessToken) {
+                ntToken = d.accessToken;
+                ntAuthFails = 0;
+                console.log(`[NT] Token renewed ✓ expires ${d.expirationTime}`);
+                return;
+            }
+            console.warn('[NT] Renewal returned no token — falling back to full login');
+        } catch (e) {
+            console.warn('[NT] Renewal error — falling back to full login:', e.message);
+        }
+    }
+    // Full re-login (handles expired token, first run, or renewal failure)
+    await ntLogin();
+}
+
+// Auto-login on startup, then re-authenticate every 45 minutes
+setTimeout(ntLogin, 3000);
 setInterval(ntRenewToken, 45 * 60 * 1000);
-// Also renew once at startup after 5 seconds to verify token works
-setTimeout(ntRenewToken, 5000);
 
 async function ntCreateLicense(email, type) {
     if (!ntToken) { console.warn('[NT] No token — skipping license creation'); return null; }
@@ -462,7 +507,7 @@ function ninjaLogoSVG() {
 //  ROUTES
 // ═══════════════════════════════════════════════════════════════════════════════
 
-app.get('/health', rateLimit({ max: 30 }), (req, res) => res.json({ ok: true, ts: nowISO(), nt_token: ntToken ? 'configured' : 'missing' }));
+app.get('/health', rateLimit({ max: 30 }), (req, res) => res.json({ ok: true, ts: nowISO(), nt_token: ntToken ? 'active' : 'not_authenticated', nt_auth_fails: ntAuthFails }));
 
 // ─── MEMBERSHIP JOTFORM ───────────────────────────────────────────────────────
 app.post('/webhooks/membership-jotform', wh, (req, res) => {
@@ -1276,17 +1321,9 @@ function adminGuard(req, res, next) {
 // ─── ADMIN: REFRESH NT TOKEN ──────────────────────────────────────────────────
 app.post('/admin/refresh-nt-token', adm, express.json(), async (req, res) => {
     if (req.body?.key !== ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
-    const newToken = (req.body?.token || '').trim();
-    if (newToken) {
-        ntToken = newToken;
-        console.log('[NT] Token manually updated via admin');
-        // Immediately renew it to verify and get fresh one
-        await ntRenewToken();
-        return res.json({ ok: true, message: 'Token updated and renewed' });
-    }
-    // No token provided — just renew existing
-    await ntRenewToken();
-    res.json({ ok: true, message: 'Token renewed', has_token: !!ntToken });
+    const ok = await ntLogin();
+    if (ok) return res.json({ ok: true, message: '✅ NT re-authenticated successfully' });
+    res.status(500).json({ ok: false, message: '❌ NT login failed — check NT_USERNAME / NT_PASSWORD in Railway env vars' });
 });
 
 app.get('/admin', adm, adminGuard, async (req, res) => {
@@ -1300,7 +1337,7 @@ app.get('/admin', adm, adminGuard, async (req, res) => {
     try { guildMembers = await getGuildAll(); } catch {}
     const allRoles = [DISCORD_MONTHLY_ROLE_ID, DISCORD_LIFETIME_ROLE_ID, ...(DISCORD_ROOM_ROLE_ID ? [DISCORD_ROOM_ROLE_ID] : [])];
     const liveHVT  = guildMembers.filter(m => m.roles?.some(r => allRoles.includes(r)));
-    const ntStatus = ntToken ? '✓ Connected' : '✗ Missing';
+    const ntStatus = ntToken ? '✓ Authenticated' : '✗ Not Authenticated';
     const ntColor  = ntToken ? '#4ade80' : '#f87171';
 
     const badge = (s, gold = false) => {
@@ -1330,7 +1367,7 @@ app.get('/admin', adm, adminGuard, async (req, res) => {
     res.send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>HVT Admin</title><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;padding:32px 24px;color:#fff;}.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.06);}.brand{font-size:20px;font-weight:700;letter-spacing:3px;text-transform:uppercase;}.restricted{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);border-radius:20px;padding:5px 14px;font-size:11px;color:#f87171;letter-spacing:2px;font-weight:700;}.sec{margin-bottom:36px;}.sec-ttl{font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#64748b;margin-bottom:16px;}.panel{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;overflow:hidden;}.pt{height:3px;background:linear-gradient(90deg,#1e3a8a,#2563eb,#1e3a8a);}.pt-red{background:linear-gradient(90deg,#7f1d1d,#dc2626,#7f1d1d);}.pt-gold{background:linear-gradient(90deg,#92610a,#f6ad55,#92610a);}.pt-purple{background:linear-gradient(90deg,#4c1d95,#7c3aed,#4c1d95);}.pt-green{background:linear-gradient(90deg,#14532d,#16a34a,#14532d);}.pt-cyan{background:linear-gradient(90deg,#164e63,#06b6d4,#164e63);}table{width:100%;border-collapse:collapse;}th{padding:12px 14px;text-align:left;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#334155;border-bottom:1px solid rgba(255,255,255,0.06);}.fc{padding:28px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;margin-bottom:20px;}.gc{padding:28px;background:rgba(124,58,237,0.05);border:1px solid rgba(124,58,237,0.15);border-radius:16px;margin-bottom:20px;}.ntc{padding:28px;background:rgba(6,182,212,0.04);border:1px solid rgba(6,182,212,0.15);border-radius:16px;margin-bottom:20px;}.bar{height:3px;margin:-28px -28px 24px;border-radius:16px 16px 0 0;}.bar-red{background:linear-gradient(90deg,#7f1d1d,#dc2626,#7f1d1d);}.bar-purple{background:linear-gradient(90deg,#4c1d95,#7c3aed,#4c1d95);}.bar-cyan{background:linear-gradient(90deg,#164e63,#06b6d4,#164e63);}input[type=email],input[type=text],input[type=password],select,textarea{width:100%;padding:12px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#fff;font-size:14px;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:12px;}input:focus,select:focus,textarea:focus{border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,0.15);}input::placeholder,textarea::placeholder{color:#334155;}.btn-red{padding:12px 32px;background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:999px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 20px rgba(220,38,38,0.3);}.btn-purple{padding:12px 32px;background:linear-gradient(135deg,#4c1d95,#7c3aed);color:#fff;border:none;border-radius:999px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 20px rgba(124,58,237,0.35);}.btn-cyan{padding:12px 32px;background:linear-gradient(135deg,#164e63,#06b6d4);color:#fff;border:none;border-radius:999px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 20px rgba(6,182,212,0.3);}.msg{margin-top:12px;padding:12px 16px;border-radius:10px;font-size:13px;display:none;line-height:1.5;}.msg.show{display:block;}.ok{background:rgba(74,222,128,0.08);color:#4ade80;border:1px solid rgba(74,222,128,0.2);}.er{background:rgba(248,113,113,0.08);color:#f87171;border:1px solid rgba(248,113,113,0.2);}.tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}.tab{padding:8px 18px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:1px solid rgba(255,255,255,0.08);color:#64748b;background:transparent;transition:all .2s;}.tab.active{background:rgba(37,99,235,0.1);border-color:rgba(37,99,235,0.3);color:#2563eb;}.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center;}.overlay.show{display:flex;}.modal{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:32px;max-width:420px;width:90%;text-align:center;backdrop-filter:blur(20px);}.mttl{font-size:20px;font-weight:700;color:#fff;margin-bottom:12px;}.msub{color:#94a3b8;font-size:14px;line-height:1.6;margin-bottom:24px;}.mbtns{display:flex;gap:12px;}.mok{flex:1;padding:12px;background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:999px;font-size:14px;font-weight:700;cursor:pointer;}.mno{flex:1;padding:12px;background:transparent;color:#94a3b8;border:1px solid rgba(255,255,255,0.1);border-radius:999px;font-size:14px;font-weight:700;cursor:pointer;}label{display:block;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}.lred{color:#64748b;}.lpurp{color:#7c3aed;}.lcyan{color:#06b6d4;}</style></head><body>
 <div class="hdr"><div><div class="brand">High Velocity Trading</div><div style="font-size:10px;color:#334155;letter-spacing:4px;text-transform:uppercase;margin-top:3px;">Admin Control Panel</div></div><div style="display:flex;align-items:center;gap:12px;"><span style="font-size:12px;color:${ntColor};font-weight:600;">NT ${ntStatus}</span><div class="restricted">&#9888; RESTRICTED</div></div></div>
 
-<div class="sec"><div class="sec-ttl">&#9670; NinjaTrader API Status</div><div class="ntc"><div class="bar bar-cyan"></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;"><div><div style="font-size:16px;font-weight:700;color:#67e8f9;margin-bottom:4px;">NT Ecosystem API</div><div style="color:#64748b;font-size:13px;">Token auto-renews every 45 min. Paste a fresh token below if needed.</div></div><div style="background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);border-radius:20px;padding:6px 16px;font-size:13px;color:${ntColor};font-weight:700;">${ntStatus}</div></div><label class="lcyan">Paste Fresh Bearer Token (optional — leave blank to just renew)</label><textarea id="ntTokenInput" placeholder="eyJraWQi..." style="height:80px;font-family:monospace;font-size:12px;resize:vertical;"></textarea><button class="btn-cyan" onclick="refreshNT()">&#8635; REFRESH NT TOKEN</button><div class="msg" id="ntMsg"></div></div></div>
+<div class="sec"><div class="sec-ttl">&#9670; NinjaTrader API Status</div><div class="ntc"><div class="bar bar-cyan"></div><div style="margin-bottom:20px;"><div style="font-size:16px;font-weight:700;color:#67e8f9;margin-bottom:4px;">NT Ecosystem API</div><div style="color:#64748b;font-size:13px;">Auto-authenticates every 45 min using stored credentials. Click below to force re-login immediately.</div></div><div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;"><div style="background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);border-radius:20px;padding:6px 16px;font-size:13px;color:${ntColor};font-weight:700;">${ntStatus}</div><div style="color:#334155;font-size:12px;">Auth failures: ${ntAuthFails}</div></div><button class="btn-cyan" onclick="refreshNT()">&#8635; FORCE RE-LOGIN NOW</button><div class="msg" id="ntMsg"></div></div></div>
 
 <div class="sec"><div class="sec-ttl">&#9889; God Mode — Instant Discord Role</div><div class="gc"><div class="bar bar-purple"></div><div style="font-size:16px;font-weight:700;color:#c4b5fd;margin-bottom:6px;">Add Any Discord User Instantly</div><div style="color:#64748b;font-size:13px;margin-bottom:20px;">Bypasses everything. Type a Discord username, pick the role, done. They must already be in the server.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;"><div><label class="lpurp">Discord Username</label><input type="text" id="godUser" placeholder="theirDiscordUsername" style="margin-bottom:0;" /></div><div><label class="lpurp">Role to Assign</label><select id="godRole" style="margin-bottom:0;"><option value="monthly">Monthly Member</option><option value="lifetime">Lifetime Member</option><option value="discord">Discord Room ($37)</option></select></div></div><button class="btn-purple" onclick="godMode()">&#9889; ASSIGN ROLE NOW</button><div class="msg" id="godMsg"></div></div></div>
 <div class="sec"><div class="sec-ttl">Manual Access Removal</div><div class="fc"><div class="bar bar-red"></div><div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:6px;">Cancel / Revoke by Email</div><div style="color:#64748b;font-size:13px;margin-bottom:20px;">Cancels subscription, removes Discord role, revokes NT license, marks account cancelled.</div><label class="lred">Member Email</label><input type="email" id="manualEmail" placeholder="member@email.com" /><label class="lred">Membership Type</label><select id="manualType"><option value="monthly">Monthly Membership</option><option value="lifetime">Lifetime License</option><option value="discord">Discord Room ($37)</option></select><button class="btn-red" onclick="openModal()">&#128293; CANCEL ACCESS</button><div class="msg" id="manualMsg"></div></div></div>
@@ -1341,7 +1378,7 @@ app.get('/admin', adm, adminGuard, async (req, res) => {
 <div id="tab-live" class="panel" style="display:none;"><div class="pt pt-green"></div><div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);"><p style="color:#64748b;font-size:12px;">Members currently in your Discord server with an HVT role. REMOVE ROLE strips all HVT roles instantly.</p></div><div style="overflow-x:auto;"><table><thead><tr><th>Display Name</th><th>Username</th><th>Discord ID</th><th>Action</th></tr></thead><tbody>${liveRows || '<tr><td colspan="4" style="padding:20px;text-align:center;color:#334155;">No members with HVT roles found</td></tr>'}</tbody></table></div></div></div>
 <div class="overlay" id="overlay"><div class="modal"><div style="font-size:32px;margin-bottom:16px;">&#9888;&#65039;</div><div class="mttl">Confirm Action</div><div class="msub" id="modalSub"></div><div class="mbtns"><button class="mno" onclick="closeModal()">BACK</button><button class="mok" onclick="confirm()">CONFIRM</button></div></div></div>
 <script>const KEY='${key}';let pending=null;
-async function refreshNT(){const token=document.getElementById('ntTokenInput').value.trim();const msg=document.getElementById('ntMsg');msg.className='msg';try{const r=await fetch('/admin/refresh-nt-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:KEY,token})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\\u2713 '+d.message;document.getElementById('ntTokenInput').value=''}else{msg.className='msg er show';msg.textContent=d.error||'Error.'}}catch{msg.className='msg er show';msg.textContent='Network error.'}}
+async function refreshNT(){const msg=document.getElementById('ntMsg');msg.className='msg';try{const r=await fetch('/admin/refresh-nt-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:KEY})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent=d.message||'\u2713 Done'}else{msg.className='msg er show';msg.textContent=d.message||'Error.'}}catch{msg.className='msg er show';msg.textContent='Network error.'}}
 function showTab(n,el){['monthly','lifetime','discord37','live'].forEach(t=>document.getElementById('tab-'+t).style.display='none');document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+n).style.display='block';el.classList.add('active')}function openModal(){const email=document.getElementById('manualEmail').value.trim();const type=document.getElementById('manualType').value;if(!email){const m=document.getElementById('manualMsg');m.className='msg er show';m.textContent='Please enter an email.';return}pending={action:'cancel',email,type};document.getElementById('modalSub').innerHTML='Cancel access for:<br><strong style="color:#f87171;">'+email+'</strong><br><br>Discord role and NT license will be removed immediately.';document.getElementById('overlay').classList.add('show')}function closeModal(){document.getElementById('overlay').classList.remove('show');pending=null}async function confirm(){closeModal();if(!pending)return;if(pending.action==='cancel')await doCancel(pending.email,pending.type);if(pending.action==='removeRole')await doRemoveRole(pending.uid,pending.username)}function fireUser(email,type){document.getElementById('manualEmail').value=email;document.getElementById('manualType').value=type;openModal()}async function doCancel(email,type){const msg=document.getElementById('manualMsg');msg.className='msg';try{const r=await fetch('/admin/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,type,key:KEY})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\\u2713 Cancelled: '+email;setTimeout(()=>location.reload(),1800)}else{msg.className='msg er show';msg.textContent=d.error||'Error.'}}catch{msg.className='msg er show';msg.textContent='Network error.'}}function removeRoleById(uid,username){pending={action:'removeRole',uid,username};document.getElementById('modalSub').innerHTML='Strip ALL HVT roles from:<br><strong style="color:#a78bfa;">@'+username+'</strong><br><br>They will lose Discord access immediately.';document.getElementById('overlay').classList.add('show')}async function doRemoveRole(uid,username){const msg=document.getElementById('manualMsg');msg.className='msg';try{const r=await fetch('/admin/remove-role',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({discord_user_id:uid,key:KEY})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\\u2713 Roles removed from @'+username;setTimeout(()=>location.reload(),1800)}else{msg.className='msg er show';msg.textContent=d.error||'Error.'}}catch{msg.className='msg er show';msg.textContent='Network error.'}}async function godMode(){const username=document.getElementById('godUser').value.trim();const role=document.getElementById('godRole').value;const msg=document.getElementById('godMsg');msg.className='msg';if(!username){msg.className='msg er show';msg.textContent='Please enter a Discord username.';return}try{const r=await fetch('/admin/god-add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({discord_username:username,role,key:KEY})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\\u26a1 Role assigned to @'+username+'!'}else{msg.className='msg er show';msg.textContent=d.error||'Error.'}}catch{msg.className='msg er show';msg.textContent='Network error.'}}document.getElementById('overlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal()});</script></body></html>`);
 });
 
