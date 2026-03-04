@@ -74,31 +74,46 @@ const NT_PASSWORD   = process.env.NT_PASSWORD   || '';
 let   ntToken       = null;
 let   ntAuthFails   = 0;
 
+// Exact password scramble from NT Ecosystem source (wr function)
+function ntScramblePassword(name, password) {
+    const n = name.length % password.toString().length;
+    const rotated = password.toString().slice(n) + password.toString().slice(0, n);
+    const reversed = rotated.split('').reverse().join('');
+    return Buffer.from(reversed).toString('base64');
+}
+
+// Exact challenge-response from NT Ecosystem source (Kt function)
+// HMAC secret key extracted from minified JS bundle
+function ntBuildPayload(name, password) {
+    const scrambled = ntScramblePassword(name, password);
+    const chl = `${Date.now() - 1581e9}`;
+    const deviceId = 'hvt-backend-railway';
+    const appId = 'arena';
+    const hmac = crypto.createHmac('sha256', '035a1259-11e7-485a-aeae-9b6016579351');
+    const data = [chl, deviceId, name, scrambled, appId].join('');
+    hmac.update(data);
+    const sec = hmac.digest('hex');
+    return { name, password: scrambled, enc: true, environment: 'live', appId, appVersion: '0.1.0', cid: '1', chl, deviceId, sec };
+}
+
 async function ntLogin() {
     if (!NT_USERNAME || !NT_PASSWORD) {
-        console.warn('[NT] No credentials configured (NT_USERNAME / NT_PASSWORD missing)');
+        console.warn('[NT] NT_USERNAME / NT_PASSWORD not set');
         return false;
     }
     try {
-        console.log('[NT] Logging in with username/password...');
+        console.log('[NT] Logging in...');
+        const payload = ntBuildPayload(NT_USERNAME, NT_PASSWORD);
         const r = await fetchFn('https://live.tradovateapi.com/v1/auth/accesstokenrequest', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name:        NT_USERNAME,
-                password:    NT_PASSWORD,
-                appId:       'arena',
-                appVersion:  '0.1.0',
-                cid:         '1',
-                sec:         '',
-                environment: 'live'
-            })
+            body: JSON.stringify(payload)
         });
         const d = await r.json();
         if (d?.accessToken) {
-            ntToken    = d.accessToken;
+            ntToken = d.accessToken;
             ntAuthFails = 0;
-            console.log(`[NT] ✅ Logged in successfully — token expires ${d.expirationTime}`);
+            console.log(`[NT] ✅ Logged in successfully — expires ${d.expirationTime}`);
             return true;
         }
         console.error('[NT] Login failed:', JSON.stringify(d));
@@ -112,7 +127,6 @@ async function ntLogin() {
 }
 
 async function ntRenewToken() {
-    // Try to renew existing token first; fall back to full re-login
     if (ntToken) {
         try {
             const r = await fetchFn('https://live.tradovateapi.com/v1/auth/renewaccesstoken', {
@@ -123,19 +137,18 @@ async function ntRenewToken() {
             if (d?.accessToken) {
                 ntToken = d.accessToken;
                 ntAuthFails = 0;
-                console.log(`[NT] Token renewed ✓ expires ${d.expirationTime}`);
-                return;
+                console.log(`[NT] ✅ Token renewed — expires ${d.expirationTime}`);
+                return true;
             }
-            console.warn('[NT] Renewal returned no token — falling back to full login');
+            console.warn('[NT] Renewal failed — re-logging in');
         } catch (e) {
-            console.warn('[NT] Renewal error — falling back to full login:', e.message);
+            console.warn('[NT] Renewal error — re-logging in:', e.message);
         }
     }
-    // Full re-login (handles expired token, first run, or renewal failure)
-    await ntLogin();
+    return ntLogin();
 }
 
-// Auto-login on startup, then re-authenticate every 45 minutes
+// Login on startup, renew every 45 min — falls back to full re-login automatically
 setTimeout(ntLogin, 3000);
 setInterval(ntRenewToken, 45 * 60 * 1000);
 
