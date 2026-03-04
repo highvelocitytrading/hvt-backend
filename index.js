@@ -1383,7 +1383,7 @@ app.get('/admin', adm, adminGuard, async (req, res) => {
 
 <div class="sec"><div class="sec-ttl">&#9670; NinjaTrader API Status</div><div class="ntc"><div class="bar bar-cyan"></div><div style="margin-bottom:20px;"><div style="font-size:16px;font-weight:700;color:#67e8f9;margin-bottom:4px;">NT Ecosystem API</div><div style="color:#64748b;font-size:13px;">Auto-authenticates every 45 min using stored credentials. Click below to force re-login immediately.</div></div><div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;"><div style="background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);border-radius:20px;padding:6px 16px;font-size:13px;color:${ntColor};font-weight:700;">${ntStatus}</div><div style="color:#334155;font-size:12px;">Auth failures: ${ntAuthFails}</div></div><button class="btn-cyan" onclick="refreshNT()">&#8635; FORCE RE-LOGIN NOW</button><div class="msg" id="ntMsg"></div></div></div>
 
-<div class="sec"><div class="sec-ttl">&#9889; God Mode — Instant Discord Role</div><div class="gc"><div class="bar bar-purple"></div><div style="font-size:16px;font-weight:700;color:#c4b5fd;margin-bottom:6px;">Add Any Discord User Instantly</div><div style="color:#64748b;font-size:13px;margin-bottom:20px;">Bypasses everything. Type a Discord username, pick the role, done. They must already be in the server.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;"><div><label class="lpurp">Discord Username</label><input type="text" id="godUser" placeholder="theirDiscordUsername" style="margin-bottom:0;" /></div><div><label class="lpurp">Role to Assign</label><select id="godRole" style="margin-bottom:0;"><option value="monthly">Monthly Member</option><option value="lifetime">Lifetime Member</option><option value="discord">Discord Room ($37)</option></select></div></div><button class="btn-purple" onclick="godMode()">&#9889; ASSIGN ROLE NOW</button><div class="msg" id="godMsg"></div></div></div>
+<div class="sec"><div class="sec-ttl">&#9889; God Mode — Grant Full Access</div><div class="gc"><div class="bar bar-purple"></div><div style="font-size:16px;font-weight:700;color:#c4b5fd;margin-bottom:6px;">Grant Access to Anyone Instantly</div><div style="color:#64748b;font-size:13px;margin-bottom:20px;">Enter their email + optional Discord username. Creates Supabase record, assigns NT license, assigns Discord role, and sends them a magic login link — all in one click.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;"><div><label class="lpurp">Email Address *</label><input type="text" id="godEmail" placeholder="their@email.com" style="margin-bottom:0;" /></div><div><label class="lpurp">Access Type</label><select id="godRole" style="margin-bottom:0;"><option value="monthly">Monthly Member</option><option value="lifetime">Lifetime Member</option><option value="discord">Discord Room ($37)</option></select></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;"><div><label class="lpurp">Full Name (optional)</label><input type="text" id="godName" placeholder="John Smith" style="margin-bottom:0;" /></div><div><label class="lpurp">Discord Username (optional)</label><input type="text" id="godUser" placeholder="theirDiscordUsername" style="margin-bottom:0;" /></div></div><div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;"><label style="display:flex;align-items:center;gap:8px;color:#94a3b8;font-size:13px;cursor:pointer;"><input type="checkbox" id="godSendEmail" checked style="width:16px;height:16px;accent-color:#a78bfa;"> Send magic login link email</label><label style="display:flex;align-items:center;gap:8px;color:#94a3b8;font-size:13px;cursor:pointer;"><input type="checkbox" id="godNT" checked style="width:16px;height:16px;accent-color:#a78bfa;"> Create NT license</label><label style="display:flex;align-items:center;gap:8px;color:#94a3b8;font-size:13px;cursor:pointer;"><input type="checkbox" id="godDiscord" style="width:16px;height:16px;accent-color:#a78bfa;"> Assign Discord role</label></div><button class="btn-purple" onclick="godMode()">&#9889; GRANT ACCESS NOW</button><div class="msg" id="godMsg"></div></div></div>
 <div class="sec"><div class="sec-ttl">Manual Access Removal</div><div class="fc"><div class="bar bar-red"></div><div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:6px;">Cancel / Revoke by Email</div><div style="color:#64748b;font-size:13px;margin-bottom:20px;">Cancels subscription, removes Discord role, revokes NT license, marks account cancelled.</div><label class="lred">Member Email</label><input type="email" id="manualEmail" placeholder="member@email.com" /><label class="lred">Membership Type</label><select id="manualType"><option value="monthly">Monthly Membership</option><option value="lifetime">Lifetime License</option><option value="discord">Discord Room ($37)</option></select><button class="btn-red" onclick="openModal()">&#128293; CANCEL ACCESS</button><div class="msg" id="manualMsg"></div></div></div>
 <div class="sec"><div class="sec-ttl">Member Management</div><div class="tabs"><button class="tab active" onclick="showTab('monthly',this)">Monthly (${(members||[]).length})</button><button class="tab" onclick="showTab('lifetime',this)">Lifetime (${(licenses||[]).length})</button><button class="tab" onclick="showTab('discord37',this)">Discord $37 (${(discordMems||[]).length})</button><button class="tab" onclick="showTab('live',this)">Live on Discord (${liveHVT.length})</button></div>
 <div id="tab-monthly" class="panel"><div class="pt"></div><div style="overflow-x:auto;"><table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Expires</th><th>NT License</th><th>Action</th></tr></thead><tbody>${memberRows || '<tr><td colspan="6" style="padding:20px;text-align:center;color:#334155;">No records</td></tr>'}</tbody></table></div></div>
@@ -1393,7 +1393,7 @@ app.get('/admin', adm, adminGuard, async (req, res) => {
 <div class="overlay" id="overlay"><div class="modal"><div style="font-size:32px;margin-bottom:16px;">&#9888;&#65039;</div><div class="mttl">Confirm Action</div><div class="msub" id="modalSub"></div><div class="mbtns"><button class="mno" onclick="closeModal()">BACK</button><button class="mok" onclick="confirm()">CONFIRM</button></div></div></div>
 <script>const KEY='${key}';let pending=null;
 async function refreshNT(){const msg=document.getElementById('ntMsg');msg.className='msg';try{const r=await fetch('/admin/refresh-nt-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:KEY})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent=d.message||'\u2713 Done'}else{msg.className='msg er show';msg.textContent=d.message||'Error.'}}catch{msg.className='msg er show';msg.textContent='Network error.'}}
-function showTab(n,el){['monthly','lifetime','discord37','live'].forEach(t=>document.getElementById('tab-'+t).style.display='none');document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+n).style.display='block';el.classList.add('active')}function openModal(){const email=document.getElementById('manualEmail').value.trim();const type=document.getElementById('manualType').value;if(!email){const m=document.getElementById('manualMsg');m.className='msg er show';m.textContent='Please enter an email.';return}pending={action:'cancel',email,type};document.getElementById('modalSub').innerHTML='Cancel access for:<br><strong style="color:#f87171;">'+email+'</strong><br><br>Discord role and NT license will be removed immediately.';document.getElementById('overlay').classList.add('show')}function closeModal(){document.getElementById('overlay').classList.remove('show');pending=null}async function confirm(){closeModal();if(!pending)return;if(pending.action==='cancel')await doCancel(pending.email,pending.type);if(pending.action==='removeRole')await doRemoveRole(pending.uid,pending.username)}function fireUser(email,type){document.getElementById('manualEmail').value=email;document.getElementById('manualType').value=type;openModal()}async function doCancel(email,type){const msg=document.getElementById('manualMsg');msg.className='msg';try{const r=await fetch('/admin/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,type,key:KEY})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\\u2713 Cancelled: '+email;setTimeout(()=>location.reload(),1800)}else{msg.className='msg er show';msg.textContent=d.error||'Error.'}}catch{msg.className='msg er show';msg.textContent='Network error.'}}function removeRoleById(uid,username){pending={action:'removeRole',uid,username};document.getElementById('modalSub').innerHTML='Strip ALL HVT roles from:<br><strong style="color:#a78bfa;">@'+username+'</strong><br><br>They will lose Discord access immediately.';document.getElementById('overlay').classList.add('show')}async function doRemoveRole(uid,username){const msg=document.getElementById('manualMsg');msg.className='msg';try{const r=await fetch('/admin/remove-role',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({discord_user_id:uid,key:KEY})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\\u2713 Roles removed from @'+username;setTimeout(()=>location.reload(),1800)}else{msg.className='msg er show';msg.textContent=d.error||'Error.'}}catch{msg.className='msg er show';msg.textContent='Network error.'}}async function godMode(){const username=document.getElementById('godUser').value.trim();const role=document.getElementById('godRole').value;const msg=document.getElementById('godMsg');msg.className='msg';if(!username){msg.className='msg er show';msg.textContent='Please enter a Discord username.';return}try{const r=await fetch('/admin/god-add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({discord_username:username,role,key:KEY})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\\u26a1 Role assigned to @'+username+'!'}else{msg.className='msg er show';msg.textContent=d.error||'Error.'}}catch{msg.className='msg er show';msg.textContent='Network error.'}}document.getElementById('overlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal()});</script></body></html>`);
+function showTab(n,el){['monthly','lifetime','discord37','live'].forEach(t=>document.getElementById('tab-'+t).style.display='none');document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+n).style.display='block';el.classList.add('active')}function openModal(){const email=document.getElementById('manualEmail').value.trim();const type=document.getElementById('manualType').value;if(!email){const m=document.getElementById('manualMsg');m.className='msg er show';m.textContent='Please enter an email.';return}pending={action:'cancel',email,type};document.getElementById('modalSub').innerHTML='Cancel access for:<br><strong style="color:#f87171;">'+email+'</strong><br><br>Discord role and NT license will be removed immediately.';document.getElementById('overlay').classList.add('show')}function closeModal(){document.getElementById('overlay').classList.remove('show');pending=null}async function confirm(){closeModal();if(!pending)return;if(pending.action==='cancel')await doCancel(pending.email,pending.type);if(pending.action==='removeRole')await doRemoveRole(pending.uid,pending.username)}function fireUser(email,type){document.getElementById('manualEmail').value=email;document.getElementById('manualType').value=type;openModal()}async function doCancel(email,type){const msg=document.getElementById('manualMsg');msg.className='msg';try{const r=await fetch('/admin/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,type,key:KEY})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\\u2713 Cancelled: '+email;setTimeout(()=>location.reload(),1800)}else{msg.className='msg er show';msg.textContent=d.error||'Error.'}}catch{msg.className='msg er show';msg.textContent='Network error.'}}function removeRoleById(uid,username){pending={action:'removeRole',uid,username};document.getElementById('modalSub').innerHTML='Strip ALL HVT roles from:<br><strong style="color:#a78bfa;">@'+username+'</strong><br><br>They will lose Discord access immediately.';document.getElementById('overlay').classList.add('show')}async function doRemoveRole(uid,username){const msg=document.getElementById('manualMsg');msg.className='msg';try{const r=await fetch('/admin/remove-role',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({discord_user_id:uid,key:KEY})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\\u2713 Roles removed from @'+username;setTimeout(()=>location.reload(),1800)}else{msg.className='msg er show';msg.textContent=d.error||'Error.'}}catch{msg.className='msg er show';msg.textContent='Network error.'}}async function godMode(){const email=document.getElementById('godEmail').value.trim();const role=document.getElementById('godRole').value;const name=document.getElementById('godName').value.trim();const username=document.getElementById('godUser').value.trim();const sendEmail=document.getElementById('godSendEmail').checked;const createNT=document.getElementById('godNT').checked;const assignDiscord=document.getElementById('godDiscord').checked;const msg=document.getElementById('godMsg');msg.className='msg';if(!email){msg.className='msg er show';msg.textContent='Email is required.';return}msg.className='msg ok show';msg.textContent='Working...';try{const r=await fetch('/admin/god-add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,role,full_name:name,discord_username:username,send_email:sendEmail,create_nt:createNT,assign_discord:assignDiscord,key:KEY})});const d=await r.json();if(r.ok){const parts=[];if(d.supabase)parts.push('\u2713 DB');if(d.nt_license)parts.push('\u2713 NT License');if(d.discord)parts.push('\u2713 Discord');if(d.email_sent)parts.push('\u2713 Email Sent');msg.className='msg ok show';msg.textContent='\u26a1 Access granted! '+parts.join(' | ');document.getElementById('godEmail').value='';document.getElementById('godName').value='';document.getElementById('godUser').value='';}else{msg.className='msg er show';msg.textContent=d.error||'Error.'}}catch{msg.className='msg er show';msg.textContent='Network error.'}}document.getElementById('overlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal()});</script></body></html>`);
 });
 
 app.post('/admin/cancel', adm, express.json(), async (req, res) => {
@@ -1447,16 +1447,92 @@ app.post('/admin/remove-role', adm, express.json(), async (req, res) => {
 app.post('/admin/god-add', adm, express.json(), async (req, res) => {
     if (req.body?.key !== ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
     try {
-        const username = (req.body.discord_username || '').trim();
-        const role     = req.body.role || 'monthly';
-        if (!username) return res.status(400).json({ error: 'discord_username required' });
-        const found = await findUser(username);
-        if (!found) return res.status(404).json({ error: `@${username} not found in the HVT server. They must join the server first.` });
-        const uid = found.user.id;
-        const rid = role === 'lifetime' ? DISCORD_LIFETIME_ROLE_ID : (role === 'discord' ? (DISCORD_ROOM_ROLE_ID || DISCORD_MONTHLY_ROLE_ID) : DISCORD_MONTHLY_ROLE_ID);
-        await addRole(uid, rid);
-        console.log(`[God Mode] @${username} (${uid}) → role: ${role} (${rid})`);
-        res.json({ ok: true, discord_user_id: uid, role });
+        const email          = (req.body.email || '').trim().toLowerCase();
+        const role           = req.body.role || 'monthly';
+        const fullName       = (req.body.full_name || '').trim();
+        const discordUser    = (req.body.discord_username || '').trim();
+        const sendEmail      = req.body.send_email !== false;
+        const createNT       = req.body.create_nt !== false;
+        const assignDiscord  = req.body.assign_discord === true;
+
+        if (!email) return res.status(400).json({ error: 'Email is required' });
+
+        const result = { ok: true, supabase: false, nt_license: false, discord: false, email_sent: false };
+
+        // 1. Upsert into correct Supabase table
+        const isLifetime = role === 'lifetime';
+        const isDiscordOnly = role === 'discord';
+        const expires = isLifetime ? null : now30days();
+        const table = isLifetime ? LICENSE_TABLE : (isDiscordOnly ? DISCORD_TABLE : MEMBERSHIP_TABLE);
+
+        const row = {
+            email,
+            full_name:  fullName || null,
+            status:     'active',
+            plan_name:  role,
+            source:     'admin_grant',
+            expires_at: expires,
+            updated_at: nowISO()
+        };
+        if (isLifetime) {
+            row.transaction_id = `admin_grant_${Date.now()}_${email}`;
+            row.license_key = `HVT-ADMIN-${crypto.randomBytes(8).toString('hex').toUpperCase()}`;
+        }
+        const { error: dbErr } = await supabase.from(table).upsert(row, {
+            onConflict: isLifetime ? 'transaction_id' : 'email'
+        });
+        if (!dbErr) result.supabase = true;
+        else console.error('[GodMode] DB error:', dbErr.message);
+
+        // 2. Create NT license (monthly or lifetime)
+        if (createNT && !isDiscordOnly && ntToken) {
+            const ntId = await ntCreateLicense(email, isLifetime ? 'lifetime' : 'monthly');
+            if (ntId) {
+                result.nt_license = ntId;
+                await supabase.from(table).update({ nt_license_id: ntId, nt_email: email, updated_at: nowISO() }).eq('email', email);
+            }
+        }
+
+        // 3. Assign Discord role (optional)
+        if (assignDiscord && discordUser) {
+            try {
+                const found = await findUser(discordUser);
+                if (found) {
+                    const uid = found.user.id;
+                    const rid = isLifetime ? DISCORD_LIFETIME_ROLE_ID : (isDiscordOnly ? (DISCORD_ROOM_ROLE_ID || DISCORD_MONTHLY_ROLE_ID) : DISCORD_MONTHLY_ROLE_ID);
+                    await addRole(uid, rid);
+                    await supabase.from(table).update({ discord_user_id: uid, updated_at: nowISO() }).eq('email', email);
+                    result.discord = true;
+                }
+            } catch (e) { console.error('[GodMode] Discord error:', e.message); }
+        }
+
+        // 4. Send magic login link email
+        if (sendEmail) {
+            try {
+                const token   = crypto.randomBytes(32).toString('hex');
+                const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+                if (!isLifetime) {
+                    await supabase.from(table).update({ course_token: token, course_token_expires: expires, updated_at: nowISO() }).eq('email', email);
+                } else {
+                    await supabase.from(table).update({ course_token: token, course_token_expires: expires, updated_at: nowISO() }).eq('email', email);
+                }
+                const loginUrl = `${APP_URL}/course/confirm?token=${token}`;
+                const planLabel = isLifetime ? 'Lifetime' : isDiscordOnly ? 'Discord Room' : 'Monthly';
+                await sendEmail(email, `Your HVT ${planLabel} Access Is Ready`, `
+                    <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#0f172a;color:#e2e8f0;padding:40px;border-radius:12px;">
+                        <h2 style="color:#f6ad55;margin-bottom:8px;">Welcome to High Velocity Trading!</h2>
+                        <p style="color:#94a3b8;margin-bottom:24px;">Your <strong style="color:#e2e8f0;">${planLabel} membership</strong> has been activated. Click below to access your member portal.</p>
+                        <a href="${loginUrl}" style="display:inline-block;background:#f6ad55;color:#0f172a;font-weight:700;padding:14px 28px;border-radius:8px;text-decoration:none;font-size:16px;">Access My Portal →</a>
+                        <p style="color:#475569;font-size:12px;margin-top:24px;">This link expires in 24 hours. You can always request a new one at <a href="${APP_URL}/login" style="color:#f6ad55;">${APP_URL}/login</a></p>
+                    </div>
+                `);
+                result.email_sent = true;
+            } catch (e) { console.error('[GodMode] Email error:', e.message); }
+        }
+
+        console.log(`[GodMode] ✅ ${email} | role=${role} | NT=${result.nt_license} | Discord=${result.discord} | Email=${result.email_sent}`);
+        res.json(result);
     } catch (e) { console.error('[GodMode]', e.message); res.status(500).json({ error: e.message }); }
 });
 
