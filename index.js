@@ -81,7 +81,7 @@ async function ntLogin() {
     }
     try {
         console.log('[NT] Logging in with username/password...');
-        const r = await fetchFn('https://ecosystemapi.ninjatrader.com/v1/auth/accesstokenrequest', {
+        const r = await fetchFn('https://live.tradovateapi.com/v1/auth/accesstokenrequest', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -114,7 +114,7 @@ async function ntRenewToken() {
     // Try to renew existing token first; fall back to full re-login
     if (ntToken) {
         try {
-            const r = await fetchFn('https://ecosystemapi.ninjatrader.com/v1/auth/renewaccesstoken', {
+            const r = await fetchFn('https://live.tradovateapi.com/v1/auth/renewaccesstoken', {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${ntToken}`, 'Content-Type': 'application/json' }
             });
