@@ -81,22 +81,16 @@ async function ntLogin() {
     }
     try {
         console.log('[NT] Logging in with username/password...');
-        // Encode password as base64 with enc:true — matches what the NT Ecosystem website sends
-        const encodedPassword = Buffer.from(NT_PASSWORD).toString('base64');
-        const deviceId = 'hvt-backend-railway-prod';
-        const sec = crypto.createHash('md5').update(NT_USERNAME + NT_PASSWORD + deviceId).digest('hex');
         const r = await fetchFn('https://live.tradovateapi.com/v1/auth/accesstokenrequest', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 name:        NT_USERNAME,
-                password:    encodedPassword,
+                password:    NT_PASSWORD,
                 appId:       'arena',
                 appVersion:  '0.1.0',
                 cid:         '1',
-                sec:         sec,
-                deviceId:    deviceId,
-                enc:         true,
+                sec:         '',
                 environment: 'live'
             })
         });
