@@ -674,51 +674,60 @@ app.post('/trading-room/activate', frm, express.json(), async (req, res) => {
 });
 
 // ─── COURSE / MEMBER ACCESS ───────────────────────────────────────────────────
-app.get('/course', (req, res) => {
-    res.send(shell('Member Access', `
-    <div style="width:100%;max-width:560px;">
-      <div class="card" style="max-width:560px;">
+// ─── SESSION HELPERS ──────────────────────────────────────────────────────────
+const SESSION_COOKIE = 'hvt_session';
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const _sessions = new Map(); // token -> { email, name, plan, expires }
+setInterval(() => { const n = Date.now(); for (const [k, s] of _sessions) if (n > s.expires) _sessions.delete(k); }, 3600000);
+
+function createSession(email, name, plan) {
+    const token = crypto.randomBytes(32).toString('hex');
+    _sessions.set(token, { email, name, plan, expires: Date.now() + SESSION_TTL_MS });
+    return token;
+}
+function getSession(req) {
+    const raw = req.headers.cookie || '';
+    const match = raw.match(new RegExp(`${SESSION_COOKIE}=([a-f0-9]{64})`));
+    if (!match) return null;
+    const s = _sessions.get(match[1]);
+    if (!s || Date.now() > s.expires) return null;
+    return s;
+}
+function requireSession(req, res, next) {
+    if (getSession(req)) return next();
+    res.redirect('/login');
+}
+
+// ─── LOGIN PAGE (was /course) ─────────────────────────────────────────────────
+app.get('/login', (req, res) => {
+    if (getSession(req)) return res.redirect('/member');
+    res.send(shell('Member Login', `
+    <div style="width:100%;max-width:520px;">
+      <div style="text-align:center;margin-bottom:32px;">
+        <div style="display:inline-block;border-top:1px solid rgba(255,255,255,0.1);border-bottom:1px solid rgba(255,255,255,0.1);padding:10px 28px;margin-bottom:16px;">
+          <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:0.5px;">High Velocity Trading</div>
+          <div style="font-size:9px;font-weight:500;letter-spacing:4px;text-transform:uppercase;color:#64748b;margin-top:3px;">Member Portal</div>
+        </div>
+        <p style="color:#64748b;font-size:13px;margin:0;">Enter your membership email. We'll send a secure one-time login link.</p>
+      </div>
+      <div class="card" style="max-width:520px;">
         <div class="ct"></div>
         <div class="cb">
-          <div style="text-align:center;margin-bottom:24px;">
-            <div style="display:inline-block;background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.2);border-radius:20px;padding:6px 18px;margin-bottom:16px;">
-              <span style="color:#2563eb;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;">Member Access Only</span>
-            </div>
-            <div class="ttl" style="margin-bottom:8px;">HVT Member Access</div>
-            <div class="sub" style="margin-bottom:0;">Enter your membership email and we'll send you a secure link to access your member portal.</div>
-          </div>
-          <div class="div"></div>
           <label for="email">Membership Email</label>
-          <input type="email" id="email" placeholder="your@email.com" />
+          <input type="email" id="email" placeholder="your@email.com" autocomplete="email" />
           <button class="btn" id="btn" onclick="go()">Send My Access Link</button>
           <div class="msg" id="msg"></div>
-        </div>
-      </div>
-      <div style="margin-top:28px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;">
-        <div style="height:3px;background:linear-gradient(90deg,#1e3a8a,#2563eb,#1e3a8a);"></div>
-        <div style="padding:32px;">
-          <div style="text-align:center;margin-bottom:24px;">
-            <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#2563eb;margin-bottom:10px;font-weight:600;">Not a Member Yet?</div>
-            <div style="font-size:24px;font-weight:700;color:#fff;line-height:1.3;">Get Full Access to the<br>HVT Course & Trading Room</div>
-          </div>
-          <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);margin-bottom:24px;"></div>
-          <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:28px;">
-            <div style="display:flex;align-items:flex-start;gap:12px;"><div style="width:28px;height:28px;border-radius:50%;background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">&#128249;</div><div><div style="color:#fff;font-size:14px;font-weight:600;margin-bottom:2px;">Full Video Course</div><div style="color:#64748b;font-size:12px;line-height:1.5;">Step-by-step trading videos built on our proven HVT strategies.</div></div></div>
-            <div style="display:flex;align-items:flex-start;gap:12px;"><div style="width:28px;height:28px;border-radius:50%;background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">&#128202;</div><div><div style="color:#fff;font-size:14px;font-weight:600;margin-bottom:2px;">Proprietary Indicators & Software</div><div style="color:#64748b;font-size:12px;line-height:1.5;">Exclusive HVT tools for a professional edge every session.</div></div></div>
-            <div style="display:flex;align-items:flex-start;gap:12px;"><div style="width:28px;height:28px;border-radius:50%;background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">&#127908;</div><div><div style="color:#fff;font-size:14px;font-weight:600;margin-bottom:2px;">Live Trading Room Access</div><div style="color:#64748b;font-size:12px;line-height:1.5;">Trade alongside the HVT team in real time, every market day.</div></div></div>
-          </div>
-          <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);margin-bottom:24px;"></div>
-          <div style="text-align:center;">
-            <a href="https://highvelocitytrading.com/#packages" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:14px 40px;border-radius:999px;font-size:14px;font-weight:700;letter-spacing:1px;box-shadow:0 4px 20px rgba(37,99,235,0.35);">VIEW PACKAGES &rarr;</a>
-            <p style="color:#334155;font-size:11px;margin-top:14px;">Questions? Call <strong style="color:#64748b;">786-461-4235</strong></p>
-          </div>
+          <p style="text-align:center;color:#334155;font-size:11px;margin-top:20px;margin-bottom:0;">Not a member? <a href="https://highvelocitytrading.com/#packages" style="color:#2563eb;text-decoration:none;font-weight:600;">View Packages &rarr;</a></p>
         </div>
       </div>
     </div>
     <script>
-      async function go(){const email=document.getElementById('email').value.trim();const msg=document.getElementById('msg');const btn=document.getElementById('btn');msg.className='msg';if(!email){msg.className='msg er show';msg.textContent='Please enter your email.';return}btn.disabled=true;btn.textContent='Sending...';try{const r=await fetch('/course/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\\u2713 Check your email! Your secure access link has been sent.';btn.textContent='Link Sent \\u2713'}else{msg.className='msg er show';msg.textContent=d.error||'Something went wrong.';btn.disabled=false;btn.textContent='Send My Access Link'}}catch{msg.className='msg er show';msg.textContent='Network error.';btn.disabled=false;btn.textContent='Send My Access Link'}}
+      async function go(){const email=document.getElementById('email').value.trim();const msg=document.getElementById('msg');const btn=document.getElementById('btn');msg.className='msg';if(!email){msg.className='msg er show';msg.textContent='Please enter your email.';return}btn.disabled=true;btn.textContent='Sending...';try{const r=await fetch('/course/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\u2713 Check your email \u2014 your secure link is on the way!';btn.textContent='Link Sent \u2713'}else{msg.className='msg er show';msg.textContent=d.error||'Something went wrong.';btn.disabled=false;btn.textContent='Send My Access Link'}}catch{msg.className='msg er show';msg.textContent='Network error.';btn.disabled=false;btn.textContent='Send My Access Link'}}
+      document.getElementById('email').addEventListener('keydown',e=>{if(e.key==='Enter')go();});
     </script>`));
 });
+
+// /course GET is defined below as the full course player (cookie-gated)
 
 app.post('/course/request', frm, express.json(), async (req, res) => {
     try {
@@ -750,64 +759,340 @@ app.get('/course/confirm', async (req, res) => {
         const isMonthly  = mData?.status === 'active' && new Date(mData.expires_at) > new Date();
         const isLifetime = lData?.status === 'active';
         if (!isMonthly && !isLifetime) return res.send(resultPage('error', 'Access Revoked', 'Your membership is no longer active.'));
-        const name     = (rec.full_name || 'Trader').split(' ')[0];
-        const planLbl  = isLifetime ? 'Lifetime Access' : 'Monthly Membership';
-        res.send(shell('Member Portal', `
-        <div style="width:100%;max-width:640px;position:relative;z-index:1;">
-          <div style="text-align:center;margin-bottom:40px;">
-            <div style="display:inline-block;border-top:1px solid rgba(255,255,255,0.1);border-bottom:1px solid rgba(255,255,255,0.1);padding:12px 32px;margin-bottom:20px;">
-              <div style="font-size:28px;font-weight:700;color:#fff;letter-spacing:0.5px;">High Velocity Trading</div>
-              <div style="font-size:10px;font-weight:500;letter-spacing:4px;text-transform:uppercase;color:#64748b;margin-top:4px;">Member Portal</div>
-            </div>
-            <p style="color:#94a3b8;font-size:14px;line-height:1.7;max-width:480px;margin:0 auto;">Manage your membership, access the trading room, watch courses, and view billing.</p>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:36px;">
-            <a href="/trading-room" style="text-decoration:none;display:block;border-radius:16px;border:1px solid rgba(37,99,235,0.15);background:rgba(255,255,255,0.03);backdrop-filter:blur(8px);overflow:hidden;transition:all .2s;" onmouseover="this.style.borderColor='rgba(37,99,235,0.4)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 32px rgba(37,99,235,0.08)'" onmouseout="this.style.borderColor='rgba(37,99,235,0.15)';this.style.transform='none';this.style.boxShadow='none'">
-              <div style="height:2px;background:linear-gradient(90deg,#1e3a8a,#2563eb,#1e3a8a);"></div>
-              <div style="padding:24px;">
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-                  <div style="width:36px;height:36px;border-radius:10px;background:rgba(37,99,235,0.1);display:flex;align-items:center;justify-content:center;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"/></svg>
-                  </div>
-                  <div style="font-size:15px;font-weight:700;color:#fff;">Trading Room</div>
-                </div>
-                <p style="color:#64748b;font-size:13px;line-height:1.5;margin-bottom:16px;">Activate your Discord trading room access</p>
-                <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#2563eb;opacity:0.7;">OPEN <span style="font-size:13px;">&rarr;</span></div>
-              </div>
-            </a>
-            <a href="/course" style="text-decoration:none;display:block;border-radius:16px;border:1px solid rgba(246,173,85,0.15);background:rgba(255,255,255,0.03);backdrop-filter:blur(8px);overflow:hidden;transition:all .2s;" onmouseover="this.style.borderColor='rgba(246,173,85,0.4)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 32px rgba(246,173,85,0.08)'" onmouseout="this.style.borderColor='rgba(246,173,85,0.15)';this.style.transform='none';this.style.boxShadow='none'">
-              <div style="height:2px;background:linear-gradient(90deg,#92610a,#f6ad55,#92610a);"></div>
-              <div style="padding:24px;">
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-                  <div style="width:36px;height:36px;border-radius:10px;background:rgba(246,173,85,0.1);display:flex;align-items:center;justify-content:center;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f6ad55" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
-                  </div>
-                  <div style="font-size:15px;font-weight:700;color:#fff;">Course</div>
-                </div>
-                <p style="color:#64748b;font-size:13px;line-height:1.5;margin-bottom:16px;">Access the HVT trading course library</p>
-                <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#f6ad55;opacity:0.7;">OPEN <span style="font-size:13px;">&rarr;</span></div>
-              </div>
-            </a>
-            <a href="/billing" style="text-decoration:none;display:block;border-radius:16px;border:1px solid rgba(37,99,235,0.15);background:rgba(255,255,255,0.03);backdrop-filter:blur(8px);overflow:hidden;transition:all .2s;" onmouseover="this.style.borderColor='rgba(37,99,235,0.4)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 32px rgba(37,99,235,0.08)'" onmouseout="this.style.borderColor='rgba(37,99,235,0.15)';this.style.transform='none';this.style.boxShadow='none'">
-              <div style="height:2px;background:linear-gradient(90deg,#1e3a8a,#2563eb,#1e3a8a);"></div>
-              <div style="padding:24px;">
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-                  <div style="width:36px;height:36px;border-radius:10px;background:rgba(37,99,235,0.1);display:flex;align-items:center;justify-content:center;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z"/></svg>
-                  </div>
-                  <div style="font-size:15px;font-weight:700;color:#fff;">Billing</div>
-                </div>
-                <p style="color:#64748b;font-size:13px;line-height:1.5;margin-bottom:16px;">View your subscription and billing details</p>
-                <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#2563eb;opacity:0.7;">OPEN <span style="font-size:13px;">&rarr;</span></div>
-              </div>
-            </a>
-          </div>
-          <div style="text-align:center;">
-            <p style="color:#64748b;font-size:12px;margin-bottom:4px;">Need help?</p>
-            <p style="color:#94a3b8;font-size:14px;font-weight:600;">&#128222; 786-461-4235</p>
-          </div>
-        </div>`));
+        const name    = (rec.full_name || 'Trader').split(' ')[0];
+        const plan    = isLifetime ? 'Lifetime Access' : 'Monthly Membership';
+        // Set 7-day session cookie — member stays logged in across the portal
+        const sessToken = createSession(rec.email, name, plan);
+        res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${sessToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${7*24*3600}`);
+        return res.redirect('/member');
     } catch (e) { console.error('[CourseConfirm]', e.message); res.send(resultPage('error', 'Error', 'Something went wrong.')); }
+});
+
+
+// ─── MEMBER PORTAL (cookie-gated dashboard) ───────────────────────────────────
+app.get('/member', requireSession, (req, res) => {
+    const s = getSession(req);
+    res.send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Member Portal — HVT</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080c14;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:60px;border-bottom:1px solid rgba(255,255,255,0.06);background:rgba(8,12,20,0.95);position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
+.logo{font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#fff}
+.logo span{color:#2563eb}
+.user-badge{display:flex;align-items:center;gap:10px;font-size:13px;color:#64748b}
+.user-badge strong{color:#94a3b8}
+.plan-pill{background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.25);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#2563eb}
+.portal-wrap{max-width:880px;margin:0 auto;padding:56px 24px}
+.portal-heading{text-align:center;margin-bottom:56px}
+.portal-heading h1{font-size:32px;font-weight:700;letter-spacing:-0.5px;margin-bottom:8px}
+.portal-heading p{color:#64748b;font-size:14px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:600px){.cards{grid-template-columns:1fr}}
+.pcard{display:block;text-decoration:none;border-radius:20px;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.02);overflow:hidden;transition:all .2s;position:relative}
+.pcard:hover{transform:translateY(-3px);border-color:var(--c);box-shadow:0 12px 40px rgba(0,0,0,0.3)}
+.pcard .bar{height:3px;background:linear-gradient(90deg,var(--c2),var(--c),var(--c2))}
+.pcard .inner{padding:28px}
+.pcard .icon{width:44px;height:44px;border-radius:12px;background:var(--cb);display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+.pcard h3{font-size:16px;font-weight:700;color:#fff;margin-bottom:6px}
+.pcard p{color:#475569;font-size:13px;line-height:1.6;margin-bottom:20px}
+.pcard .arrow{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--c);opacity:0.8}
+.help{text-align:center;margin-top:56px;color:#334155;font-size:13px}
+.help a{color:#2563eb;text-decoration:none}
+</style></head><body>
+<div class="topbar">
+  <div class="logo">High <span>Velocity</span> Trading</div>
+  <div class="user-badge"><strong>${s.name}</strong> <span class="plan-pill">${s.plan}</span></div>
+</div>
+<div class="portal-wrap">
+  <div class="portal-heading">
+    <h1>Welcome back, ${s.name}</h1>
+    <p>Everything you need to trade at the highest level.</p>
+  </div>
+  <div class="cards">
+    <a class="pcard" href="/course" style="--c:#f6ad55;--c2:#92610a;--cb:rgba(246,173,85,0.08);">
+      <div class="bar"></div>
+      <div class="inner">
+        <div class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f6ad55" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
+        </div>
+        <h3>Course Library</h3>
+        <p>Step-by-step trading videos built on the HVT system. Learn at your own pace.</p>
+        <div class="arrow">Watch Now &rarr;</div>
+      </div>
+    </a>
+    <a class="pcard" href="/trading-room" style="--c:#2563eb;--c2:#1e3a8a;--cb:rgba(37,99,235,0.08);">
+      <div class="bar"></div>
+      <div class="inner">
+        <div class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"/></svg>
+        </div>
+        <h3>Trading Room</h3>
+        <p>Activate your Discord access and trade live with the HVT team every market day.</p>
+        <div class="arrow">Activate &rarr;</div>
+      </div>
+    </a>
+    <a class="pcard" href="/billing/confirm-session" style="--c:#4ade80;--c2:#166534;--cb:rgba(74,222,128,0.08);">
+      <div class="bar"></div>
+      <div class="inner">
+        <div class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z"/></svg>
+        </div>
+        <h3>Billing</h3>
+        <p>View your subscription status, renewal date, and manage your membership.</p>
+        <div class="arrow">View Billing &rarr;</div>
+      </div>
+    </a>
+    <a class="pcard" href="https://highvelocitytrading.com" target="_blank" style="--c:#a78bfa;--c2:#4c1d95;--cb:rgba(167,139,250,0.08);">
+      <div class="bar"></div>
+      <div class="inner">
+        <div class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253"/></svg>
+        </div>
+        <h3>HVT Website</h3>
+        <p>Visit the main site for announcements, resources, and community updates.</p>
+        <div class="arrow">Visit &rarr;</div>
+      </div>
+    </a>
+  </div>
+  <div class="help">Need help? Call <a href="tel:7864614235">786-461-4235</a> or email <a href="mailto:support@highvelocitytrading.com">support@highvelocitytrading.com</a></div>
+</div>
+</body></html>`);
+});
+
+// Billing shortcut via session (no re-auth needed)
+app.get('/billing/confirm-session', requireSession, async (req, res) => {
+    const s = getSession(req);
+    try {
+        const { data } = await supabase.from(MEMBERSHIP_TABLE).select('email,full_name,status,expires_at').eq('email', s.email).maybeSingle();
+        const status  = data?.status || 'unknown';
+        const exAt    = data?.expires_at ? new Date(data.expires_at) : null;
+        const sc      = status === 'active' ? '#4ade80' : '#f87171';
+        const sb      = status === 'active' ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)';
+        const sbd     = status === 'active' ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.2)';
+        const next    = exAt ? exAt.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}) : 'N/A';
+        const days    = exAt ? Math.max(0, Math.ceil((exAt - new Date()) / 86400000)) : 0;
+        const cancel  = status === 'active'
+            ? `<div style="margin-top:24px;padding-top:24px;border-top:1px solid rgba(255,255,255,0.06);"><p style="color:#334155;font-size:12px;text-align:center;margin-bottom:16px;">Want to cancel?</p><a href="/cancel" style="display:block;width:100%;padding:12px;background:transparent;border:1px solid rgba(248,113,113,0.3);color:#f87171;border-radius:999px;font-size:14px;font-weight:700;text-align:center;text-decoration:none;">Cancel Membership</a></div>`
+            : `<div style="margin-top:24px;text-align:center;"><p style="color:#64748b;font-size:13px;">Membership is no longer active.</p></div>`;
+        res.send(shell('Billing', `
+        <div class="card" style="max-width:480px;width:100%;"><div class="ct"></div><div class="cb">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <a href="/member" style="color:#2563eb;font-size:13px;text-decoration:none;">&larr; Back to Portal</a>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;margin-top:16px;">
+            <div>
+              <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;margin-bottom:4px;">Welcome back</div>
+              <div style="font-size:22px;font-weight:700;color:#fff;">${s.name}</div>
+            </div>
+            <div style="background:${sb};border:1px solid ${sbd};border-radius:20px;padding:6px 14px;font-size:12px;color:${sc};font-weight:600;">${status === 'active' ? '&#9679; Active' : status}</div>
+          </div>
+          <div class="div"></div>
+          <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;overflow:hidden;margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:#64748b;font-size:13px;">Plan</span><span style="color:#94a3b8;font-size:13px;">${s.plan}</span></div>
+            <div style="display:flex;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:#64748b;font-size:13px;">Email</span><span style="color:#94a3b8;font-size:13px;">${s.email}</span></div>
+            <div style="display:flex;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:#64748b;font-size:13px;">Next Billing</span><span style="color:#94a3b8;font-size:13px;">${next}</span></div>
+            <div style="display:flex;justify-content:space-between;padding:14px 18px;"><span style="color:#64748b;font-size:13px;">Days Remaining</span><span style="color:${days > 7 ? '#4ade80' : '#f6ad55'};font-size:13px;font-weight:600;">${days} days</span></div>
+          </div>${cancel}
+        </div></div>`));
+    } catch(e) { console.error('[BillingSession]', e.message); res.redirect('/billing'); }
+});
+
+// ─── COURSE PLAYER (cookie-gated) ─────────────────────────────────────────────
+app.get('/course', requireSession, (req, res) => {
+    const s = getSession(req);
+    res.send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Course — HVT</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:#080c14;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;flex-direction:column}
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:54px;border-bottom:1px solid rgba(255,255,255,0.07);background:#080c14;flex-shrink:0;z-index:100}
+.topbar-left{display:flex;align-items:center;gap:16px}
+.back-btn{display:flex;align-items:center;gap:6px;color:#475569;font-size:12px;text-decoration:none;font-weight:600;letter-spacing:0.5px;transition:color .15s}
+.back-btn:hover{color:#94a3b8}
+.logo{font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#fff;border-left:1px solid rgba(255,255,255,0.1);padding-left:16px}
+.logo span{color:#f6ad55}
+.user-pill{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:4px 12px;font-size:11px;color:#64748b;font-weight:600}
+/* LAYOUT */
+.layout{display:flex;flex:1;overflow:hidden}
+/* SIDEBAR */
+.sidebar{width:280px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.07);background:#080c14;display:flex;flex-direction:column;overflow:hidden}
+.sidebar-header{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0}
+.sidebar-header h2{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#475569}
+.sidebar-scroll{flex:1;overflow-y:auto;padding:8px 0}
+.sidebar-scroll::-webkit-scrollbar{width:4px}
+.sidebar-scroll::-webkit-scrollbar-track{background:transparent}
+.sidebar-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:2px}
+/* SECTION */
+.section{margin-bottom:2px}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;cursor:pointer;user-select:none;transition:background .15s}
+.section-header:hover{background:rgba(255,255,255,0.03)}
+.section-title{font-size:12px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;flex:1}
+.section-count{font-size:10px;color:#334155;font-weight:600;margin-right:8px}
+.section-chevron{color:#334155;font-size:10px;transition:transform .2s}
+.section.open .section-chevron{transform:rotate(90deg)}
+.section-videos{display:none;padding:0 0 4px}
+.section.open .section-videos{display:block}
+/* VIDEO ITEM */
+.video-item{display:flex;align-items:center;gap:12px;padding:9px 20px 9px 28px;cursor:pointer;transition:background .15s;position:relative}
+.video-item:hover{background:rgba(255,255,255,0.03)}
+.video-item.active{background:rgba(246,173,85,0.06)}
+.video-item.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:#f6ad55}
+.video-thumb{width:48px;height:30px;border-radius:5px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.video-thumb img{width:100%;height:100%;object-fit:cover}
+.play-icon{width:14px;height:14px;color:#475569}
+.video-item.active .play-icon{color:#f6ad55}
+.video-info{flex:1;min-width:0}
+.video-title{font-size:12px;font-weight:600;color:#64748b;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.video-item.active .video-title{color:#e2e8f0}
+.video-dur{font-size:10px;color:#334155;margin-top:2px;font-weight:500}
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#080c14}
+.player-wrap{flex:1;display:flex;align-items:center;justify-content:center;background:#000;position:relative;min-height:0}
+.player-wrap iframe{width:100%;height:100%;border:none}
+.player-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#1e293b;text-align:center;padding:40px}
+.player-placeholder svg{opacity:0.3}
+.player-placeholder h3{font-size:20px;font-weight:700;color:#1e293b}
+.player-placeholder p{font-size:13px;color:#1e293b;max-width:320px;line-height:1.6}
+.video-meta{padding:20px 28px;border-top:1px solid rgba(255,255,255,0.06);flex-shrink:0;background:#080c14}
+.video-meta h2{font-size:18px;font-weight:700;color:#fff;margin-bottom:4px}
+.video-meta-sub{display:flex;align-items:center;gap:16px;font-size:12px;color:#475569}
+.section-badge{background:rgba(246,173,85,0.1);border:1px solid rgba(246,173,85,0.2);border-radius:20px;padding:2px 10px;font-size:10px;font-weight:700;color:#f6ad55;letter-spacing:1px;text-transform:uppercase}
+/* MOBILE */
+@media(max-width:768px){
+  .sidebar{position:fixed;left:-280px;top:54px;bottom:0;z-index:50;transition:left .25s;box-shadow:4px 0 24px rgba(0,0,0,0.4)}
+  .sidebar.open{left:0}
+  .layout{position:relative}
+  .mob-menu{display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;color:#94a3b8;font-size:16px}
+}
+@media(min-width:769px){.mob-menu{display:none}}
+</style></head><body>
+<div class="topbar">
+  <div class="topbar-left">
+    <button class="mob-menu" onclick="toggleSidebar()" title="Menu">&#9776;</button>
+    <a class="back-btn" href="/member">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/></svg>
+      Portal
+    </a>
+    <div class="logo">HVT <span>Course</span></div>
+  </div>
+  <div class="user-pill">${s.name}</div>
+</div>
+<div class="layout">
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header"><h2>Course Content</h2></div>
+    <div class="sidebar-scroll" id="sidebarScroll">
+      <!-- Sections injected by JS -->
+    </div>
+  </div>
+  <div class="main">
+    <div class="player-wrap" id="playerWrap">
+      <div class="player-placeholder" id="placeholder">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
+        <h3>Select a lesson</h3>
+        <p>Choose a video from the course menu on the left to get started.</p>
+      </div>
+      <iframe id="player" style="display:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe>
+    </div>
+    <div class="video-meta" id="videoMeta" style="display:none">
+      <h2 id="videoTitle"></h2>
+      <div class="video-meta-sub">
+        <span class="section-badge" id="videoSection"></span>
+        <span id="videoDur"></span>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+// ── COURSE DATA (add sections/videos here) ──────────────────────────────────
+const COURSE = [
+  {
+    title: 'Psychology',
+    videos: [
+      { title: 'Welcome to HVT', duration: '1m', ytId: '' },
+      { title: 'Why Traders Fail in the Long Run', duration: '4m', ytId: '' },
+      { title: 'How to Set Yourself Up for Success', duration: '4m', ytId: '' },
+      { title: 'Expand Your Horizon', duration: '3m', ytId: '' },
+      { title: 'Next Steps', duration: '1m', ytId: '' },
+    ]
+  },
+  {
+    title: 'Basic Technicals',
+    videos: [
+      { title: 'Anatomy of a Candlestick', duration: '9m', ytId: '' },
+      { title: 'Structure — Uptrend vs Downtrend', duration: '7m', ytId: '' },
+    ]
+  },
+  // ── ADD MORE SECTIONS BELOW ──
+  // { title: 'Section Name', videos: [ { title: 'Video Title', duration: '5m', ytId: 'YOUTUBE_ID' } ] }
+];
+
+// ── BUILD SIDEBAR ─────────────────────────────────────────────────────────────
+let activeSection = 0, activeVideo = 0;
+const scroll = document.getElementById('sidebarScroll');
+
+function buildSidebar() {
+  scroll.innerHTML = '';
+  COURSE.forEach((sec, si) => {
+    const secEl = document.createElement('div');
+    secEl.className = 'section' + (si === activeSection ? ' open' : '');
+    secEl.innerHTML = \`
+      <div class="section-header" onclick="toggleSection(\${si})">
+        <div class="section-title">\${sec.title}</div>
+        <div class="section-count">\${sec.videos.length} videos</div>
+        <div class="section-chevron">&#9654;</div>
+      </div>
+      <div class="section-videos">\${sec.videos.map((v, vi) => \`
+        <div class="video-item\${si===activeSection&&vi===activeVideo?' active':''}" onclick="playVideo(\${si},\${vi})">
+          <div class="video-thumb">
+            \${v.ytId ? \`<img src="https://img.youtube.com/vi/\${v.ytId}/mqdefault.jpg" alt="">\` : \`<svg class="play-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg>\`}
+          </div>
+          <div class="video-info">
+            <div class="video-title">\${v.title}</div>
+            <div class="video-dur">\${v.duration}</div>
+          </div>
+        </div>\`).join('')}
+      </div>\`;
+    scroll.appendChild(secEl);
+  });
+}
+
+function toggleSection(si) {
+  const els = scroll.querySelectorAll('.section');
+  els[si].classList.toggle('open');
+}
+
+function playVideo(si, vi) {
+  activeSection = si; activeVideo = vi;
+  buildSidebar();
+  const v = COURSE[si].videos[vi];
+  const player = document.getElementById('player');
+  const placeholder = document.getElementById('placeholder');
+  const meta = document.getElementById('videoMeta');
+  if (v.ytId) {
+    player.src = \`https://www.youtube.com/embed/\${v.ytId}?autoplay=1&rel=0\`;
+    player.style.display = 'block';
+    placeholder.style.display = 'none';
+  } else {
+    player.style.display = 'none';
+    placeholder.style.display = 'flex';
+    placeholder.innerHTML = \`<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"/></svg><h3>Coming Soon</h3><p>This video will be available shortly.</p>\`;
+  }
+  document.getElementById('videoTitle').textContent = v.title;
+  document.getElementById('videoSection').textContent = COURSE[si].title;
+  document.getElementById('videoDur').textContent = v.duration;
+  meta.style.display = 'flex';
+  // Close sidebar on mobile after selection
+  if (window.innerWidth < 769) document.getElementById('sidebar').classList.remove('open');
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+buildSidebar();
+</script>
+</body></html>`);
 });
 
 // ─── BILLING PORTAL ───────────────────────────────────────────────────────────
