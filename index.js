@@ -16,7 +16,7 @@ app.set('trust proxy', 1);
 const path = require('path');
 app.use(express.static(path.join(__dirname, 'public')));
 
-const PORT = process.env.PORT || 8121;
+const PORT = process.env.PORT || 8128;
 
 // ─── SECURITY HEADERS ────────────────────────────────────────────────────────
 app.use((req, res, next) => {
@@ -479,7 +479,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;displa
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10;}
 .topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:52px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative;}
 .topnav-logo{display:flex;align-items:center;gap:0;text-decoration:none;}
-.topnav-logo img{height:72px;width:auto;}
+.topnav-logo img{height:40px;width:auto;}
 .topnav-left{display:flex;align-items:center;gap:12px;}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s;}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85);}
@@ -512,8 +512,9 @@ input::placeholder{color:#334155;}
 .nt-signup-wrap{text-align:center;margin-top:12px;}
 .nt-signup-btn{display:inline-block;padding:10px 18px;background:#D9452A;color:#000;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:15px;font-weight:800;letter-spacing:1.5px;text-decoration:none;box-shadow:0 4px 16px rgba(217,69,42,0.4);transition:transform .2s ease,box-shadow .2s ease,background .2s ease;margin-left:-36px;}
 .nt-signup-btn:hover{transform:scale(1.06);box-shadow:0 6px 24px rgba(217,69,42,0.5);background:#E04F35;}
-.discord-join-btn{display:inline-flex;align-items:center;gap:10px;padding:10px 20px;background:#5865F2;color:#fff;border-radius:999px;font-size:14px;font-weight:700;text-decoration:none;transition:background .2s,transform .1s;}
+.discord-join-btn{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:#5865F2;color:#fff;border-radius:999px;font-size:13px;font-weight:700;text-decoration:none;transition:background .2s,transform .1s;}
 .discord-join-btn:hover{background:#4752C4;transform:translateY(-1px);}
+.discord-join-btn img{height:26px;width:auto;object-fit:contain;flex-shrink:0;display:block;}
 </style></head><body>
 <div class="hvt-bg" aria-hidden="true"></div>
 <div class="topnav-wrap">
@@ -693,7 +694,7 @@ app.get('/trading-room', (req, res) => {
             <div style="width:24px;height:24px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;margin-top:1px;">1</div>
             <div style="flex:1;color:#94a3b8;font-size:13px;line-height:1.5;">Join the HVT Discord server, then enter your details below and click Activate.</div>
           </div>
-          <div style="text-align:center;margin-bottom:16px;"><a href="${DISCORD_INVITE_URL}" target="_blank" rel="noopener noreferrer" class="discord-join-btn"><img src="/discordlogo.png" alt="" width="35" height="35" style="flex-shrink:0;display:block"/><span>Join Discord</span></a></div>
+          <div style="text-align:center;margin-bottom:16px;"><a href="${DISCORD_INVITE_URL}" target="_blank" rel="noopener noreferrer" class="discord-join-btn"><img src="/discordlogo.png" alt=""/><span>Join Discord</span></a></div>
           <div style="display:flex;gap:12px;">
             <div style="width:24px;height:24px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;margin-top:1px;">2</div>
             <div style="color:#94a3b8;font-size:13px;line-height:1.5;">Once you have joined, enter your <strong style="color:#fff;">purchase email</strong> and <strong style="color:#fff;">Discord username</strong> below and click Activate.</div>
@@ -867,7 +868,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
 .topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:52px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
 .topnav-logo{display:flex;align-items:center;text-decoration:none}
-.topnav-logo img{height:72px;width:auto}
+.topnav-logo img{height:40px;width:auto}
 .topnav-left{display:flex;align-items:center;gap:12px}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85)}
@@ -1050,7 +1051,7 @@ app.get('/billing/confirm-session', (req, res, next) => {
             <div style="display:flex;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:#64748b;font-size:13px;">Next Billing</span><span style="color:#94a3b8;font-size:13px;">${nextLabel}</span></div>
             <div style="display:flex;justify-content:space-between;padding:14px 18px;"><span style="color:#64748b;font-size:13px;">Days Remaining</span><span style="color:${days > 7 ? '#4ade80' : '#f6ad55'};font-size:13px;font-weight:600;">${days} days</span></div>
           </div>${cancelHtml}
-        </div></div>`));
+        </div></div>`, { pill: 'BILLING' }));
 });
 
 // ─── COURSE PLAYER (cookie-gated) ─────────────────────────────────────────────
@@ -1064,7 +1065,7 @@ app.get('/course', requireSession, (req, res) => {
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
 .topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:52px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
 .topnav-logo{display:flex;align-items:center;text-decoration:none}
-.topnav-logo img{height:32px;width:auto}
+.topnav-logo img{height:40px;width:auto}
 .topnav-left{display:flex;align-items:center;gap:12px}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85)}
@@ -1356,7 +1357,7 @@ app.get('/billing', (req, res) => {
     </div></div>
     <script>
       async function go(){const email=document.getElementById('email').value.trim();const msg=document.getElementById('msg');const btn=document.getElementById('btn');msg.className='msg';if(!email){msg.className='msg er show';msg.textContent='Please enter your email.';return}btn.disabled=true;btn.textContent='Sending...';try{const r=await fetch('/billing/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\\u2713 Check your email! A secure link has been sent.';btn.textContent='Email Sent'}else{msg.className='msg er show';msg.textContent=d.error||'Something went wrong.';btn.disabled=false;btn.textContent='Send Access Link'}}catch{msg.className='msg er show';msg.textContent='Network error.';btn.disabled=false;btn.textContent='Send Access Link'}}
-    </script>`));
+    </script>`, { pill: 'BILLING' }));
 });
 
 app.post('/billing/request', frm, express.json(), async (req, res) => {
