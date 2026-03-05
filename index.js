@@ -969,17 +969,15 @@ function requireSession(req, res, next) {
 app.get('/login', (req, res) => {
     if (getSession(req)) return res.redirect('/member');
     res.send(shell('Member Login', `
-    <div style="width:100%;max-width:520px;">
-      <div style="text-align:center;margin-bottom:32px;">
-        <div style="display:inline-block;border-top:1px solid rgba(255,255,255,0.1);border-bottom:1px solid rgba(255,255,255,0.1);padding:10px 28px;margin-bottom:16px;">
-          <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:0.5px;">High Velocity Trading</div>
-          <div style="font-size:9px;font-weight:500;letter-spacing:4px;text-transform:uppercase;color:#64748b;margin-top:3px;">Member Portal</div>
-        </div>
-        <p style="color:#64748b;font-size:13px;margin:0;">Enter your membership email. We'll send a secure one-time login link.</p>
-      </div>
-      <div class="card" style="max-width:520px;">
+    <div style="width:100%;max-width:460px;">
+      <div class="card">
         <div class="ct"></div>
         <div class="cb">
+          <div style="text-align:center;margin-bottom:24px;">
+            <div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:6px;">Member Login</div>
+            <p style="color:#64748b;font-size:13px;margin:0;line-height:1.6;">Enter your membership email and we'll send you a secure one-time login link.</p>
+          </div>
+          <div class="div"></div>
           <label for="email">Membership Email</label>
           <input type="email" id="email" placeholder="your@email.com" autocomplete="email" />
           <button class="btn" id="btn" onclick="go()">Send My Access Link</button>
@@ -1040,16 +1038,20 @@ app.get('/course/confirm', async (req, res) => {
 app.get('/member', requireSession, (req, res) => {
     const s = getSession(req);
     res.send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Member Portal — HVT</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#080c14;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:60px;border-bottom:1px solid rgba(255,255,255,0.06);background:rgba(8,12,20,0.95);position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
-.logo{font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#fff}
-.logo span{color:#2254F5}
+body{background:#000000;color:#fff;font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;min-height:100vh}
+.hvt-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:#000000;}
+.hvt-bg::before{content:'';position:absolute;top:0;left:0;width:65%;height:65%;background:radial-gradient(ellipse at 15% 30%,#00001C 0%,transparent 65%);pointer-events:none;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:52px;border-bottom:1px solid rgba(255,255,255,0.06);background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar-logo{display:flex;align-items:center;text-decoration:none;}
+.topbar-logo img{height:32px;width:auto;}
 .user-badge{display:flex;align-items:center;gap:10px;font-size:13px;color:#64748b}
-.user-badge strong{color:#94a3b8}
-.plan-pill{background:rgba(34,84,245,0.1);border:1px solid rgba(34,84,245,0.25);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#2254F5}
-.portal-wrap{max-width:880px;margin:0 auto;padding:56px 24px}
+.user-badge strong{color:#94a3b8;font-size:13px;}
+.plan-pill{background:rgba(34,84,245,0.1);border:1px solid rgba(34,84,245,0.25);border-radius:20px;padding:3px 12px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#2254F5}
+.portal-wrap{max-width:880px;margin:0 auto;padding:56px 24px;position:relative;z-index:1;}
 .portal-heading{text-align:center;margin-bottom:56px}
 .portal-heading h1{font-size:32px;font-weight:700;letter-spacing:-0.5px;margin-bottom:8px}
 .portal-heading p{color:#64748b;font-size:14px}
@@ -1066,8 +1068,11 @@ body{background:#080c14;color:#fff;font-family:-apple-system,BlinkMacSystemFont,
 .help{text-align:center;margin-top:56px;color:#334155;font-size:13px}
 .help a{color:#2254F5;text-decoration:none}
 </style></head><body>
+<div class="hvt-bg" aria-hidden="true"></div>
 <div class="topbar">
-  <div class="logo">High <span>Velocity</span> Trading</div>
+  <div class="topbar-left">
+    <a href="/member" class="topbar-logo"><img src="/hvt-logo.png" alt="High Velocity Trading" /></a>
+  </div>
   <div class="user-badge"><strong>${s.name}</strong> <span class="plan-pill">${s.plan}</span></div>
 </div>
 <div class="portal-wrap">
