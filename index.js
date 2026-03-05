@@ -788,8 +788,10 @@ app.post('/webhooks/discord-authnet', wh, express.json(), async (req, res) => {
 app.get('/check-access', frm, async (req, res) => {
     const email = req.query.email?.toLowerCase().trim();
     if (!email) return res.status(400).json({ active: false });
-    const { data } = await supabase.from(MEMBERSHIP_TABLE).select('status,expires_at').eq('email', email).maybeSingle();
-    res.json({ active: data?.status === 'active' && new Date(data.expires_at) > new Date() });
+    try {
+        const { data } = await supabase.from(MEMBERSHIP_TABLE).select('status,expires_at').eq('email', email).maybeSingle();
+        res.json({ active: data?.status === 'active' && new Date(data.expires_at) > new Date() });
+    } catch (e) { console.error('[CheckAccess]', e.message); res.status(500).json({ active: false }); }
 });
 
 // ─── TRADING ROOM ─────────────────────────────────────────────────────────────
@@ -1186,6 +1188,9 @@ app.get('/member', (req, res, next) => {
 
 // ─── TRADING JOURNAL (session-gated) ──────────────────────────────────────────
 app.get('/trading-journal', requireSession, (req, res) => {
+    const s = getSession(req);
+    // Journal page — session data available: s.email, s.name, s.plan
+    // Tomorrow: full journal UI with Supabase trade logging will be built here
     res.send(shell('Trading Journal', `
     <div class="card" style="max-width:560px;">
       <div class="ct"></div>
@@ -1200,7 +1205,7 @@ app.get('/trading-journal', requireSession, (req, res) => {
         <div class="sub" style="margin-bottom:24px;">Log your trades, review performance, and track your progress with the HVT system.</div>
         <div class="div"></div>
         <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:32px;text-align:center;">
-          <p style="color:#64748b;font-size:14px;line-height:1.6;margin:0;">Your trading journal is being set up. Check back soon to start logging trades and reviewing your performance.</p>
+          <p style="color:#64748b;font-size:14px;line-height:1.6;margin:0;">Full trading journal launching soon. Your account: <strong style="color:#fff;">${s.email}</strong></p>
         </div>
       </div>
     </div>`));
@@ -1631,9 +1636,11 @@ function adminGuard(req, res, next) {
 // ─── ADMIN: REFRESH NT TOKEN ──────────────────────────────────────────────────
 app.post('/admin/refresh-nt-token', adm, express.json(), async (req, res) => {
     if (req.body?.key !== ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
-    const ok = await ntLogin();
-    if (ok) return res.json({ ok: true, message: '✅ NT re-authenticated successfully' });
-    res.status(500).json({ ok: false, message: '❌ NT login failed — check NT_USERNAME / NT_PASSWORD in Railway env vars' });
+    try {
+        const ok = await ntLogin();
+        if (ok) return res.json({ ok: true, message: '✅ NT re-authenticated successfully' });
+        res.status(500).json({ ok: false, message: '❌ NT login failed — check NT_USERNAME / NT_PASSWORD in Railway env vars' });
+    } catch (e) { console.error('[RefreshNT]', e.message); res.status(500).json({ ok: false, message: e.message }); }
 });
 
 // ─── ADMIN: CANCEL / REVOKE ───────────────────────────────────────────────────
@@ -1828,7 +1835,7 @@ app.post('/admin/god-add', adm, express.json(), async (req, res) => {
 // ─── ADMIN: PANEL HTML ────────────────────────────────────────────────────────
 app.get('/admin', adm, adminGuard, async (req, res) => {
     const key = req.query.key || '';
-
+    try {
     const [{ data: members }, { data: licenses }, { data: discordMems }] = await Promise.all([
         supabase.from(MEMBERSHIP_TABLE).select('email,full_name,status,plan_name,expires_at,discord_user_id,nt_license_id').order('updated_at', { ascending: false }).limit(100),
         supabase.from(LICENSE_TABLE).select('email,full_name,status,license_key,nt_license_id').order('updated_at', { ascending: false }).limit(100),
@@ -2196,6 +2203,7 @@ function godMode() {
 </html>`;
 
     res.send(html);
+    } catch (e) { console.error('[AdminPanel]', e.message, e.stack); res.status(500).send('<h1 style="color:red">Admin panel error: ' + e.message + '</h1>'); }
 });
 
 // ─── EMAIL PREVIEW (admin only) ───────────────────────────────────────────────
