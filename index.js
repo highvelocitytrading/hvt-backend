@@ -16,7 +16,7 @@ app.set('trust proxy', 1);
 const path = require('path');
 app.use(express.static(path.join(__dirname, 'public')));
 
-const PORT = process.env.PORT || 8128;
+const PORT = process.env.PORT || 8135;
 
 // ─── SECURITY HEADERS ────────────────────────────────────────────────────────
 app.use((req, res, next) => {
@@ -512,6 +512,8 @@ input::placeholder{color:#334155;}
 .nt-signup-wrap{text-align:center;margin-top:12px;}
 .nt-signup-btn{display:inline-block;padding:10px 18px;background:#D9452A;color:#000;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:15px;font-weight:800;letter-spacing:1.5px;text-decoration:none;box-shadow:0 4px 16px rgba(217,69,42,0.4);transition:transform .2s ease,box-shadow .2s ease,background .2s ease;margin-left:-36px;}
 .nt-signup-btn:hover{transform:scale(1.06);box-shadow:0 6px 24px rgba(217,69,42,0.5);background:#E04F35;}
+.tr-install-btn{display:inline-block;padding:10px 18px;background:#D9452A;color:#000;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:15px;font-weight:800;letter-spacing:1.5px;text-decoration:none;box-shadow:0 4px 16px rgba(217,69,42,0.4);transition:transform .2s ease,box-shadow .2s ease,background .2s ease;}
+.tr-install-btn:hover{transform:scale(1.06);box-shadow:0 6px 24px rgba(217,69,42,0.5);background:#E04F35;}
 .discord-join-btn{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:#5865F2;color:#fff;border-radius:999px;font-size:13px;font-weight:700;text-decoration:none;transition:background .2s,transform .1s;}
 .discord-join-btn:hover{background:#4752C4;transform:translateY(-1px);}
 .discord-join-btn img{height:26px;width:auto;object-fit:contain;flex-shrink:0;display:block;}
@@ -688,6 +690,11 @@ app.get('/trading-room', (req, res) => {
         </div>
         <label for="ntemail">NinjaTrader Account Email</label>
         <input type="email" id="ntemail" placeholder="email used for NinjaTrader" />
+        <div style="background:rgba(34,84,245,0.05);border:1px solid rgba(34,84,245,0.15);border-radius:12px;padding:18px 20px;margin-bottom:24px;">
+          <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#2254F5;margin-bottom:8px;font-weight:700;">Install Software</div>
+          <div style="color:#94a3b8;font-size:13px;line-height:1.5;">Download and install the HVT software before activating Discord access.</div>
+          <div style="margin-top:14px;text-align:center;"><a href="#" id="install-software-link" class="tr-install-btn">Install Software</a></div>
+        </div>
         <div style="background:rgba(34,84,245,0.05);border:1px solid rgba(34,84,245,0.15);border-radius:12px;padding:18px 20px;margin-bottom:24px;">
           <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;margin-bottom:14px;font-weight:700;">Discord Trading Room</div>
           <div style="display:flex;gap:12px;margin-bottom:12px;">
