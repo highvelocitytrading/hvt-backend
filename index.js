@@ -693,7 +693,7 @@ app.get('/trading-room', (req, res) => {
             <div style="width:24px;height:24px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;margin-top:1px;">1</div>
             <div style="flex:1;color:#94a3b8;font-size:13px;line-height:1.5;">Join the HVT Discord server, then enter your details below and click Activate.</div>
           </div>
-          <div style="text-align:center;margin-bottom:16px;"><a href="${DISCORD_INVITE_URL}" target="_blank" rel="noopener noreferrer" class="discord-join-btn"><img src="/discordlogo.png" alt="" width="22" height="22" style="flex-shrink:0;display:block"/><span>Join Discord</span></a></div>
+          <div style="text-align:center;margin-bottom:16px;"><a href="${DISCORD_INVITE_URL}" target="_blank" rel="noopener noreferrer" class="discord-join-btn"><img src="/discordlogo.png" alt="" width="35" height="35" style="flex-shrink:0;display:block"/><span>Join Discord</span></a></div>
           <div style="display:flex;gap:12px;">
             <div style="width:24px;height:24px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;margin-top:1px;">2</div>
             <div style="color:#94a3b8;font-size:13px;line-height:1.5;">Once you have joined, enter your <strong style="color:#fff;">purchase email</strong> and <strong style="color:#fff;">Discord username</strong> below and click Activate.</div>
