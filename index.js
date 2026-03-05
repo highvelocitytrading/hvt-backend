@@ -1645,7 +1645,8 @@ app.post('/admin/cancel', adm, express.json(), async (req, res) => {
         if (!email) return res.status(400).json({ error: 'Email required' });
 
         if (type === 'lifetime') {
-            const { data: l } = await supabase.from(LICENSE_TABLE).select('nt_license_id').eq('email', email).maybeSingle();
+            const { data: l } = await supabase.from(LICENSE_TABLE).select('nt_license_id,status').eq('email', email).maybeSingle();
+            if (!l) return res.status(404).json({ error: 'No lifetime license found for this email' });
             if (l?.nt_license_id) try { await ntRevokeLicense(l.nt_license_id); } catch (e) { console.error('[AdminCancel NT]', e.message); }
             await supabase.from(LICENSE_TABLE).update({ status: 'cancelled', updated_at: nowISO() }).eq('email', email);
             console.log('[Admin] Lifetime revoked:', email);
@@ -1842,7 +1843,7 @@ app.get('/admin', adm, adminGuard, async (req, res) => {
 
     // ── Admin JS (fully isolated — no template string conflicts) ───────────────
     const adminJS = `
-const KEY = ${JSON.stringify(key)};
+const KEY = document.getElementById('adminKey').value;
 let pending = null;
 
 async function refreshNT() {
@@ -2069,6 +2070,7 @@ label{display:block;font-size:11px;font-weight:600;letter-spacing:2px;text-trans
 </head>
 <body>
 
+<input type="hidden" id="adminKey" value="${key}">
 <div class="hdr">
   <div>
     <div class="brand">High Velocity Trading</div>
