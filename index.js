@@ -1744,13 +1744,16 @@ app.post('/admin/god-add', adm, express.json(), async (req, res) => {
 
         if (doEmail) {
             try {
-                const token      = crypto.randomBytes(32).toString('hex');
-                const tokenExp   = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+                // Save a 24-hour login token so the member can access the portal immediately
+                const token    = crypto.randomBytes(32).toString('hex');
+                const tokenExp = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
                 await supabase.from(table).update({ course_token: token, course_token_expires: tokenExp, updated_at: nowISO() }).eq('email', email);
-                const loginUrl   = `${APP_URL}/course/confirm?token=${token}`;
-                const planLabel  = isLifetime ? 'Lifetime' : isDiscordOnly ? 'Discord Room' : 'Monthly';
-                const emailHtml  = `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#0f172a;color:#e2e8f0;padding:40px;border-radius:12px;"><h2 style="color:#f6ad55;margin-bottom:8px;">Welcome to High Velocity Trading!</h2><p style="color:#94a3b8;margin-bottom:24px;">Your <strong style="color:#e2e8f0;">${planLabel} membership</strong> has been activated. Click below to access your member portal.</p><a href="${loginUrl}" style="display:inline-block;background:#f6ad55;color:#0f172a;font-weight:700;padding:14px 28px;border-radius:8px;text-decoration:none;font-size:16px;">Access My Portal &rarr;</a><p style="color:#475569;font-size:12px;margin-top:24px;">Link expires in 24 hours. Request a new one at <a href="${APP_URL}/login" style="color:#f6ad55;">${APP_URL}/login</a></p></div>`;
-                await sendEmail(email, `Your HVT ${planLabel} Access Is Ready`, emailHtml);
+                // Send the full branded welcome email (same as webhook flow)
+                if (isDiscordOnly) {
+                    await sendDiscordWelcome(email, fullName);
+                } else {
+                    await sendWelcome(email, fullName, isLifetime ? 'lifetime' : 'monthly');
+                }
                 result.email_sent = true;
             } catch (e) { console.error('[GodMode] Email error:', e.message); }
         }
