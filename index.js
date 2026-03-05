@@ -16,7 +16,7 @@ app.set('trust proxy', 1);
 const path = require('path');
 app.use(express.static(path.join(__dirname, 'public')));
 
-const PORT = process.env.PORT || 8119;
+const PORT = process.env.PORT || 8121;
 
 // ─── SECURITY HEADERS ────────────────────────────────────────────────────────
 app.use((req, res, next) => {
@@ -712,7 +712,7 @@ app.get('/trading-room', (req, res) => {
     </div>
     <script>
       async function go(){const email=document.getElementById('email').value.trim();const disc=document.getElementById('discord').value.trim();const ntEmail=document.getElementById('ntemail').value.trim();const msg=document.getElementById('msg');const btn=document.getElementById('btn');msg.className='msg';if(!ntEmail){msg.className='msg er show';msg.textContent='Please enter your NinjaTrader account email.';return}if(!email){msg.className='msg er show';msg.textContent='Please enter your purchase email.';return}if(!disc){msg.className='msg er show';msg.textContent='Please enter your Discord username.';return}btn.disabled=true;btn.textContent='Activating...';try{const r=await fetch('/trading-room/activate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,discord_username:disc,ninjatrader_email:ntEmail})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\\u2713 Done! Check Discord \\u2014 your role has been assigned. NinjaTrader indicators will activate automatically.';btn.textContent='Access Granted \\u2713'}else{msg.className='msg er show';msg.textContent=d.error||'Something went wrong.';btn.disabled=false;btn.textContent='Activate Member Access'}}catch{msg.className='msg er show';msg.textContent='Network error. Please try again.';btn.disabled=false;btn.textContent='Activate Member Access'}}
-    </script>`));
+    </script>`, { pill: 'GET STARTED' }));
 });
 
 app.post('/trading-room/activate', frm, express.json(), async (req, res) => {
