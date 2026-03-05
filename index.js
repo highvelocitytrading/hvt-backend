@@ -16,7 +16,7 @@ app.set('trust proxy', 1);
 const path = require('path');
 app.use(express.static(path.join(__dirname, 'public')));
 
-const PORT = process.env.PORT || 8095;
+const PORT = process.env.PORT || 8116;
 
 // ─── SECURITY HEADERS ────────────────────────────────────────────────────────
 app.use((req, res, next) => {
@@ -61,6 +61,7 @@ const ADMIN_SECRET              = process.env.ADMIN_SECRET   || 'HVT-ADMIN-FADBC
 
 const DISCORD_BOT_TOKEN        = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_GUILD_ID         = process.env.DISCORD_GUILD_ID         || '1460694720090083483';
+const DISCORD_INVITE_URL       = process.env.DISCORD_INVITE_URL       || 'https://discord.com/invite/J3vjw4qz';
 const DISCORD_MONTHLY_ROLE_ID  = process.env.DISCORD_MONTHLY_ROLE_ID  || '1476634274424819897';
 const DISCORD_LIFETIME_ROLE_ID = process.env.DISCORD_LIFETIME_ROLE_ID || '1476634362811384001';
 const DISCORD_ROOM_ROLE_ID     = process.env.DISCORD_ROOM_ROLE_ID     || '';
@@ -464,7 +465,7 @@ function shell(title, body, hero) {
     return `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>${title} – High Velocity Trading</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Bebas+Neue&family=Montserrat:wght@800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:100px 20px 24px;color:#fff;position:relative;overflow-x:hidden;}
@@ -508,6 +509,11 @@ input::placeholder{color:#334155;}
 .ntIcon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(34,84,245,0.12);border:1px solid rgba(34,84,245,0.22);flex-shrink:0;}
 .ntTitle{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#2254F5;font-weight:700;line-height:1;}
 .ntDesc{color:#94a3b8;font-size:12.5px;line-height:1.55;margin-top:6px;}
+.nt-signup-wrap{text-align:center;margin-top:12px;}
+.nt-signup-btn{display:inline-block;padding:10px 18px;background:#D9452A;color:#000;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:15px;font-weight:800;letter-spacing:1.5px;text-decoration:none;box-shadow:0 4px 16px rgba(217,69,42,0.4);transition:transform .2s ease,box-shadow .2s ease,background .2s ease;margin-left:-36px;}
+.nt-signup-btn:hover{transform:scale(1.06);box-shadow:0 6px 24px rgba(217,69,42,0.5);background:#E04F35;}
+.discord-join-btn{display:inline-flex;align-items:center;gap:10px;padding:10px 20px;background:#5865F2;color:#fff;border-radius:999px;font-size:14px;font-weight:700;text-decoration:none;transition:background .2s,transform .1s;}
+.discord-join-btn:hover{background:#4752C4;transform:translateY(-1px);}
 </style></head><body>
 <div class="hvt-bg" aria-hidden="true"></div>
 <div class="topnav-wrap">
@@ -676,6 +682,7 @@ app.get('/trading-room', (req, res) => {
           <div style="flex:1;">
             <div class="ntTitle">NinjaTrader Activation</div>
             <div class="ntDesc">Enter the email tied to your <strong style="color:#fff;">NinjaTrader account</strong>. <strong style="color:#94a3b8;">You must have a NinjaTrader account created first</strong> before submitting this.</div>
+            <div class="nt-signup-wrap"><a href="https://lp.ninjatrader.com/platform?im_ref=XLAQAKxrwxyZWIqQPWQSz2P0Uku26HTRR1lDXQ0&sharedid=&irpid=7019303&irgwc=1&afsrc=1" target="_blank" rel="noopener noreferrer" class="nt-signup-btn">Sign up</a></div>
           </div>
         </div>
         <label for="ntemail">NinjaTrader Account Email</label>
@@ -684,8 +691,9 @@ app.get('/trading-room', (req, res) => {
           <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;margin-bottom:14px;font-weight:700;">Discord Trading Room</div>
           <div style="display:flex;gap:12px;margin-bottom:12px;">
             <div style="width:24px;height:24px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;margin-top:1px;">1</div>
-            <div style="color:#94a3b8;font-size:13px;line-height:1.5;">Go to <strong style="color:#2254F5;">highvelocitytrading.com</strong>, click <strong style="color:#fff;">Join Discord</strong>, and join the server.</div>
+            <div style="flex:1;color:#94a3b8;font-size:13px;line-height:1.5;">Join the HVT Discord server, then enter your details below and click Activate.</div>
           </div>
+          <div style="text-align:center;margin-bottom:16px;"><a href="${DISCORD_INVITE_URL}" target="_blank" rel="noopener noreferrer" class="discord-join-btn"><img src="/discord-logo.svg" alt="" width="22" height="22" style="flex-shrink:0;display:block"/><span>Join Discord</span></a></div>
           <div style="display:flex;gap:12px;">
             <div style="width:24px;height:24px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;margin-top:1px;">2</div>
             <div style="color:#94a3b8;font-size:13px;line-height:1.5;">Once you have joined, enter your <strong style="color:#fff;">purchase email</strong> and <strong style="color:#fff;">Discord username</strong> below and click Activate.</div>
@@ -929,6 +937,15 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
       </div>
     </div>
     <div class="carousel-scroll" id="carousel-scroll">
+    <a class="pcard" href="/trading-room">
+      <div class="bar"></div>
+      <div class="inner">
+        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"/></svg></div>
+        <h3>Get Started</h3>
+        <p>Activate your Discord access and trade live with the HVT team every market day.</p>
+        <div class="arrow">Get Started <span class="arr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
+      </div>
+    </a>
     <a class="pcard" href="/course">
       <div class="bar"></div>
       <div class="inner">
@@ -936,15 +953,6 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
         <h3>Course Library</h3>
         <p>Step-by-step trading videos built on the HVT system. Learn at your own pace.</p>
         <div class="arrow">Watch Now <span class="arr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
-      </div>
-    </a>
-    <a class="pcard" href="/trading-room">
-      <div class="bar"></div>
-      <div class="inner">
-        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"/></svg></div>
-        <h3>Trading Room</h3>
-        <p>Activate your Discord access and trade live with the HVT team every market day.</p>
-        <div class="arrow">Activate <span class="arr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
       </div>
     </a>
     <a class="pcard" href="/trading-journal">
