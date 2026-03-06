@@ -214,6 +214,24 @@ if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
     console.warn('[WARN] Missing Supabase env. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to .env for login/membership. Server will start.');
 }
 // ─── SUPABASE STORAGE DOWNLOADS ──────────────────────────────────────────────
+const DOWNLOAD_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'uploads';
+
+// MUST match exactly the filenames in Supabase Storage
+const FILES = {
+  template: 'HVT NQ TEMPLATE.xml',
+  master:   'HVTMasterAccessNQ.zip'
+};
+
+async function signedDownloadUrl(objectPath) {
+  if (!supabase) throw new Error('Supabase client not configured');
+  const { data, error } = await supabase.storage
+    .from(DOWNLOAD_BUCKET)
+    .createSignedUrl(objectPath, 60); // 60 seconds
+
+  if (error || !data?.signedUrl) throw new Error(error?.message || 'Could not create signed URL');
+  return data.signedUrl;
+}
+// ─── SUPABASE STORAGE DOWNLOADS ──────────────────────────────────────────────
 const DOWNLOAD_BUCKET = 'uploads';
 
 // MUST match exactly the filenames in Supabase Storage
