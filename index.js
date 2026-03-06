@@ -213,62 +213,7 @@ if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
 } else {
     console.warn('[WARN] Missing Supabase env. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to .env for login/membership. Server will start.');
 }
-// ─── SUPABASE STORAGE DOWNLOADS ──────────────────────────────────────────────
-const DOWNLOAD_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'uploads';
 
-// MUST match exactly the filenames in Supabase Storage
-const FILES = {
-  template: 'HVT NQ TEMPLATE.xml',
-  master:   'HVTMasterAccessNQ.zip'
-};
-
-async function signedDownloadUrl(objectPath) {
-  if (!supabase) throw new Error('Supabase client not configured');
-  const { data, error } = await supabase.storage
-    .from(DOWNLOAD_BUCKET)
-    .createSignedUrl(objectPath, 60); // 60 seconds
-
-  if (error || !data?.signedUrl) throw new Error(error?.message || 'Could not create signed URL');
-  return data.signedUrl;
-}
-// ─── SUPABASE STORAGE DOWNLOADS ──────────────────────────────────────────────
-const DOWNLOAD_BUCKET = 'uploads';
-
-// MUST match exactly the filenames in Supabase Storage
-const FILES = {
-  template: 'HVT NQ TEMPLATE.xml',
-  master:   'HVTMasterAccessNQ.zip',
-};
-
-async function signedDownloadUrl(objectPath) {
-  const { data, error } = await supabase
-    .storage
-    .from(DOWNLOAD_BUCKET)
-    .createSignedUrl(objectPath, 60); // 60 seconds
-
-  if (error || !data?.signedUrl) {
-    throw new Error(error?.message || 'Could not create signed URL');
-  }
-  return data.signedUrl;
-}
-
-app.get('/download/:which', frm, async (req, res) => {
-  try {
-    if (!supabase) return res.status(503).send('Supabase not configured');
-
-    const which = req.params.which;
-    const objectPath = FILES[which];
-    if (!objectPath) return res.status(404).send('Invalid download');
-
-    const url = await signedDownloadUrl(objectPath);
-
-    // Redirect triggers the browser download
-    return res.redirect(302, url);
-  } catch (e) {
-    console.error('[DOWNLOAD]', e.message);
-    return res.status(500).send('Download error');
-  }
-});
 // ─── SHARED HELPERS ───────────────────────────────────────────────────────────
 function pickFirst(...v) { for (const x of v) { if (typeof x === 'string' && x.trim()) return x.trim(); if (typeof x === 'number') return String(x); } return null; }
 function genKey()        { return `HVT-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`; }
@@ -573,9 +518,9 @@ input::placeholder{color:#334155;}
 .tr-install-btn{display:inline-block;padding:12px 24px;background:#2254F5;color:#fff;border:1px solid rgba(255,255,255,0.12);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.5px;text-decoration:none;box-shadow:0 2px 12px rgba(34,84,245,0.25);transition:background .2s,box-shadow .2s,transform .2s;}
 .tr-install-btn:hover{background:#2d5cf7;box-shadow:0 4px 20px rgba(34,84,245,0.35);transform:translateY(-1px);}
 .tr-install-btn:active{transform:translateY(0);box-shadow:0 1px 8px rgba(34,84,245,0.2);}
-.discord-join-btn{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:#5865F2;color:#fff;border-radius:999px;font-size:13px;font-weight:700;text-decoration:none;transition:background .2s,transform .1s;}
-.discord-join-btn:hover{background:#4752C4;transform:translateY(-1px);}
-.discord-join-btn img{height:26px;width:auto;object-fit:contain;flex-shrink:0;display:block;}
+.discord-join-btn{display:inline-flex;align-items:center;gap:10px;padding:12px 24px;background:#5865F2;color:#fff;border:1px solid rgba(255,255,255,0.12);border-radius:8px;font-size:13px;font-weight:600;letter-spacing:0.3px;text-decoration:none;box-shadow:0 2px 12px rgba(88,101,242,0.25);transition:background .2s,box-shadow .2s,transform .2s;}
+.discord-join-btn:hover{background:#4752C4;box-shadow:0 4px 20px rgba(88,101,242,0.35);transform:translateY(-1px);}
+.discord-join-btn img{height:22px;width:auto;object-fit:contain;flex-shrink:0;display:block;}
 </style></head><body>
 <div class="hvt-bg" aria-hidden="true"></div>
 <div class="topnav-wrap">
