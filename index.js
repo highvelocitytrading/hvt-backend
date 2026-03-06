@@ -484,11 +484,11 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;displa
 .hero-sub{font-family:'DM Sans',sans-serif;font-weight:400;font-size:15px;color:#94a3b8;line-height:1.6;max-width:360px;margin:0 auto 0;}
 .hero-div{height:1px;background:linear-gradient(90deg,transparent,rgba(34,84,245,0.3),transparent);margin:16px auto 0;max-width:200px;}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10;}
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:64px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative;}
-.topnav-logo{display:flex;align-items:center;gap:12px;text-decoration:none;color:#fff;}
-.topnav-logo img{height:52px;width:auto;display:block;object-fit:contain;flex-shrink:0;}
-.topnav-logo .topnav-brand{font-size:17px;font-weight:700;letter-spacing:2px;text-transform:uppercase;white-space:nowrap;}
-.topnav-logo .topnav-brand-sub{font-size:10px;font-weight:500;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-top:1px;}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:80px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative;}
+.topnav-logo{display:flex;align-items:center;gap:14px;text-decoration:none;color:#fff;}
+.topnav-logo img{height:72px;width:auto;display:block;object-fit:contain;flex-shrink:0;}
+.topnav-logo .topnav-brand{font-size:24px;font-weight:800;letter-spacing:3px;text-transform:uppercase;white-space:nowrap;letter-spacing:2.5px;}
+.topnav-logo .topnav-brand-sub{font-size:11px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#2254F5;margin-top:3px;}
 .topnav-left{display:flex;align-items:center;gap:12px;}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s;}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85);}
@@ -535,7 +535,7 @@ input::placeholder{color:#334155;}
 <div class="topnav-wrap">
   <nav class="topnav">
     <div class="topnav-left">
-      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png?v=2" alt="" /><span><span class="topnav-brand">High Velocity Trading</span><br/><span class="topnav-brand-sub">Member Portal</span></span></a>
+      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png?v=3" alt="" /><span><span class="topnav-brand">High Velocity Trading</span><br/><span class="topnav-brand-sub">Member Portal</span></span></a>
     </div>
     <div class="topnav-right" style="display:flex;align-items:center;gap:12px;">
       <a href="/member" class="topnav-link" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Portal</a>
@@ -930,11 +930,11 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 .member-bg::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(34,84,245,0.18) 0%,transparent 50%),radial-gradient(ellipse 60% 40% at 20% 30%,#00001C 0%,transparent 55%);pointer-events:none}
 .member-bg::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:600px;height:200px;background:radial-gradient(ellipse 100% 100% at 50% 100%,rgba(34,84,245,0.08) 0%,transparent 70%);pointer-events:none}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:64px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
-.topnav-logo{display:flex;align-items:center;gap:12px;text-decoration:none;color:#fff}
-.topnav-logo img{height:52px;width:auto;display:block;object-fit:contain;flex-shrink:0}
-.topnav-logo .topnav-brand{font-size:17px;font-weight:700;letter-spacing:2px;text-transform:uppercase;white-space:nowrap}
-.topnav-logo .topnav-brand-sub{font-size:10px;font-weight:500;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-top:2px}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:80px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
+.topnav-logo{display:flex;align-items:center;gap:14px;text-decoration:none;color:#fff}
+.topnav-logo img{height:72px;width:auto;display:block;object-fit:contain;flex-shrink:0}
+.topnav-logo .topnav-brand{font-size:24px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;white-space:nowrap}
+.topnav-logo .topnav-brand-sub{font-size:11px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#2254F5;margin-top:3px}
 .topnav-left{display:flex;align-items:center;gap:12px}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85)}
@@ -981,7 +981,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 <div class="topnav-wrap">
   <nav class="topnav">
     <div class="topnav-left">
-      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png?v=2" alt="" /><span><span class="topnav-brand">High Velocity Trading</span><br/><span class="topnav-brand-sub">Member Portal</span></span></a>
+      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png?v=3" alt="" /><span><span class="topnav-brand">High Velocity Trading</span><br/><span class="topnav-brand-sub">Member Portal</span></span></a>
     </div>
     <div class="topnav-right">
       <a href="/billing/confirm-session" class="topnav-out">Billing</a>
@@ -1123,11 +1123,11 @@ app.get('/course', requireSession, (req, res) => {
 *{box-sizing:border-box;margin:0;padding:0}html,body{height:100%;overflow:hidden}body{font-family:'DM Sans',sans-serif;background:#000;color:#fff;display:flex;flex-direction:column}
 .member-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:#000}.member-bg::before{content:'';position:absolute;top:0;left:0;width:70%;height:60%;background:radial-gradient(ellipse at 20% 20%,#00001C 0%,transparent 60%);pointer-events:none}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:64px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
-.topnav-logo{display:flex;align-items:center;gap:12px;text-decoration:none;color:#fff}
-.topnav-logo img{height:52px;width:auto;display:block;object-fit:contain;flex-shrink:0}
-.topnav-logo .topnav-brand{font-size:17px;font-weight:700;letter-spacing:2px;text-transform:uppercase;white-space:nowrap}
-.topnav-logo .topnav-brand-sub{font-size:10px;font-weight:500;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-top:2px}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:80px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
+.topnav-logo{display:flex;align-items:center;gap:14px;text-decoration:none;color:#fff}
+.topnav-logo img{height:72px;width:auto;display:block;object-fit:contain;flex-shrink:0}
+.topnav-logo .topnav-brand{font-size:24px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;white-space:nowrap}
+.topnav-logo .topnav-brand-sub{font-size:11px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#2254F5;margin-top:3px}
 .topnav-left{display:flex;align-items:center;gap:12px}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85)}
@@ -1136,7 +1136,7 @@ app.get('/course', requireSession, (req, res) => {
 .topnav-out:hover{color:rgba(255,255,255,0.85)}
 .topnav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);letter-spacing:0.2px;transition:background .2s,color .2s,border-color .2s}
 .topnav-cta:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18)}
-.layout{display:flex;flex:1;overflow:hidden;position:relative;z-index:1;margin-top:64px}
+.layout{display:flex;flex:1;overflow:hidden;position:relative;z-index:1;margin-top:80px}
 .sidebar{width:280px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);display:flex;flex-direction:column;overflow:hidden}
 .sidebar-header{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0}
 .sidebar-header h2{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#64748b}
@@ -1166,7 +1166,7 @@ app.get('/course', requireSession, (req, res) => {
 .video-meta h2{font-size:18px;font-weight:700;color:#fff;margin-bottom:4px}
 .video-meta-sub{display:flex;align-items:center;gap:16px;font-size:12px;color:#64748b}
 .section-badge{background:rgba(34,84,245,0.12);border:1px solid rgba(34,84,245,0.2);border-radius:6px;padding:2px 10px;font-size:10px;font-weight:700;color:#2254F5;letter-spacing:1px;text-transform:uppercase}
-@media(max-width:768px){.sidebar{position:fixed;left:-280px;top:64px;bottom:0;z-index:50;transition:left .25s;box-shadow:4px 0 24px rgba(0,0,0,0.4)}.sidebar.open{left:0}.layout{position:relative}.mob-menu{display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:6px;cursor:pointer;color:#94a3b8;font-size:16px}}
+@media(max-width:768px){.sidebar{position:fixed;left:-280px;top:80px;bottom:0;z-index:50;transition:left .25s;box-shadow:4px 0 24px rgba(0,0,0,0.4)}.sidebar.open{left:0}.layout{position:relative}.mob-menu{display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:6px;cursor:pointer;color:#94a3b8;font-size:16px}}
 @media(min-width:769px){.mob-menu{display:none}}
 </style></head><body>
 <div class="member-bg" aria-hidden="true"></div>
@@ -1174,7 +1174,7 @@ app.get('/course', requireSession, (req, res) => {
   <nav class="topnav">
     <div class="topnav-left">
       <button class="mob-menu" onclick="toggleSidebar()" title="Menu" aria-label="Menu">&#9776;</button>
-      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png?v=2" alt="" /><span><span class="topnav-brand">High Velocity Trading</span><br/><span class="topnav-brand-sub">Member Portal</span></span></a>
+      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png?v=3" alt="" /><span><span class="topnav-brand">High Velocity Trading</span><br/><span class="topnav-brand-sub">Member Portal</span></span></a>
     </div>
     <div class="topnav-right">
       <a href="/member" class="topnav-out">Portal</a>
