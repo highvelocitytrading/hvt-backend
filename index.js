@@ -585,37 +585,34 @@ app.post('/webhooks/membership-jotform', wh, (req, res) => {
 
 // ─── MEMBERSHIP AUTHNET ───────────────────────────────────────────────────────
 app.post('/webhooks/membership-authnet', wh, express.json(), (req, res) => {
-    res.status(200).send('OK'); // Always respond immediately so Authorize.net never deactivates
-    (async () => {
-        try {
-            const { eventType = '', payload = {} } = req.body || {};
-            const email = (payload?.customerDetails?.email || '').toLowerCase().trim();
-            const subId = pickFirst(payload?.id);
-            const CANCEL_EVENTS = ['net.authorize.customer.subscription.cancelled','net.authorize.customer.subscription.expired','net.authorize.customer.subscription.suspended','net.authorize.customer.subscription.terminated','net.authorize.customer.subscription.failed'];
-
-            if (eventType === 'net.authorize.customer.subscription.created' || eventType === 'net.authorize.payment.capture.created') {
-                if (!email) return;
-                const row = { email, plan_name: 'membership', status: 'active', source: 'authnet', expires_at: now30days(), updated_at: nowISO() };
-                if (subId) row.authnet_subscription_id = subId;
-                await supabase.from(MEMBERSHIP_TABLE).upsert(row, { onConflict: 'email' });
-                try {
-                    const ntId = await ntCreateLicense(email, 'monthly');
-                    if (ntId) await supabase.from(MEMBERSHIP_TABLE).update({ nt_license_id: ntId, updated_at: nowISO() }).eq('email', email);
-                } catch (e) { console.error('[NT monthly AN]', e.message); }
-                console.log(`✅ Membership (AN): ${email}`);
-            } else if (CANCEL_EVENTS.includes(eventType)) {
-                const q = subId ? supabase.from(MEMBERSHIP_TABLE).update({ status: 'cancelled', updated_at: nowISO() }).eq('authnet_subscription_id', subId)
-                                : email ? supabase.from(MEMBERSHIP_TABLE).update({ status: 'cancelled', updated_at: nowISO() }).eq('email', email) : null;
-                if (q) {
-                    await q;
-                    const { data: m } = await supabase.from(MEMBERSHIP_TABLE).select('discord_user_id,nt_license_id').eq(subId ? 'authnet_subscription_id' : 'email', subId || email).maybeSingle();
-                    if (m?.discord_user_id) try { await stripRole(m.discord_user_id, DISCORD_MONTHLY_ROLE_ID); } catch {}
-                    if (m?.nt_license_id)   try { await ntRevokeLicense(m.nt_license_id); } catch {}
-                    console.log(`🚫 Membership cancelled (AN): ${email || subId}`);
-                }
+    res.status(200).send('OK'); // Respond immediately — prevents Authorize.net deactivation
+    (async () => { try {
+        const { eventType = '', payload = {} } = req.body || {};
+        const email = (payload?.customerDetails?.email || '').toLowerCase().trim();
+        const subId = pickFirst(payload?.id);
+        const CANCEL_EVENTS = ['net.authorize.customer.subscription.cancelled','net.authorize.customer.subscription.expired','net.authorize.customer.subscription.suspended','net.authorize.customer.subscription.terminated','net.authorize.customer.subscription.failed'];
+        if (eventType === 'net.authorize.customer.subscription.created' || eventType === 'net.authorize.payment.capture.created') {
+            if (!email) return;
+            const row = { email, plan_name: 'membership', status: 'active', source: 'authnet', expires_at: now30days(), updated_at: nowISO() };
+            if (subId) row.authnet_subscription_id = subId;
+            await supabase.from(MEMBERSHIP_TABLE).upsert(row, { onConflict: 'email' });
+            try {
+                const ntId = await ntCreateLicense(email, 'monthly');
+                if (ntId) await supabase.from(MEMBERSHIP_TABLE).update({ nt_license_id: ntId, updated_at: nowISO() }).eq('email', email);
+            } catch (e) { console.error('[NT monthly AN]', e.message); }
+            console.log(`✅ Membership (AN): ${email}`);
+        } else if (CANCEL_EVENTS.includes(eventType)) {
+            const q = subId ? supabase.from(MEMBERSHIP_TABLE).update({ status: 'cancelled', updated_at: nowISO() }).eq('authnet_subscription_id', subId)
+                            : email ? supabase.from(MEMBERSHIP_TABLE).update({ status: 'cancelled', updated_at: nowISO() }).eq('email', email) : null;
+            if (q) {
+                await q;
+                const { data: m } = await supabase.from(MEMBERSHIP_TABLE).select('discord_user_id,nt_license_id').eq(subId ? 'authnet_subscription_id' : 'email', subId || email).maybeSingle();
+                if (m?.discord_user_id) try { await stripRole(m.discord_user_id, DISCORD_MONTHLY_ROLE_ID); } catch {}
+                if (m?.nt_license_id)   try { await ntRevokeLicense(m.nt_license_id); } catch {}
+                console.log(`🚫 Membership cancelled (AN): ${email || subId}`);
             }
-        } catch (e) { console.error('[MemberAN]', e.message); }
-    })();
+        }
+    } catch (e) { console.error('[MemberAN]', e.message); } })();
 });
 
 // ─── DISCORD $37 JOTFORM ─────────────────────────────────────────────────────
@@ -639,33 +636,30 @@ app.post('/webhooks/discord-jotform', wh, (req, res) => {
 
 // ─── DISCORD $37 AUTHNET ──────────────────────────────────────────────────────
 app.post('/webhooks/discord-authnet', wh, express.json(), (req, res) => {
-    res.status(200).send('OK'); // Always respond immediately so Authorize.net never deactivates
-    (async () => {
-        try {
-            const { eventType = '', payload = {} } = req.body || {};
-            const email = (payload?.customerDetails?.email || '').toLowerCase().trim();
-            const subId = pickFirst(payload?.id);
-            const CANCEL_EVENTS = ['net.authorize.customer.subscription.cancelled','net.authorize.customer.subscription.expired','net.authorize.customer.subscription.suspended','net.authorize.customer.subscription.terminated','net.authorize.customer.subscription.failed'];
-
-            if (eventType === 'net.authorize.customer.subscription.created' || eventType === 'net.authorize.payment.capture.created') {
-                if (!email) return;
-                const row = { email, plan_name: 'discord_monthly', status: 'active', source: 'authnet', expires_at: now30days(), updated_at: nowISO() };
-                if (subId) row.authnet_subscription_id = subId;
-                await supabase.from(DISCORD_TABLE).upsert(row, { onConflict: 'email' });
-                console.log(`✅ Discord member renewed (AN): ${email}`);
-            } else if (CANCEL_EVENTS.includes(eventType)) {
-                const q = subId ? supabase.from(DISCORD_TABLE).update({ status: 'cancelled', updated_at: nowISO() }).eq('authnet_subscription_id', subId)
-                                : email ? supabase.from(DISCORD_TABLE).update({ status: 'cancelled', updated_at: nowISO() }).eq('email', email) : null;
-                if (q) {
-                    await q;
-                    const rid = DISCORD_ROOM_ROLE_ID || DISCORD_MONTHLY_ROLE_ID;
-                    const { data: dm } = await supabase.from(DISCORD_TABLE).select('discord_user_id').eq(subId ? 'authnet_subscription_id' : 'email', subId || email).maybeSingle();
-                    if (dm?.discord_user_id) try { await stripRole(dm.discord_user_id, rid); } catch {}
-                    console.log(`🚫 Discord cancelled (AN): ${email || subId}`);
-                }
+    res.status(200).send('OK'); // Respond immediately — prevents Authorize.net deactivation
+    (async () => { try {
+        const { eventType = '', payload = {} } = req.body || {};
+        const email = (payload?.customerDetails?.email || '').toLowerCase().trim();
+        const subId = pickFirst(payload?.id);
+        const CANCEL_EVENTS = ['net.authorize.customer.subscription.cancelled','net.authorize.customer.subscription.expired','net.authorize.customer.subscription.suspended','net.authorize.customer.subscription.terminated','net.authorize.customer.subscription.failed'];
+        if (eventType === 'net.authorize.customer.subscription.created' || eventType === 'net.authorize.payment.capture.created') {
+            if (!email) return;
+            const row = { email, plan_name: 'discord_monthly', status: 'active', source: 'authnet', expires_at: now30days(), updated_at: nowISO() };
+            if (subId) row.authnet_subscription_id = subId;
+            await supabase.from(DISCORD_TABLE).upsert(row, { onConflict: 'email' });
+            console.log(`✅ Discord member renewed (AN): ${email}`);
+        } else if (CANCEL_EVENTS.includes(eventType)) {
+            const q = subId ? supabase.from(DISCORD_TABLE).update({ status: 'cancelled', updated_at: nowISO() }).eq('authnet_subscription_id', subId)
+                            : email ? supabase.from(DISCORD_TABLE).update({ status: 'cancelled', updated_at: nowISO() }).eq('email', email) : null;
+            if (q) {
+                await q;
+                const rid = DISCORD_ROOM_ROLE_ID || DISCORD_MONTHLY_ROLE_ID;
+                const { data: dm } = await supabase.from(DISCORD_TABLE).select('discord_user_id').eq(subId ? 'authnet_subscription_id' : 'email', subId || email).maybeSingle();
+                if (dm?.discord_user_id) try { await stripRole(dm.discord_user_id, rid); } catch {}
+                console.log(`🚫 Discord cancelled (AN): ${email || subId}`);
             }
-        } catch (e) { console.error('[DiscordAN]', e.message); }
-    })();
+        }
+    } catch (e) { console.error('[DiscordAN]', e.message); } })();
 });
 
 app.get('/check-access', frm, async (req, res) => {
@@ -1587,24 +1581,22 @@ app.get('/cancel/confirm', async (req, res) => {
 
 // ─── LIFETIME LICENSE WEBHOOKS ────────────────────────────────────────────────
 app.post('/webhooks/authorize-net', wh, express.raw({ type: '*/*', limit: '2mb' }), (req, res) => {
-    res.status(200).json({ ok: true }); // Always respond immediately so Authorize.net never deactivates
-    (async () => {
-        try {
-            const rawBody = req.body?.toString('utf8') || '';
-            const sig     = verifyAuthnetSig(rawBody, req.headers['x-anet-signature']);
-            if (!sig.ok) { console.error('[LicenseAN] invalid signature:', sig.reason); return; }
-            let body = {};
-            try { body = rawBody ? JSON.parse(rawBody) : {}; } catch {}
-            const txId  = pickFirst(body?.payload?.id);
-            const eType = pickFirst(body?.eventType) || 'authorize_net';
-            if (!txId) { console.error('[LicenseAN] missing transaction id'); return; }
-            const row = await upsertLicense(txId, { authorize_received: true, last_source: 'authorize', authorize_event_type: eType, raw_authorize: rawBody, authorize_body_json: body, status: 'pending_jotform' });
-            if (row.email && row.full_name) {
-                const act = await upsertLicense(txId, { authorize_received: true, last_source: 'authorize', status: 'active' });
-                console.log(`✅ License (AN): ${act.email}`);
-            }
-        } catch (e) { console.error('[LicenseAN]', e); }
-    })();
+    res.status(200).json({ ok: true }); // Respond immediately — prevents Authorize.net deactivation
+    (async () => { try {
+        const rawBody = req.body?.toString('utf8') || '';
+        const sig     = verifyAuthnetSig(rawBody, req.headers['x-anet-signature']);
+        if (!sig.ok) { console.error('[LicenseAN] bad sig:', sig.reason); return; }
+        let body = {};
+        try { body = rawBody ? JSON.parse(rawBody) : {}; } catch {}
+        const txId  = pickFirst(body?.payload?.id);
+        const eType = pickFirst(body?.eventType) || 'authorize_net';
+        if (!txId) { console.error('[LicenseAN] missing txId'); return; }
+        const row = await upsertLicense(txId, { authorize_received: true, last_source: 'authorize', authorize_event_type: eType, raw_authorize: rawBody, authorize_body_json: body, status: 'pending_jotform' });
+        if (row.email && row.full_name) {
+            const act = await upsertLicense(txId, { authorize_received: true, last_source: 'authorize', status: 'active' });
+            console.log(`✅ License (AN): ${act.email}`);
+        }
+    } catch (e) { console.error('[LicenseAN]', e); } })();
 });
 
 app.post('/webhooks/jotform', wh, (req, res) => {
