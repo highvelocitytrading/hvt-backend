@@ -16,7 +16,7 @@ app.set('trust proxy', 1);
 const path = require('path');
 app.use(express.static(path.join(__dirname, 'public')));
 
-const PORT = process.env.PORT || 8151;
+const PORT = process.env.PORT || 8154;
 
 // ─── SECURITY HEADERS ────────────────────────────────────────────────────────
 app.use((req, res, next) => {
@@ -483,6 +483,9 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;displa
 .topnav-left{display:flex;align-items:center;gap:12px;}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s;}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85);}
+.topnav-right{display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.topnav-right a.topnav-link,.topnav-right a.topnav-out{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s;}
+.topnav-right a.topnav-link:hover,.topnav-right a.topnav-out:hover{color:rgba(255,255,255,0.85);}
 .topnav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);letter-spacing:0.2px;transition:background .2s,color .2s,border-color .2s;}
 .topnav-cta:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18);}
 .card{width:100%;max-width:460px;background:rgba(255,255,255,0.03);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(34,84,245,0.2);border-radius:20px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.6);position:relative;z-index:1;}
@@ -512,9 +515,9 @@ input::placeholder{color:#334155;}
 .nt-signup-wrap{text-align:center;margin-top:12px;}
 .nt-signup-btn{display:inline-block;padding:10px 18px;background:#D9452A;color:#000;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:15px;font-weight:800;letter-spacing:1.5px;text-decoration:none;box-shadow:0 4px 16px rgba(217,69,42,0.4);transition:transform .2s ease,box-shadow .2s ease,background .2s ease;margin-left:-36px;}
 .nt-signup-btn:hover{transform:scale(1.06);box-shadow:0 6px 24px rgba(217,69,42,0.5);background:#E04F35;}
-.tr-install-btn{display:inline-block;padding:14px 28px;background:linear-gradient(180deg,#3b6cf7 0%,#2254F5 50%,#1a45d4 100%);color:#fff;border:1px solid rgba(255,255,255,0.18);border-radius:999px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;letter-spacing:0.6px;text-decoration:none;text-shadow:0 1px 2px rgba(0,0,0,0.2);box-shadow:0 4px 0 rgba(0,0,0,0.15),0 6px 24px rgba(34,84,245,0.4),inset 0 1px 0 rgba(255,255,255,0.15);transition:transform 0.28s cubic-bezier(0.34,1.56,0.64,1),box-shadow 0.28s ease,border-color .2s ease;}
-.tr-install-btn:hover{transform:translateY(-4px) scale(1.03);box-shadow:0 8px 0 rgba(0,0,0,0.12),0 16px 40px rgba(34,84,245,0.55),inset 0 1px 0 rgba(255,255,255,0.2);border-color:rgba(255,255,255,0.28);}
-.tr-install-btn:active{transform:translateY(-1px) scale(1.01);box-shadow:0 2px 0 rgba(0,0,0,0.2),0 4px 16px rgba(34,84,245,0.35),inset 0 1px 0 rgba(255,255,255,0.1);}
+.tr-install-btn{display:inline-block;padding:12px 24px;background:#2254F5;color:#fff;border:1px solid rgba(255,255,255,0.12);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.5px;text-decoration:none;box-shadow:0 2px 12px rgba(34,84,245,0.25);transition:background .2s,box-shadow .2s,transform .2s;}
+.tr-install-btn:hover{background:#2d5cf7;box-shadow:0 4px 20px rgba(34,84,245,0.35);transform:translateY(-1px);}
+.tr-install-btn:active{transform:translateY(0);box-shadow:0 1px 8px rgba(34,84,245,0.2);}
 .discord-join-btn{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:#5865F2;color:#fff;border-radius:999px;font-size:13px;font-weight:700;text-decoration:none;transition:background .2s,transform .1s;}
 .discord-join-btn:hover{background:#4752C4;transform:translateY(-1px);}
 .discord-join-btn img{height:26px;width:auto;object-fit:contain;flex-shrink:0;display:block;}
@@ -524,9 +527,9 @@ input::placeholder{color:#334155;}
   <nav class="topnav">
     <div class="topnav-left">
       <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png" alt="High Velocity Trading" /></a>
-      <a href="/member" class="topnav-link">Portal</a>
     </div>
     <div class="topnav-right" style="display:flex;align-items:center;gap:12px;">
+      <a href="/member" class="topnav-link" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Portal</a>
       <a href="/billing/confirm-session" class="topnav-out" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Billing</a>
       <a href="/logout" class="topnav-out" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Log out</a>
       <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>
@@ -1154,9 +1157,9 @@ app.get('/course', requireSession, (req, res) => {
     <div class="topnav-left">
       <button class="mob-menu" onclick="toggleSidebar()" title="Menu" aria-label="Menu">&#9776;</button>
       <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png" alt="High Velocity Trading" /></a>
-      <a href="/member" class="topnav-link">Portal</a>
     </div>
     <div class="topnav-right">
+      <a href="/member" class="topnav-out">Portal</a>
       <a href="/billing/confirm-session" class="topnav-out">Billing</a>
       <a href="/logout" class="topnav-out">Log out</a>
       <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>
