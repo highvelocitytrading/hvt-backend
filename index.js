@@ -16,7 +16,7 @@ app.set('trust proxy', 1);
 const path = require('path');
 app.use(express.static(path.join(__dirname, 'public')));
 
-const PORT = process.env.PORT || 8135;
+const PORT = process.env.PORT || 8151;
 
 // ─── SECURITY HEADERS ────────────────────────────────────────────────────────
 app.use((req, res, next) => {
@@ -512,8 +512,9 @@ input::placeholder{color:#334155;}
 .nt-signup-wrap{text-align:center;margin-top:12px;}
 .nt-signup-btn{display:inline-block;padding:10px 18px;background:#D9452A;color:#000;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:15px;font-weight:800;letter-spacing:1.5px;text-decoration:none;box-shadow:0 4px 16px rgba(217,69,42,0.4);transition:transform .2s ease,box-shadow .2s ease,background .2s ease;margin-left:-36px;}
 .nt-signup-btn:hover{transform:scale(1.06);box-shadow:0 6px 24px rgba(217,69,42,0.5);background:#E04F35;}
-.tr-install-btn{display:inline-block;padding:10px 18px;background:#D9452A;color:#000;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:15px;font-weight:800;letter-spacing:1.5px;text-decoration:none;box-shadow:0 4px 16px rgba(217,69,42,0.4);transition:transform .2s ease,box-shadow .2s ease,background .2s ease;}
-.tr-install-btn:hover{transform:scale(1.06);box-shadow:0 6px 24px rgba(217,69,42,0.5);background:#E04F35;}
+.tr-install-btn{display:inline-block;padding:14px 28px;background:linear-gradient(180deg,#3b6cf7 0%,#2254F5 50%,#1a45d4 100%);color:#fff;border:1px solid rgba(255,255,255,0.18);border-radius:999px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;letter-spacing:0.6px;text-decoration:none;text-shadow:0 1px 2px rgba(0,0,0,0.2);box-shadow:0 4px 0 rgba(0,0,0,0.15),0 6px 24px rgba(34,84,245,0.4),inset 0 1px 0 rgba(255,255,255,0.15);transition:transform 0.28s cubic-bezier(0.34,1.56,0.64,1),box-shadow 0.28s ease,border-color .2s ease;}
+.tr-install-btn:hover{transform:translateY(-4px) scale(1.03);box-shadow:0 8px 0 rgba(0,0,0,0.12),0 16px 40px rgba(34,84,245,0.55),inset 0 1px 0 rgba(255,255,255,0.2);border-color:rgba(255,255,255,0.28);}
+.tr-install-btn:active{transform:translateY(-1px) scale(1.01);box-shadow:0 2px 0 rgba(0,0,0,0.2),0 4px 16px rgba(34,84,245,0.35),inset 0 1px 0 rgba(255,255,255,0.1);}
 .discord-join-btn{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:#5865F2;color:#fff;border-radius:999px;font-size:13px;font-weight:700;text-decoration:none;transition:background .2s,transform .1s;}
 .discord-join-btn:hover{background:#4752C4;transform:translateY(-1px);}
 .discord-join-btn img{height:26px;width:auto;object-fit:contain;flex-shrink:0;display:block;}
@@ -525,7 +526,11 @@ input::placeholder{color:#334155;}
       <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png" alt="High Velocity Trading" /></a>
       <a href="/member" class="topnav-link">Portal</a>
     </div>
-    <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>
+    <div class="topnav-right" style="display:flex;align-items:center;gap:12px;">
+      <a href="/billing/confirm-session" class="topnav-out" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Billing</a>
+      <a href="/logout" class="topnav-out" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Log out</a>
+      <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>
+    </div>
   </nav>
 </div>
 <div class="hero">
@@ -666,6 +671,39 @@ app.get('/check-access', frm, async (req, res) => {
     res.json({ active: data?.status === 'active' && new Date(data.expires_at) > new Date() });
 });
 
+// ─── DOWNLOADS (signed URL redirect; private bucket) ──────────────────────────
+app.get('/downloads/installer', frm, async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Service unavailable. Configure Supabase in .env and restart the server.' });
+    try {
+        const { data, error } = await supabase.storage.from('uploads').createSignedUrl('packages/HVTMasterAccessNQ.zip', 60);
+        if (error) {
+            console.error('[DownloadInstaller]', error.message);
+            return res.status(500).json({ error: 'Failed to generate download link. Please try again later.' });
+        }
+        const url = data.signedUrl + (data.signedUrl.includes('?') ? '&' : '?') + 'download=HVTMasterAccessNQ.zip';
+        return res.redirect(302, url);
+    } catch (e) {
+        console.error('[DownloadInstaller]', e.message);
+        return res.status(500).json({ error: 'Failed to generate download link. Please try again later.' });
+    }
+});
+
+app.get('/downloads/template', frm, async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Service unavailable. Configure Supabase in .env and restart the server.' });
+    try {
+        const { data, error } = await supabase.storage.from('uploads').createSignedUrl('templates/HVT NQ TEMPLATE.xml', 60);
+        if (error) {
+            console.error('[DownloadTemplate]', error.message);
+            return res.status(500).json({ error: 'Failed to generate download link. Please try again later.' });
+        }
+        const url = data.signedUrl + (data.signedUrl.includes('?') ? '&' : '?') + 'download=HVT_NQ_TEMPLATE.xml';
+        return res.redirect(302, url);
+    } catch (e) {
+        console.error('[DownloadTemplate]', e.message);
+        return res.status(500).json({ error: 'Failed to generate download link. Please try again later.' });
+    }
+});
+
 // ─── TRADING ROOM ─────────────────────────────────────────────────────────────
 app.get('/trading-room', (req, res) => {
     res.send(shell('Activate Member Access', `
@@ -692,8 +730,9 @@ app.get('/trading-room', (req, res) => {
         <input type="email" id="ntemail" placeholder="email used for NinjaTrader" />
         <div style="background:rgba(34,84,245,0.05);border:1px solid rgba(34,84,245,0.15);border-radius:12px;padding:18px 20px;margin-bottom:24px;">
           <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#2254F5;margin-bottom:8px;font-weight:700;">Install Software</div>
-          <div style="color:#94a3b8;font-size:13px;line-height:1.5;">Download and install the HVT software before activating Discord access.</div>
-          <div style="margin-top:14px;text-align:center;"><a href="#" id="install-software-link" class="tr-install-btn">Install Software</a></div>
+          <div style="color:#94a3b8;font-size:13px;line-height:1.5;">Download and install both the HVT software and the template package before activating Discord access.</div>
+          <div style="margin-top:14px;text-align:center;"><a href="/downloads/installer" id="install-software-link" class="tr-install-btn">Install Software</a></div>
+          <div style="margin-top:12px;text-align:center;"><a href="/downloads/template" id="install-template-link" class="tr-install-btn">Download Template</a></div>
         </div>
         <div style="background:rgba(34,84,245,0.05);border:1px solid rgba(34,84,245,0.15);border-radius:12px;padding:18px 20px;margin-bottom:24px;">
           <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;margin-bottom:14px;font-weight:700;">Discord Trading Room</div>
@@ -871,7 +910,8 @@ function memberPortalHtml(s) {
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:#fff;position:relative;overflow-x:hidden}
 .member-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:#000000}
-.member-bg::before{content:'';position:absolute;top:0;left:0;width:70%;height:60%;background:radial-gradient(ellipse at 20% 20%,#00001C 0%,transparent 60%);pointer-events:none}
+.member-bg::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(34,84,245,0.18) 0%,transparent 50%),radial-gradient(ellipse 60% 40% at 20% 30%,#00001C 0%,transparent 55%);pointer-events:none}
+.member-bg::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:600px;height:200px;background:radial-gradient(ellipse 100% 100% at 50% 100%,rgba(34,84,245,0.08) 0%,transparent 70%);pointer-events:none}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
 .topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:52px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
 .topnav-logo{display:flex;align-items:center;text-decoration:none}
@@ -885,11 +925,13 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 .topnav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);letter-spacing:0.2px;transition:background .2s,color .2s,border-color .2s}
 .topnav-cta:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18)}
 .portal-wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:96px 24px 64px}
-.hero-section{text-align:center;margin-bottom:32px}
-.hero-section .pill{display:inline-block;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.25);border-radius:999px;color:#2254F5;font-size:11px;letter-spacing:3px;text-transform:uppercase;padding:6px 18px;margin-bottom:14px}
-.hero-section h1{font-size:38px;font-weight:700;letter-spacing:-0.5px;margin-bottom:0;color:#fff}
-.hero-section p{color:#94a3b8;font-size:16px;line-height:1.5}
-.hero-div{height:1px;background:linear-gradient(90deg,transparent,rgba(34,84,245,0.3),transparent);margin:16px auto 0;max-width:200px}
+.hero-section{text-align:center;margin-bottom:32px;position:relative;padding:32px 20px 24px;border-radius:20px;box-shadow:0 0 0 1px rgba(34,84,245,0.06),0 0 60px rgba(34,84,245,0.08);animation:heroFade 0.6s ease-out}
+@keyframes heroFade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.hero-section .pill{display:inline-block;background:rgba(34,84,245,0.12);border:1px solid rgba(34,84,245,0.35);border-radius:999px;color:#2254F5;font-size:11px;letter-spacing:3px;text-transform:uppercase;padding:6px 18px;margin-bottom:18px;box-shadow:0 0 20px rgba(34,84,245,0.2);animation:heroFade 0.5s ease-out 0.1s both}
+.hero-section h1{font-size:44px;font-weight:800;letter-spacing:-0.5px;margin-bottom:0;color:#fff;line-height:1.2;animation:heroFade 0.5s ease-out 0.15s both}
+.hero-section .hero-name{background:linear-gradient(135deg,#60a5fa,#93c5fd);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-section .hero-tagline{color:#94a3b8;font-size:17px;letter-spacing:0.3px;margin-top:12px;animation:heroFade 0.5s ease-out 0.2s both}
+.hero-div{height:2px;background:linear-gradient(90deg,transparent,rgba(34,84,245,0.2),rgba(34,84,245,0.6),rgba(34,84,245,0.2),transparent);margin:20px auto 0;max-width:280px;border-radius:1px;animation:heroFade 0.5s ease-out 0.25s both}
 .section-label{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#64748b;margin:0 0 16px;text-align:center}
 .carousel-section{margin-bottom:40px}
 .carousel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:16px;flex-wrap:wrap}
@@ -923,6 +965,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
       <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png" alt="High Velocity Trading" /></a>
     </div>
     <div class="topnav-right">
+      <a href="/billing/confirm-session" class="topnav-out">Billing</a>
       <a href="/logout" class="topnav-out">Log out</a>
       <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>
     </div>
@@ -931,8 +974,8 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 <div class="portal-wrap">
   <div class="hero-section">
     <span class="pill">MEMBER PORTAL</span>
-    <h1>Welcome back, ${s.name}</h1>
-    <p style="font-family:'DM Sans',sans-serif;font-weight:400;font-size:17px;color:#4a6a8a;text-align:center;letter-spacing:0.2px;margin:10px 0 0 0">Stay sharp. Stay ahead.</p>
+    <h1>Welcome back, <span class="hero-name">${s.name}</span></h1>
+    <p class="hero-tagline">Stay sharp. Stay ahead.</p>
     <div class="hero-div"></div>
   </div>
   <p class="section-label">Your dashboard</p>
@@ -970,15 +1013,6 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
         <h3>Trading Journal</h3>
         <p>Log your trades, review performance, and track your progress with the HVT system.</p>
         <div class="arrow">Open Journal <span class="arr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
-      </div>
-    </a>
-    <a class="pcard" href="/billing/confirm-session">
-      <div class="bar"></div>
-      <div class="inner">
-        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z"/></svg></div>
-        <h3>Billing</h3>
-        <p>View your subscription status, renewal date, and manage your membership.</p>
-        <div class="arrow">View Billing <span class="arr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
       </div>
     </a>
   </div>
@@ -1123,6 +1157,7 @@ app.get('/course', requireSession, (req, res) => {
       <a href="/member" class="topnav-link">Portal</a>
     </div>
     <div class="topnav-right">
+      <a href="/billing/confirm-session" class="topnav-out">Billing</a>
       <a href="/logout" class="topnav-out">Log out</a>
       <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>
     </div>
@@ -1164,32 +1199,13 @@ app.get('/trading-journal', requireSession, (req, res) => {
     const s = getSession(req);
     const hero = { pill: 'TRADING JOURNAL', title: 'Track. Review. Improve.', sub: 'Every trade logged is a lesson earned.' };
     res.send(shell('Trading Journal', `
-    <div style="max-width:min(1920px,98vw);margin:0 auto;padding:0 16px;">
+    <div class="journal-wrap" style="width:100%;max-width:1400px;margin:0 auto;padding:0 20px;box-sizing:border-box;">
       <div style="margin-top:8px;margin-bottom:16px;">
         <a href="/member" style="color:#2254F5;font-size:13px;text-decoration:none;font-weight:500;">&larr; Back to Portal</a>
       </div>
 
-      <!-- Summary cards -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
-        <div class="card" style="padding:16px 20px;">
-          <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:600;margin-bottom:4px;">Total PnL</div>
-          <div id="stat-pnl" style="font-size:22px;font-weight:700;color:#4ade80;">$0.00</div>
-          <div style="font-size:11px;color:#334155;margin-top:2px;">Realized only</div>
-        </div>
-        <div class="card" style="padding:16px 20px;">
-          <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:600;margin-bottom:4px;">Win Rate</div>
-          <div id="stat-wins" style="font-size:22px;font-weight:700;color:#94a3b8;">—</div>
-          <div style="font-size:11px;color:#334155;margin-top:2px;">Wins / total</div>
-        </div>
-        <div class="card" style="padding:16px 20px;">
-          <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:600;margin-bottom:4px;">Trades</div>
-          <div id="stat-count" style="font-size:22px;font-weight:700;color:#94a3b8;">0</div>
-          <div style="font-size:11px;color:#334155;margin-top:2px;">Closed (selected period)</div>
-        </div>
-      </div>
-
       <!-- Period filter -->
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
         <span style="font-size:12px;color:#64748b;font-weight:600;">Period:</span>
         <button type="button" class="journal-tab active" data-period="day">Today</button>
         <button type="button" class="journal-tab" data-period="week">This Week</button>
@@ -1197,23 +1213,86 @@ app.get('/trading-journal', requireSession, (req, res) => {
         <button type="button" class="journal-tab" data-period="all">All</button>
       </div>
 
-      <!-- Calendar card -->
-      <div class="card" style="overflow:hidden;width:100%;max-width:100%;">
+      <!-- Row 1: Net P&L, Avg win/loss, Day Streak -->
+      <div class="journal-metrics" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px;">
+        <div class="card j-card" style="padding:18px 20px;">
+          <div class="j-card-label">Net P&L</div>
+          <div class="j-card-value" id="stat-pnl" style="color:#94a3b8;">$0.00</div>
+          <div class="j-chart-line j-chart-empty" aria-hidden="true"></div>
+        </div>
+        <div class="card j-card" style="padding:18px 20px;">
+          <div class="j-card-label">Avg win/loss trade</div>
+          <div class="j-card-value" id="stat-avgwl" style="color:#94a3b8;">—</div>
+          <div class="j-bar-wrap j-bar-empty"><div class="j-bar j-bar-win" style="width:0;"></div><div class="j-bar j-bar-loss" style="width:0;"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:6px;color:#64748b;"><span>—</span><span>—</span></div>
+        </div>
+        <div class="card j-card" style="padding:18px 20px;">
+          <div class="j-card-label">Current Day Streak</div>
+          <div class="j-card-value" id="stat-daystreak" style="color:#94a3b8;">0 days</div>
+          <div style="display:flex;gap:12px;font-size:12px;margin-top:6px;color:#64748b;"><span>0W</span><span>0L</span></div>
+        </div>
+      </div>
+
+      <!-- Row 2: Win %, Profit Factor, Trade Streak -->
+      <div class="journal-metrics" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
+        <div class="card j-card" style="padding:18px 20px;">
+          <div class="j-card-label">Trade Win %</div>
+          <div class="j-card-value" id="stat-wins" style="color:#94a3b8;">—</div>
+          <div class="j-donut j-donut-half j-donut-empty" style="--p:0;" aria-hidden="true"></div>
+          <div style="display:flex;justify-content:center;gap:16px;font-size:11px;margin-top:6px;color:#64748b;"><span>0</span><span>0</span></div>
+        </div>
+        <div class="card j-card" style="padding:18px 20px;">
+          <div class="j-card-label">Profit Factor</div>
+          <div class="j-card-value" id="stat-pf" style="color:#94a3b8;">—</div>
+          <div class="j-donut j-donut-full j-donut-empty" style="--p:0;" aria-hidden="true"></div>
+        </div>
+        <div class="card j-card" style="padding:18px 20px;">
+          <div class="j-card-label">Current Trade Streak</div>
+          <div class="j-card-value" id="stat-tradestreak" style="color:#94a3b8;">0 trades</div>
+          <div style="display:flex;gap:12px;font-size:12px;margin-top:6px;color:#64748b;"><span>0W</span><span>0L</span></div>
+        </div>
+      </div>
+
+      <!-- Two columns: Trades table | Calendar -->
+      <div class="journal-bottom-grid" style="display:grid;grid-template-columns:minmax(200px,280px) minmax(560px,1fr);gap:24px;align-items:start;min-width:0;">
+        <!-- Trades panel -->
+        <div class="card" style="overflow:hidden;max-width:100%;">
+          <div class="ct"></div>
+          <div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:12px;font-weight:700;letter-spacing:1px;color:#e2e8f0;">Trades</span>
+            <button type="button" class="j-info-btn" aria-label="Info">i</button>
+          </div>
+          <div style="display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <button type="button" class="j-panel-tab active" data-tab="recent">Recent</button>
+            <button type="button" class="j-panel-tab" data-tab="open">Open Positions</button>
+          </div>
+          <div id="trades-recent" class="j-trades-content">
+            <table class="j-trades-table"><thead><tr><th>Symbol</th><th>Close Date</th><th>Net P&L</th></tr></thead><tbody>
+              <tr><td colspan="3" style="text-align:center;color:#64748b;padding:28px 16px;">No trades recorded yet</td></tr>
+            </tbody></table>
+          </div>
+          <div id="trades-open" class="j-trades-content" style="display:none;">
+            <table class="j-trades-table"><thead><tr><th>Symbol</th><th>Side</th><th>Unrealized P&L</th></tr></thead><tbody><tr><td colspan="3" style="text-align:center;color:#64748b;padding:24px;">No open positions</td></tr></tbody></table>
+          </div>
+        </div>
+
+        <!-- Calendar -->
+      <div class="card journal-calendar-card" style="overflow:visible;width:100%;min-width:560px;">
         <div class="ct"></div>
         <div style="padding:0;">
-          <div style="padding:8px 20px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-            <div style="display:flex;align-items:center;gap:6px;min-width:120px;">
-              <button type="button" id="cal-prev" aria-label="Previous month" style="width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#94a3b8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;">&#9664;</button>
-              <button type="button" id="cal-today" style="padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:#94a3b8;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;">TODAY</button>
-              <button type="button" id="cal-next" aria-label="Next month" style="width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#94a3b8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;">&#9654;</button>
+          <div style="padding:10px 20px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <button type="button" id="cal-prev" aria-label="Previous month" class="cal-nav-btn">&#9664;</button>
+              <button type="button" id="cal-prev-yr" aria-label="Previous year" class="cal-nav-btn" style="font-size:11px;">&#171;</button>
+              <button type="button" id="cal-today" class="cal-today-btn">TODAY</button>
+              <button type="button" id="cal-next-yr" aria-label="Next year" class="cal-nav-btn" style="font-size:11px;">&#187;</button>
+              <button type="button" id="cal-next" aria-label="Next month" class="cal-nav-btn">&#9654;</button>
             </div>
-            <span id="cal-month-year" style="flex:1;text-align:center;font-size:14px;font-weight:700;color:#fff;letter-spacing:0.5px;">March 2025</span>
-            <div style="min-width:32px;display:flex;justify-content:flex-end;">
-              <button type="button" id="cal-info" aria-label="Info" style="width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#64748b;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">i</button>
-            </div>
+            <span id="cal-month-year" style="flex:1;text-align:center;font-size:14px;font-weight:700;color:#fff;letter-spacing:0.5px;">March 2026</span>
+            <button type="button" id="cal-info" aria-label="Info" class="j-info-btn">i</button>
           </div>
-          <div style="padding:8px 20px 16px;">
-            <div style="display:grid;grid-template-columns:repeat(7,minmax(110px,1fr));gap:6px;margin-bottom:6px;">
+          <div style="padding:12px 20px 20px;">
+            <div style="display:grid;grid-template-columns:repeat(7,minmax(72px,1fr));gap:10px;margin-bottom:10px;">
               <div style="text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e2e8f0;font-weight:700;padding:4px 0;">Sun</div>
               <div style="text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e2e8f0;font-weight:700;padding:4px 0;">Mon</div>
               <div style="text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e2e8f0;font-weight:700;padding:4px 0;">Tue</div>
@@ -1222,10 +1301,12 @@ app.get('/trading-journal', requireSession, (req, res) => {
               <div style="text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e2e8f0;font-weight:700;padding:4px 0;">Fri</div>
               <div style="text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e2e8f0;font-weight:700;padding:4px 0;">Sat</div>
             </div>
-            <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,minmax(110px,1fr));gap:6px;min-width:0;"></div>
+            <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,minmax(72px,1fr));gap:10px;min-width:0;"></div>
           </div>
         </div>
       </div>
+      </div>
+
       <div id="cal-tooltip" style="display:none;position:fixed;z-index:100;background:#0f172a;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:12px 16px;box-shadow:0 20px 40px rgba(0,0,0,0.5);pointer-events:none;font-size:13px;">
         <div id="cal-tooltip-date" style="font-weight:700;color:#fff;margin-bottom:4px;"></div>
         <div id="cal-tooltip-pnl" style="font-weight:700;"></div>
@@ -1236,24 +1317,45 @@ app.get('/trading-journal', requireSession, (req, res) => {
     </div>
 
     <style>
+      .journal-wrap .card{max-width:none;}
       .journal-tab{padding:8px 18px;border-radius:999px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;}
       .journal-tab:hover{background:rgba(255,255,255,0.08);color:#e2e8f0;}
       .journal-tab.active{background:rgba(34,84,245,0.15);border-color:rgba(34,84,245,0.35);color:#60a5fa;}
-      #cal-prev:hover,#cal-next:hover,#cal-today:hover{background:rgba(255,255,255,0.08);color:#fff;}
-      .cal-day{min-height:92px;border-radius:8px;display:flex;flex-direction:column;align-items:stretch;cursor:pointer;transition:all .15s;border:2px solid transparent;position:relative;padding:8px;box-sizing:border-box;background:rgba(255,255,255,0.02);}
+      .j-card-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:600;margin-bottom:4px;}
+      .j-card-value{font-size:22px;font-weight:700;}
+      .j-chart-line{height:32px;margin-top:10px;border-radius:4px;overflow:hidden;}
+      .j-chart-empty{background:rgba(255,255,255,0.04);}
+      .j-bar-empty .j-bar{display:none;}
+      .j-donut-empty{background:rgba(255,255,255,0.06) !important;}
+      .j-bar-wrap{display:flex;height:8px;border-radius:4px;overflow:hidden;margin-top:8px;background:rgba(255,255,255,0.06);}
+      .j-bar{height:100%;}.j-bar-win{background:#22c55e;}.j-bar-loss{background:#ef4444;}
+      .j-donut{width:64px;height:32px;margin:8px auto 0;border-radius:32px 32px 0 0;background:conic-gradient(#22c55e calc(var(--p)*1.8deg),#ef4444 0);}
+      .j-donut-full{width:56px;height:56px;margin:8px auto 0;border-radius:50%;background:conic-gradient(#22c55e calc(var(--p)*3.6deg),rgba(239,68,68,0.4) 0);}
+      .j-info-btn{width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#64748b;cursor:pointer;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+      .j-panel-tab{padding:10px 18px;border:none;background:transparent;color:#64748b;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;}
+      .j-panel-tab:hover{color:#94a3b8;}
+      .j-panel-tab.active{color:#2254F5;border-bottom-color:#2254F5;}
+      .j-trades-table{width:100%;border-collapse:collapse;font-size:13px;}
+      .j-trades-table th{text-align:left;padding:10px 14px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#64748b;border-bottom:1px solid rgba(255,255,255,0.06);}
+      .j-trades-table td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.04);color:#e2e8f0;}
+      .cal-nav-btn,.cal-today-btn{width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#94a3b8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;}
+      .cal-today-btn{width:auto;padding:5px 10px;font-size:11px;}
+      #cal-prev:hover,#cal-next:hover,#cal-prev-yr:hover,#cal-next-yr:hover,#cal-today:hover{background:rgba(255,255,255,0.08);color:#fff;}
+      .cal-day{aspect-ratio:1;min-width:0;border-radius:8px;display:flex;flex-direction:column;align-items:stretch;cursor:pointer;transition:all .15s;border:2px solid transparent;position:relative;padding:10px 8px;box-sizing:border-box;background:rgba(255,255,255,0.02);gap:6px;}
       .cal-day:hover{background:rgba(255,255,255,0.06);}
       .cal-day.other-month .cal-num{color:#334155;}
       .cal-day.has-pnl.profit{background:rgba(34,197,94,0.25);border-color:rgba(34,197,94,0.5);}
       .cal-day.has-pnl.profit:hover{background:rgba(34,197,94,0.35);}
       .cal-day.has-pnl.loss{background:rgba(239,68,68,0.25);border-color:rgba(239,68,68,0.5);}
       .cal-day.has-pnl.loss:hover{background:rgba(239,68,68,0.35);}
-      .cal-day.is-today .cal-num{box-shadow:0 0 0 2px rgba(139,92,246,0.7);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;}
-      .cal-num{font-size:16px;font-weight:700;color:#e2e8f0;flex-shrink:0;}
-      .cal-day-content{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:0;}
-      .cal-pnl{font-size:15px;font-weight:700;margin-top:2px;line-height:1.2;}
-      .cal-trades{font-size:10px;color:inherit;opacity:0.9;margin-top:2px;}
+      .cal-day.is-today .cal-num{box-shadow:0 0 0 2px rgba(34,84,245,0.7);border-radius:50%;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;}
+      .cal-num{font-size:15px;font-weight:700;color:#e2e8f0;flex-shrink:0;line-height:1;}
+      .cal-day-content{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:0;overflow:hidden;padding:0 2px;}
+      .cal-pnl{font-size:12px;font-weight:700;line-height:1.3;word-break:break-all;}
+      .cal-trades{font-size:10px;color:inherit;opacity:0.9;margin-top:2px;line-height:1.2;}
       .cal-day.has-pnl.profit .cal-pnl,.cal-day.has-pnl.profit .cal-trades{color:#22c55e;}
       .cal-day.has-pnl.loss .cal-pnl,.cal-day.has-pnl.loss .cal-trades{color:#ef4444;}
+      @media(max-width:900px){.journal-metrics{grid-template-columns:1fr !important;} .journal-bottom-grid{grid-template-columns:1fr !important;}}
     </style>
     <script>
       (function(){
@@ -1267,11 +1369,20 @@ app.get('/trading-journal', requireSession, (req, res) => {
         });
         var cur = new Date();
         var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-        var samplePnL = { '2025-3-5': 162.50, '2025-3-4': -85.00, '2025-3-3': 220.00, '2025-3-10': 45.25 };
-        var sampleTrades = { '2025-3-5': 1, '2025-3-4': 2, '2025-3-3': 3, '2025-3-10': 1 };
+        var samplePnL = {};
+        var sampleTrades = {};
         function dateKey(d){ return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate(); }
-        function formatPnl(n){ var a = Math.abs(n); if (a >= 1000) return (n >= 0 ? '' : '-') + '$' + (a/1000).toFixed(2) + 'K'; return (n >= 0 ? '+' : '') + '$' + n.toFixed(2); }
+        function formatPnl(n){ var a = Math.abs(n); if (a >= 1000) return (n >= 0 ? '' : '-') + '$' + (a/1000).toFixed(1) + 'k'; return (n >= 0 ? '+' : '') + '$' + n.toFixed(1); }
         var todayKey = dateKey(new Date());
+        document.querySelectorAll('.j-panel-tab').forEach(function(btn){
+          btn.addEventListener('click', function(){
+            document.querySelectorAll('.j-panel-tab').forEach(function(b){ b.classList.remove('active'); });
+            btn.classList.add('active');
+            var t = btn.getAttribute('data-tab');
+            document.getElementById('trades-recent').style.display = t === 'recent' ? 'block' : 'none';
+            document.getElementById('trades-open').style.display = t === 'open' ? 'block' : 'none';
+          });
+        });
         function render(){
           var y = cur.getFullYear(), m = cur.getMonth();
           document.getElementById('cal-month-year').textContent = monthNames[m] + ' ' + y;
@@ -1343,6 +1454,8 @@ app.get('/trading-journal', requireSession, (req, res) => {
         }
         document.getElementById('cal-prev').onclick = function(){ cur.setMonth(cur.getMonth()-1); render(); };
         document.getElementById('cal-next').onclick = function(){ cur.setMonth(cur.getMonth()+1); render(); };
+        document.getElementById('cal-prev-yr').onclick = function(){ cur.setFullYear(cur.getFullYear()-1); render(); };
+        document.getElementById('cal-next-yr').onclick = function(){ cur.setFullYear(cur.getFullYear()+1); render(); };
         document.getElementById('cal-today').onclick = function(){ cur = new Date(); render(); };
         document.getElementById('cal-info').onclick = function(){ alert('Daily PnL shows realized profit/loss for each day. Green = profit, red = loss. Data from NinjaTrader when connected.'); };
         render();
