@@ -73,8 +73,8 @@ const DISCORD_TABLE    = 'discord_members';
 // Supabase storage: bucket name and object paths (must match files in Storage exactly)
 const DOWNLOAD_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'uploads';
 const DOWNLOAD_PATHS   = {
-    installer: 'HVTMasterAccessNQ.zip',
-    template:  'HVT NQ TEMPLATE.xml'
+    installer: process.env.DOWNLOAD_INSTALLER_PATH || 'HVTMasterAccessNQ.zip',
+    template:  process.env.DOWNLOAD_TEMPLATE_PATH || 'HVT NQ TEMPLATE.xml'
 };
 
 // ─── NINJATRADER ECOSYSTEM API ────────────────────────────────────────────────
@@ -688,15 +688,15 @@ app.get('/downloads/installer', frm, async (req, res) => {
         const objectPath = DOWNLOAD_PATHS.installer;
         const { data, error } = await supabase.storage.from(DOWNLOAD_BUCKET).createSignedUrl(objectPath, 120);
         if (error) {
-            console.error('[DownloadInstaller]', error.message);
-            return res.status(500).json({ error: 'Failed to generate download link. Please try again later.' });
+            console.error('[DownloadInstaller] path=%s bucket=%s', objectPath, DOWNLOAD_BUCKET, error.message, error);
+            return res.status(500).json({ error: 'Failed to generate download link. Please try again later.', detail: error.message });
         }
         const sep = data.signedUrl.includes('?') ? '&' : '?';
-        const url = `${data.signedUrl}${sep}download=${encodeURIComponent(DOWNLOAD_PATHS.installer)}`;
+        const url = `${data.signedUrl}${sep}download=${encodeURIComponent(DOWNLOAD_PATHS.installer.split('/').pop())}`;
         return res.redirect(302, url);
     } catch (e) {
-        console.error('[DownloadInstaller]', e.message);
-        return res.status(500).json({ error: 'Failed to generate download link. Please try again later.' });
+        console.error('[DownloadInstaller]', e.message, e);
+        return res.status(500).json({ error: 'Failed to generate download link. Please try again later.', detail: e.message });
     }
 });
 
@@ -706,16 +706,16 @@ app.get('/downloads/template', frm, async (req, res) => {
         const objectPath = DOWNLOAD_PATHS.template;
         const { data, error } = await supabase.storage.from(DOWNLOAD_BUCKET).createSignedUrl(objectPath, 120);
         if (error) {
-            console.error('[DownloadTemplate]', error.message);
-            return res.status(500).json({ error: 'Failed to generate download link. Please try again later.' });
+            console.error('[DownloadTemplate] path=%s bucket=%s', objectPath, DOWNLOAD_BUCKET, error.message, error);
+            return res.status(500).json({ error: 'Failed to generate download link. Please try again later.', detail: error.message });
         }
         const sep = data.signedUrl.includes('?') ? '&' : '?';
         const downloadName = 'HVT_NQ_TEMPLATE.xml';
         const url = `${data.signedUrl}${sep}download=${encodeURIComponent(downloadName)}`;
         return res.redirect(302, url);
     } catch (e) {
-        console.error('[DownloadTemplate]', e.message);
-        return res.status(500).json({ error: 'Failed to generate download link. Please try again later.' });
+        console.error('[DownloadTemplate]', e.message, e);
+        return res.status(500).json({ error: 'Failed to generate download link. Please try again later.', detail: e.message });
     }
 });
 
@@ -746,8 +746,8 @@ app.get('/trading-room', (req, res) => {
         <div style="background:rgba(34,84,245,0.05);border:1px solid rgba(34,84,245,0.15);border-radius:12px;padding:18px 20px;margin-bottom:24px;">
           <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#2254F5;margin-bottom:8px;font-weight:700;">Install Software</div>
           <div style="color:#94a3b8;font-size:13px;line-height:1.5;">Download and install both the HVT software and the template package before activating Discord access.</div>
-          <div style="margin-top:14px;text-align:center;"><a href="/downloads/installer" id="install-software-link" class="tr-install-btn" download="HVTMasterAccessNQ.zip">Install Software</a></div>
-          <div style="margin-top:12px;text-align:center;"><a href="/downloads/template" id="install-template-link" class="tr-install-btn" download="HVT_NQ_TEMPLATE.xml">Download Template</a></div>
+          <div style="margin-top:14px;text-align:center;"><a href="${APP_URL}/downloads/installer" id="install-software-link" class="tr-install-btn" download="HVTMasterAccessNQ.zip">Install Software</a></div>
+          <div style="margin-top:12px;text-align:center;"><a href="${APP_URL}/downloads/template" id="install-template-link" class="tr-install-btn" download="HVT_NQ_TEMPLATE.xml">Download Template</a></div>
         </div>
         <div style="background:rgba(34,84,245,0.05);border:1px solid rgba(34,84,245,0.15);border-radius:12px;padding:18px 20px;margin-bottom:24px;">
           <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;margin-bottom:14px;font-weight:700;">Discord Trading Room</div>
