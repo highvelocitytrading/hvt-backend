@@ -616,7 +616,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;displa
 .hero-sub{font-family:'DM Sans',sans-serif;font-weight:400;font-size:15px;color:#94a3b8;line-height:1.6;max-width:360px;margin:0 auto 0;}
 .hero-div{height:1px;background:linear-gradient(90deg,transparent,rgba(34,84,245,0.3),transparent);margin:16px auto 0;max-width:200px;}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10;}
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative;}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:45px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative;}
 .topnav-logo{display:flex;align-items:center;gap:0;text-decoration:none;}
 .topnav-logo img{height:26px;width:auto;background:transparent;}
 .topnav-left{display:flex;align-items:center;gap:12px;}
@@ -673,7 +673,7 @@ ${body}
 function resultPage(type, title, msg) {
     const m = { success:{i:'&#10003;',c:'#4ade80',b:'rgba(74,222,128,0.08)',r:'rgba(74,222,128,0.2)'}, error:{i:'&#10005;',c:'#f87171',b:'rgba(248,113,113,0.08)',r:'rgba(248,113,113,0.2)'}, info:{i:'&#8505;',c:'#2254F5',b:'rgba(34,84,245,0.08)',r:'rgba(34,84,245,0.2)'} }[type] || {i:'&#10005;',c:'#f87171',b:'rgba(248,113,113,0.08)',r:'rgba(248,113,113,0.2)'};
     return shell(title, `<div class="card" style="max-width:460px;width:100%;"><div class="ct"></div><div class="cb" style="text-align:center;">
-      <div style="width:56px;height:56px;border-radius:50%;background:${m.b};border:1px solid ${m.r};display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:22px;color:${m.c};">${m.i}</div>
+      <div style="width:56px;height:45px;border-radius:50%;background:${m.b};border:1px solid ${m.r};display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:22px;color:${m.c};">${m.i}</div>
       <div class="ttl" style="margin-bottom:16px;">${title}</div>
       <div style="background:${m.b};border:1px solid ${m.r};border-radius:10px;padding:16px;color:${m.c};font-size:14px;line-height:1.6;">${msg}</div>
     </div></div>`);
@@ -1074,7 +1074,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 .member-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:#000000}
 .member-bg::before{content:'';position:absolute;top:0;left:0;width:70%;height:60%;background:radial-gradient(ellipse at 20% 20%,#00001C 0%,transparent 60%);pointer-events:none}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:45px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
 .topnav-logo{display:flex;align-items:center;text-decoration:none}
 .topnav-logo img{height:26px;width:auto;background:transparent;}
 .topnav-left{display:flex;align-items:center;gap:12px}
