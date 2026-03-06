@@ -16,6 +16,14 @@ app.set('trust proxy', 1);
 
 const PORT = process.env.PORT || 8080;
 
+// ─── STATIC FILES (logo, images) ─────────────────────────────────────────────
+const path = require('path');
+app.use(express.static(path.join(__dirname, 'public'), {
+    maxAge: '7d',
+    etag: true,
+    index: false   // don't serve index.html from public/
+}));
+
 // ─── SECURITY HEADERS ────────────────────────────────────────────────────────
 app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options',  'nosniff');
