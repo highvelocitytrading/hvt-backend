@@ -14,6 +14,19 @@ const fetchFn = global.fetch
 const app = express();
 app.set('trust proxy', 1);
 const path = require('path');
+
+// Serve logo as SVG so it never 404s (before static so it takes precedence)
+app.get('/hvt-logo.png', (req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.type('image/svg+xml');
+    res.send(HVT_LOGO_SVG);
+});
+app.get('/hvt-logo.svg', (req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.type('image/svg+xml');
+    res.send(HVT_LOGO_SVG);
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 8154;
@@ -463,12 +476,19 @@ async function upsertLicense(txId, patch) {
 
 // ─── V LOGO SVG ───────────────────────────────────────────────────────────────
 const V_LOGO_SVG = `<svg width="20" height="18" viewBox="0 0 20 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L10 16.5L19 1" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const HVT_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40"><path d="M4 8L20 32L36 8" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
 
 // ─── PAGE SHELL ──────────────────────────────────────────────────────────────
-function shell(title, body, hero) {
+function shell(title, body, hero, opts) {
     const pill = (hero && hero.pill) ? hero.pill : 'MEMBER PORTAL';
     const heroTitle = (hero && hero.title) ? hero.title : 'Your Edge Starts Here';
     const heroSub = (hero && hero.sub) ? hero.sub : 'Access your live trading room, course, and billing — all in one place.';
+    const navRight = (opts && opts.nav === 'login')
+        ? '<a href="tel:786-461-4235" class="topnav-cta">Call Us</a>'
+        : `<a href="/member" class="topnav-link" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Portal</a>
+      <a href="/billing/confirm-session" class="topnav-out" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Billing</a>
+      <a href="/logout" class="topnav-out" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Log out</a>
+      <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>`;
     return `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>${title} – High Velocity Trading</title>
@@ -536,10 +556,7 @@ input::placeholder{color:#334155;}
       <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png" alt="High Velocity Trading" /></a>
     </div>
     <div class="topnav-right" style="display:flex;align-items:center;gap:12px;">
-      <a href="/member" class="topnav-link" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Portal</a>
-      <a href="/billing/confirm-session" class="topnav-out" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Billing</a>
-      <a href="/logout" class="topnav-out" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Log out</a>
-      <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>
+      ${navRight}
     </div>
   </nav>
 </div>
@@ -846,7 +863,7 @@ function getSession(req) {
 }
 function requireSession(req, res, next) {
     if (getSession(req)) return next();
-    res.redirect('/login');
+    res.redirect(302, '/login');
 }
 
 app.get('/logout', (req, res) => {
@@ -856,7 +873,7 @@ app.get('/logout', (req, res) => {
 
 // ─── LOGIN PAGE ───────────────────────────────────────────────────────────────
 app.get('/login', (req, res) => {
-    if (getSession(req)) return res.redirect('/member');
+    if (getSession(req)) return res.redirect(302, '/member');
     res.send(shell('Member Login', `
     <div style="width:100%;max-width:520px;">
       <div class="card" style="max-width:520px;">
@@ -867,14 +884,13 @@ app.get('/login', (req, res) => {
           <button class="btn" id="btn" onclick="go()">Send My Access Link</button>
           <div class="msg" id="msg"></div>
           <p style="text-align:center;color:#334155;font-size:11px;margin-top:20px;margin-bottom:0;">Not a member? <a href="https://highvelocitytrading.com/#packages" style="color:#2254F5;text-decoration:none;font-weight:600;">View Packages &rarr;</a></p>
-          <p style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);"><a href="/member?demo=1" style="color:#94a3b8;font-size:13px;text-decoration:none;">Try the demo portal instead &rarr;</a></p>
         </div>
       </div>
     </div>
     <script>
       async function go(){const email=document.getElementById('email').value.trim();const msg=document.getElementById('msg');const btn=document.getElementById('btn');msg.className='msg';if(!email){msg.className='msg er show';msg.textContent='Please enter your email.';return}btn.disabled=true;btn.textContent='Sending...';try{const r=await fetch('/course/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\u2713 Check your email \u2014 your secure link is on the way!';btn.textContent='Link Sent \u2713'}else{msg.className='msg er show';msg.textContent=d.error||'Something went wrong.';btn.disabled=false;btn.textContent='Send My Access Link'}}catch{msg.className='msg er show';msg.textContent='Network error.';btn.disabled=false;btn.textContent='Send My Access Link'}}
       document.getElementById('email').addEventListener('keydown',e=>{if(e.key==='Enter')go();});
-    </script>`));
+    </script>`), undefined, { nav: 'login' });
 });
 
 app.post('/course/request', frm, express.json(), async (req, res) => {
@@ -913,7 +929,8 @@ app.get('/course/confirm', async (req, res) => {
         const plan    = isLifetime ? 'Lifetime Access' : 'Monthly Membership';
         const sessToken = createSession(rec.email, name, plan);
         res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${sessToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${7*24*3600}`);
-        return res.redirect('/member');
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        return res.redirect(302, '/member');
     } catch (e) { console.error('[CourseConfirm]', e.message); res.send(resultPage('error', 'Error', 'Something went wrong.')); }
 });
 
@@ -1049,17 +1066,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 }
 
 // ─── MEMBER PORTAL (cookie-gated dashboard) ───────────────────────────────────
-app.get('/member', (req, res, next) => {
-    if (req.query.demo === '1' || !getSession(req)) {
-        const s = getSession(req) || { name: 'Demo', plan: 'Monthly Membership', email: 'demo@example.com' };
-        if (!getSession(req)) {
-            const token = createSession(s.email, s.name, s.plan);
-            res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${7*24*3600}`);
-        }
-        return res.send(memberPortalHtml(s));
-    }
-    next();
-}, (req, res) => {
+app.get('/member', requireSession, (req, res) => {
     const s = getSession(req);
     res.send(memberPortalHtml(s));
 });
@@ -1067,7 +1074,7 @@ app.get('/member', (req, res, next) => {
 // ─── BILLING SHORTCUT VIA SESSION ─────────────────────────────────────────────
 app.get('/billing/confirm-session', (req, res, next) => {
     if (getSession(req)) return next();
-    res.redirect('/member');
+    res.redirect(302, '/login');
 }, async (req, res) => {
     const s = getSession(req);
     let status = 'active', exAt = null, nextLabel = 'N/A', days = 0;
