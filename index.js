@@ -2217,7 +2217,11 @@ app.post('/admin/god-add', adm, express.json(), async (req, res) => {
 
 // ─── ADMIN: PANEL HTML ────────────────────────────────────────────────────────
 app.get('/admin', adm, adminGuard, async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     const key = req.query.key || '';
+    const BUILD_TS = 'v' + new Date().toISOString().slice(0,16).replace('T',' '); // e.g. v2026-03-07 22:05
     try {
     const [{ data: members }, { data: licenses }, { data: discordMems }] = await Promise.all([
         supabase.from(MEMBERSHIP_TABLE).select('email,full_name,status,plan_name,expires_at,discord_user_id,nt_license_id').order('updated_at', { ascending: false }).limit(100),
@@ -2232,64 +2236,194 @@ app.get('/admin', adm, adminGuard, async (req, res) => {
     const ntStatus = ntToken ? '\u2713 Authenticated' : '\u2717 Not Authenticated';
     const ntColor  = ntToken ? '#4ade80' : '#f87171';
 
-    function badge(s, gold) {
-        const a = s === 'active';
+    function badge(st, gold) {
+        const a = st === 'active';
         const c  = a ? (gold ? '#f6ad55' : '#4ade80') : '#f87171';
         const bg = a ? (gold ? 'rgba(246,173,85,0.08)' : 'rgba(74,222,128,0.08)') : 'rgba(248,113,113,0.08)';
         const bd = a ? (gold ? 'rgba(246,173,85,0.2)' : 'rgba(74,222,128,0.2)') : 'rgba(248,113,113,0.2)';
-        return `<span style="background:${bg};border:1px solid ${bd};border-radius:20px;padding:3px 10px;font-size:11px;color:${c};letter-spacing:1px;font-weight:600;">${s}</span>`;
+        return '<span style="background:' + bg + ';border:1px solid ' + bd + ';border-radius:20px;padding:3px 10px;font-size:11px;color:' + c + ';letter-spacing:1px;font-weight:600;">' + st + '</span>';
     }
 
     function actionBtn(email, type, label) {
         const safeEmail = email.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-        return `<button class="abtn" data-email="${safeEmail}" data-type="${type}">${label}</button>`;
+        return '<button class="abtn" data-email="' + safeEmail + '" data-type="' + type + '" data-label="' + label + '">' + label + '</button>';
     }
 
     const memberRows = (members || []).map(m => {
         const exp = m.expires_at ? new Date(m.expires_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'N/A';
-        const ntB = m.nt_license_id ? `<span style="color:#60a5fa;font-size:11px;">NT#${m.nt_license_id}</span>` : '<span style="color:#334155;">—</span>';
+        const ntB = m.nt_license_id ? '<span style="color:#60a5fa;font-size:11px;">NT#' + m.nt_license_id + '</span>' : '<span style="color:#334155;">\u2014</span>';
         const act = m.status === 'active' ? actionBtn(m.email,'monthly','CANCEL') : '<span style="color:#334155;font-size:12px;">Inactive</span>';
-        return `<tr><td>${m.full_name||'—'}</td><td class="em">${m.email}</td><td>${badge(m.status)}</td><td class="dt">${exp}</td><td>${ntB}</td><td>${act}</td></tr>`;
+        return '<tr><td>' + (m.full_name||'\u2014') + '</td><td class="em">' + m.email + '</td><td>' + badge(m.status) + '</td><td class="dt">' + exp + '</td><td>' + ntB + '</td><td>' + act + '</td></tr>';
     }).join('') || '<tr><td colspan="6" class="empty">No records</td></tr>';
 
     const licenseRows = (licenses || []).map(l => {
-        const ntB = l.nt_license_id ? `<span style="color:#60a5fa;font-size:11px;">NT#${l.nt_license_id}</span>` : '<span style="color:#334155;">—</span>';
+        const ntB = l.nt_license_id ? '<span style="color:#60a5fa;font-size:11px;">NT#' + l.nt_license_id + '</span>' : '<span style="color:#334155;">\u2014</span>';
         const act = l.status === 'active' ? actionBtn(l.email,'lifetime','REVOKE') : '<span style="color:#334155;font-size:12px;">Inactive</span>';
-        return `<tr><td>${l.full_name||'—'}</td><td class="em">${l.email}</td><td>${badge(l.status,true)}</td><td class="dt" style="font-family:monospace;font-size:11px;">${l.license_key||''}</td><td>${ntB}</td><td>${act}</td></tr>`;
+        return '<tr><td>' + (l.full_name||'\u2014') + '</td><td class="em">' + l.email + '</td><td>' + badge(l.status,true) + '</td><td class="dt" style="font-family:monospace;font-size:11px;">' + (l.license_key||'') + '</td><td>' + ntB + '</td><td>' + act + '</td></tr>';
     }).join('') || '<tr><td colspan="6" class="empty">No records</td></tr>';
 
     const discordRows = (discordMems || []).map(d => {
         const exp = d.expires_at ? new Date(d.expires_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'N/A';
         const act = d.status === 'active' ? actionBtn(d.email,'discord','CANCEL') : '<span style="color:#334155;font-size:12px;">Inactive</span>';
-        return `<tr><td>${d.full_name||'—'}</td><td class="em">${d.email}</td><td>${badge(d.status)}</td><td class="dt">${exp}</td><td style="color:#a78bfa;font-size:12px;">${d.discord_username||(d.discord_user_id?'Linked':'—')}</td><td>${act}</td></tr>`;
+        return '<tr><td>' + (d.full_name||'\u2014') + '</td><td class="em">' + d.email + '</td><td>' + badge(d.status) + '</td><td class="dt">' + exp + '</td><td style="color:#a78bfa;font-size:12px;">' + (d.discord_username||(d.discord_user_id?'Linked':'\u2014')) + '</td><td>' + act + '</td></tr>';
     }).join('') || '<tr><td colspan="5" class="empty">No records</td></tr>';
 
     const liveRows = liveHVT.map(m => {
         const safeId   = (m.user.id||'').replace(/"/g,'&quot;');
         const safeUser = (m.user.username||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-        return `<tr><td>${m.nick||'—'}</td><td style="color:#a78bfa;">@${m.user.username}</td><td style="font-family:monospace;font-size:11px;color:#475569;">${m.user.id}</td><td><button class="abtn abtn-remove" data-uid="${safeId}" data-uname="${safeUser}">REMOVE</button></td></tr>`;
+        return '<tr><td>' + (m.nick||'\u2014') + '</td><td style="color:#a78bfa;">@' + m.user.username + '</td><td style="font-family:monospace;font-size:11px;color:#475569;">' + m.user.id + '</td><td><button class="abtn abtn-rm" data-uid="' + safeId + '" data-uname="' + safeUser + '">REMOVE</button></td></tr>';
     }).join('') || '<tr><td colspan="4" class="empty">No live members</td></tr>';
 
     const activeMonthly  = (members  || []).filter(m => m.status === 'active').length;
     const activeLifetime = (licenses || []).filter(l => l.status === 'active').length;
     const activeDiscord  = (discordMems || []).filter(d => d.status === 'active').length;
     const totalActive    = activeMonthly + activeLifetime + activeDiscord;
-    const mCount = (members  || []).length;
-    const lCount = (licenses || []).length;
-    const dCount = (discordMems || []).length;
+    const mCount  = (members  || []).length;
+    const lCount  = (licenses || []).length;
+    const dCount  = (discordMems || []).length;
     const lvCount = liveHVT.length;
 
-    const AKEY = JSON.stringify(key);
+    // Build JS as a plain string — NOT inside the HTML template literal
+    // This guarantees no escaping issues and no template literal nesting problems
+    const adminJS = [
+        'var K=' + JSON.stringify(key) + ';',
+        '',
+        'function el(id){return document.getElementById(id);}',
+        'function on(id,ev,fn){var e=el(id);if(e)e.addEventListener(ev,fn);}',
+        '',
+        'function showMsg(id,ok,text){',
+        '  var e=el(id);if(!e)return;',
+        '  e.className="msg "+(ok?"ok":"er")+" show";',
+        '  e.textContent=text;',
+        '}',
+        '',
+        'function post(url,body,okCb,errCb){',
+        '  fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({key:K},body))})',
+        '    .then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d};});})',
+        '    .then(function(x){x.ok?okCb(x.d):errCb(x.d.error||JSON.stringify(x.d));})',
+        '    .catch(function(e){errCb("Network error: "+e.message);});',
+        '}',
+        '',
+        '// TABS',
+        'document.querySelectorAll(".tab").forEach(function(btn){',
+        '  btn.addEventListener("click",function(){',
+        '    document.querySelectorAll(".tab").forEach(function(b){b.classList.remove("on");});',
+        '    document.querySelectorAll(".tp").forEach(function(p){p.style.display="none";});',
+        '    btn.classList.add("on");',
+        '    var p=el("tp-"+btn.dataset.tab);',
+        '    if(p)p.style.display="block";',
+        '  });',
+        '});',
+        '',
+        '// FORCE RE-LOGIN',
+        'on("btnRefreshNT","click",function(){',
+        '  var btn=el("btnRefreshNT");',
+        '  if(btn)btn.disabled=true;',
+        '  showMsg("ntMsg",true,"Reconnecting...");',
+        '  fetch("/admin/refresh-nt-token",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:K})})',
+        '    .then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d};});})',
+        '    .then(function(x){showMsg("ntMsg",x.ok,x.d.message||(x.ok?"Done":"Error"));})',
+        '    .catch(function(e){showMsg("ntMsg",false,"Network error: "+e.message);})',
+        '    .finally(function(){var b=el("btnRefreshNT");if(b)b.disabled=false;});',
+        '});',
+        '',
+        '// TEST STORAGE',
+        'on("btnTestStorage","click",function(){',
+        '  var btn=el("btnTestStorage");',
+        '  if(btn)btn.disabled=true;',
+        '  showMsg("storageMsg",true,"Testing...");',
+        '  fetch("/admin/test-storage?key="+encodeURIComponent(K))',
+        '    .then(function(r){return r.json();})',
+        '    .then(function(d){',
+        '      var t=["Buckets: "+JSON.stringify(d.buckets),"Uploads: "+JSON.stringify(d.uploads_root),"Installer: "+(d.installer_signed_url||"N/A"),"Template: "+(d.template_signed_url||"N/A")];',
+        '      showMsg("storageMsg",!!(d.installer_signed_url&&d.installer_signed_url.length>10),t.join("\\n"));',
+        '    })',
+        '    .catch(function(e){showMsg("storageMsg",false,"Error: "+e.message);})',
+        '    .finally(function(){var b=el("btnTestStorage");if(b)b.disabled=false;});',
+        '});',
+        '',
+        '// GRANT ACCESS',
+        'on("btnGodMode","click",function(){',
+        '  var email=(el("godEmail").value||"").trim();',
+        '  if(!email){showMsg("godMsg",false,"Email is required.");return;}',
+        '  var btn=el("btnGodMode");if(btn)btn.disabled=true;',
+        '  showMsg("godMsg",true,"Granting access...");',
+        '  post("/admin/god-add",{',
+        '    email:email,',
+        '    role:(el("godRole").value||"monthly"),',
+        '    full_name:(el("godName").value||"").trim(),',
+        '    discord_username:(el("godUser").value||"").trim(),',
+        '    send_email:el("godSendEmail").checked,',
+        '    create_nt:el("godNT").checked,',
+        '    assign_discord:el("godDiscord").checked',
+        '  },function(d){',
+        '    var p=[];',
+        '    if(d.supabase)p.push("\\u2713 DB");',
+        '    if(d.nt_license)p.push("\\u2713 NT");',
+        '    if(d.discord)p.push("\\u2713 Discord");',
+        '    if(d.email_sent)p.push("\\u2713 Email");',
+        '    showMsg("godMsg",true,"\\u26a1 Done! "+(p.length?p.join(" | "):"Access granted"));',
+        '    ["godEmail","godName","godUser"].forEach(function(i){var e=el(i);if(e)e.value="";});',
+        '    var b=el("btnGodMode");if(b)b.disabled=false;',
+        '  },function(e){',
+        '    showMsg("godMsg",false,"Error: "+e);',
+        '    var b=el("btnGodMode");if(b)b.disabled=false;',
+        '  });',
+        '});',
+        '',
+        '// MANUAL CANCEL',
+        'on("btnCancel","click",function(){',
+        '  var email=(el("manualEmail").value||"").trim();',
+        '  var type=(el("manualType").value||"monthly");',
+        '  if(!email){showMsg("cancelMsg",false,"Enter an email first.");return;}',
+        '  doCancel(email,type);',
+        '});',
+        '',
+        'function doCancel(email,type){',
+        '  showMsg("cancelMsg",true,"Cancelling "+email+"...");',
+        '  post("/admin/cancel",{email:email,type:type},',
+        '    function(d){showMsg("cancelMsg",true,"\\u2713 Cancelled: "+email+(d.db_updated?" \\u2014 DB updated":""));setTimeout(function(){location.reload();},1500);},',
+        '    function(e){showMsg("cancelMsg",false,"Error: "+e);}',
+        '  );',
+        '}',
+        '',
+        '// TABLE BUTTONS (event delegation)',
+        'document.addEventListener("click",function(e){',
+        '  var btn=e.target.closest(".abtn");',
+        '  if(!btn)return;',
+        '  if(btn.classList.contains("abtn-rm")){',
+        '    if(btn.dataset.confirm!=="yes"){',
+        '      btn.textContent="CONFIRM?";btn.dataset.confirm="yes";',
+        '      btn.style.background="linear-gradient(135deg,#92400e,#d97706)";',
+        '      setTimeout(function(){if(btn.dataset.confirm==="yes"){btn.textContent="REMOVE";btn.dataset.confirm="";btn.style.background="";}},3000);',
+        '      return;',
+        '    }',
+        '    btn.disabled=true;btn.textContent="...";',
+        '    showMsg("cancelMsg",true,"Removing roles from @"+btn.dataset.uname+"...");',
+        '    post("/admin/remove-role",{discord_user_id:btn.dataset.uid},',
+        '      function(){showMsg("cancelMsg",true,"\\u2713 Removed @"+btn.dataset.uname);setTimeout(function(){location.reload();},1500);},',
+        '      function(e){showMsg("cancelMsg",false,"Error: "+e);btn.disabled=false;btn.textContent="REMOVE";}',
+        '    );',
+        '    return;',
+        '  }',
+        '  if(btn.dataset.email){',
+        '    if(btn.dataset.confirm!=="yes"){',
+        '      btn.dataset.confirm="yes";',
+        '      var orig=btn.textContent;',
+        '      btn.textContent="CONFIRM?";',
+        '      btn.style.background="linear-gradient(135deg,#92400e,#d97706)";',
+        '      setTimeout(function(){if(btn.dataset.confirm==="yes"){btn.textContent=orig;btn.dataset.confirm="";btn.style.background="";}},3000);',
+        '      return;',
+        '    }',
+        '    btn.disabled=true;btn.textContent="...";',
+        '    doCancel(btn.dataset.email,btn.dataset.type);',
+        '  }',
+        '});',
+        '',
+        'console.log("[HVT Admin] JS loaded OK. Key present:", !!K);',
+    ].join('\n');
 
-    res.send(`<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>HVT Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
+    const css = `*{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;padding:28px 20px;color:#fff}
 .hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06)}
 .brand{font-size:18px;font-weight:700;letter-spacing:3px;text-transform:uppercase}
@@ -2342,7 +2476,7 @@ select option{background:#111}
 .tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
 .tab{padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:1px solid rgba(255,255,255,0.08);color:#64748b;background:transparent;transition:all .15s}
 .tab.on{background:rgba(34,84,245,0.12);border-color:rgba(37,99,235,0.35);color:#2254F5}
-.panel{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:14px;overflow:hidden}
+.tp{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:14px;overflow:hidden}
 .pt{height:3px}
 .pt-b{background:linear-gradient(90deg,#1e3a8a,#2254F5,#1e3a8a)}
 .pt-g{background:linear-gradient(90deg,#92610a,#f6ad55,#92610a)}
@@ -2358,284 +2492,11 @@ td.empty{padding:20px;text-align:center;color:#334155}
 .abtn{background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:6px;padding:5px 13px;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:opacity .15s}
 .abtn:hover{opacity:.8}
 .abtn:disabled{opacity:.4;cursor:not-allowed}
-.ntbadge{display:inline-flex;align-items:center;gap:8px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);border-radius:20px;padding:5px 14px;font-size:13px;font-weight:700}
-</style>
-</head>
-<body>
+.ntbadge{display:inline-flex;align-items:center;gap:8px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);border-radius:20px;padding:5px 14px;font-size:13px;font-weight:700}`;
 
-<div class="hdr">
-  <div>
-    <div class="brand">High Velocity Trading</div>
-    <div style="font-size:10px;color:#334155;letter-spacing:3px;text-transform:uppercase;margin-top:2px;">Admin Control Panel</div>
-  </div>
-  <div style="display:flex;align-items:center;gap:12px;">
-    <span style="font-size:12px;color:${ntColor};font-weight:600;">NT ${ntStatus}</span>
-    <div class="restricted">&#9888; RESTRICTED</div>
-  </div>
-</div>
+    const html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1.0">\n<title>HVT Admin</title>\n<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">\n<style>\n' + css + '\n</style>\n</head>\n<body>\n\n<div class="hdr">\n  <div>\n    <div class="brand">High Velocity Trading</div>\n    <div style="font-size:10px;color:#334155;letter-spacing:3px;text-transform:uppercase;margin-top:2px;">Admin Control Panel &mdash; ' + BUILD_TS + '</div>\n  </div>\n  <div style="display:flex;align-items:center;gap:12px;">\n    <span style="font-size:12px;color:' + ntColor + ';font-weight:600;">NT ' + ntStatus + '</span>\n    <div class="restricted">&#9888; RESTRICTED</div>\n  </div>\n</div>\n\n<div class="stats">\n  <div class="sc sc-b"><div class="snum">' + totalActive + '</div><div class="slbl">Total Active</div></div>\n  <div class="sc sc-b"><div class="snum">' + activeMonthly + '</div><div class="slbl">Monthly Active</div></div>\n  <div class="sc sc-g"><div class="snum">' + activeLifetime + '</div><div class="slbl">Lifetime Active</div></div>\n  <div class="sc sc-p"><div class="snum">' + activeDiscord + '</div><div class="slbl">Discord $37</div></div>\n  <div class="sc sc-gr"><div class="snum">' + lvCount + '</div><div class="slbl">Live on Discord</div></div>\n  <div class="sc sc-c"><div class="snum" style="color:' + ntColor + ';">' + (ntToken ? '&#10003;' : '&#10007;') + '</div><div class="slbl">NT API Status</div></div>\n</div>\n\n<div class="sec">\n  <div class="sec-ttl">&#9670; NinjaTrader API</div>\n  <div class="box box-nt">\n    <div class="bbar bbar-cy"></div>\n    <div class="boxtitle" style="color:#67e8f9;">NT Ecosystem API</div>\n    <div class="boxsub">Auto-authenticates every 45 min. Auth failures: ' + ntAuthFails + '</div>\n    <div style="margin-bottom:16px;"><span class="ntbadge" style="color:' + ntColor + ';">' + ntStatus + '</span></div>\n    <button class="btn btn-cy" id="btnRefreshNT">&#8635; FORCE RE-LOGIN</button>\n    <div class="msg" id="ntMsg"></div>\n  </div>\n  <div class="box box-gr">\n    <div class="bbar bbar-gr"></div>\n    <div class="boxtitle" style="color:#4ade80;">Supabase Storage</div>\n    <div class="boxsub">Test bucket access and file paths for downloads.</div>\n    <button class="btn btn-gr" id="btnTestStorage">&#128196; TEST STORAGE</button>\n    <div class="msg" id="storageMsg"></div>\n  </div>\n</div>\n\n<div class="sec">\n  <div class="sec-ttl">&#9889; God Mode \u2014 Grant Access</div>\n  <div class="box box-pu">\n    <div class="bbar bbar-pu"></div>\n    <div class="boxtitle" style="color:#c4b5fd;">Grant Full Access Instantly</div>\n    <div class="boxsub">Creates Supabase record, NT license, Discord role, sends magic login link.</div>\n    <div class="row2">\n      <div><label>Email *</label><input type="text" id="godEmail" placeholder="their@email.com"></div>\n      <div><label>Access Type</label><select id="godRole"><option value="monthly">Monthly Member</option><option value="lifetime">Lifetime Member</option><option value="discord">Discord Room ($37)</option></select></div>\n    </div>\n    <div class="row2">\n      <div><label>Full Name</label><input type="text" id="godName" placeholder="John Smith"></div>\n      <div><label>Discord Username</label><input type="text" id="godUser" placeholder="username"></div>\n    </div>\n    <div class="chks">\n      <label class="chk"><input type="checkbox" id="godSendEmail" checked> Send login email</label>\n      <label class="chk"><input type="checkbox" id="godNT" checked> Create NT license</label>\n      <label class="chk"><input type="checkbox" id="godDiscord"> Assign Discord role</label>\n    </div>\n    <button class="btn btn-pu" id="btnGodMode">&#9889; GRANT ACCESS NOW</button>\n    <div class="msg" id="godMsg"></div>\n  </div>\n</div>\n\n<div class="sec">\n  <div class="sec-ttl">Manual Access Removal</div>\n  <div class="box box-re">\n    <div class="bbar bbar-re"></div>\n    <div class="boxtitle">Cancel / Revoke by Email</div>\n    <div class="boxsub">Cancels Authnet sub, removes Discord role, revokes NT license, marks cancelled in Supabase.</div>\n    <label>Member Email</label>\n    <input type="email" id="manualEmail" placeholder="member@email.com">\n    <label>Membership Type</label>\n    <select id="manualType"><option value="monthly">Monthly Membership</option><option value="lifetime">Lifetime License</option><option value="discord">Discord Room ($37)</option></select>\n    <button class="btn btn-re" id="btnCancel">&#128293; CANCEL ACCESS</button>\n    <div class="msg" id="cancelMsg"></div>\n  </div>\n</div>\n\n<div class="sec">\n  <div class="sec-ttl">Member Management</div>\n  <div class="tabs">\n    <button class="tab on" data-tab="monthly">Monthly (' + mCount + ')</button>\n    <button class="tab" data-tab="lifetime">Lifetime (' + lCount + ')</button>\n    <button class="tab" data-tab="discord37">Discord $37 (' + dCount + ')</button>\n    <button class="tab" data-tab="live">Live on Discord (' + lvCount + ')</button>\n  </div>\n  <div id="tp-monthly" class="tp"><div class="pt pt-b"></div><div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Expires</th><th>NT</th><th>Action</th></tr></thead><tbody>' + memberRows + '</tbody></table></div></div>\n  <div id="tp-lifetime" class="tp" style="display:none"><div class="pt pt-g"></div><div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>License Key</th><th>NT</th><th>Action</th></tr></thead><tbody>' + licenseRows + '</tbody></table></div></div>\n  <div id="tp-discord37" class="tp" style="display:none"><div class="pt pt-p"></div><div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Expires</th><th>Discord</th><th>Action</th></tr></thead><tbody>' + discordRows + '</tbody></table></div></div>\n  <div id="tp-live" class="tp" style="display:none"><div class="pt pt-gr"></div><div style="overflow-x:auto"><table><thead><tr><th>Display Name</th><th>Username</th><th>Discord ID</th><th>Action</th></tr></thead><tbody>' + liveRows + '</tbody></table></div></div>\n</div>\n\n<script>\n' + adminJS + '\n</script>\n</body>\n</html>';
 
-<div class="stats">
-  <div class="sc sc-b"><div class="snum">${totalActive}</div><div class="slbl">Total Active</div></div>
-  <div class="sc sc-b"><div class="snum">${activeMonthly}</div><div class="slbl">Monthly Active</div></div>
-  <div class="sc sc-g"><div class="snum">${activeLifetime}</div><div class="slbl">Lifetime Active</div></div>
-  <div class="sc sc-p"><div class="snum">${activeDiscord}</div><div class="slbl">Discord $37</div></div>
-  <div class="sc sc-gr"><div class="snum">${lvCount}</div><div class="slbl">Live on Discord</div></div>
-  <div class="sc sc-c"><div class="snum" style="color:${ntColor};">${ntToken ? '&#10003;' : '&#10007;'}</div><div class="slbl">NT API Status</div></div>
-</div>
-
-<div class="sec">
-  <div class="sec-ttl">&#9670; NinjaTrader API</div>
-  <div class="box box-nt">
-    <div class="bbar bbar-cy"></div>
-    <div class="boxtitle" style="color:#67e8f9;">NT Ecosystem API</div>
-    <div class="boxsub">Auto-authenticates every 45 min. Auth failures: ${ntAuthFails}</div>
-    <div style="margin-bottom:16px;">
-      <span class="ntbadge" style="color:${ntColor};">${ntStatus}</span>
-    </div>
-    <button class="btn btn-cy" id="btnRefreshNT">&#8635; FORCE RE-LOGIN</button>
-    <div class="msg" id="ntMsg"></div>
-  </div>
-  <div class="box box-gr">
-    <div class="bbar bbar-gr"></div>
-    <div class="boxtitle" style="color:#4ade80;">Supabase Storage</div>
-    <div class="boxsub">Test bucket access and file paths for downloads.</div>
-    <button class="btn btn-gr" id="btnTestStorage">&#128196; TEST STORAGE</button>
-    <div class="msg" id="storageMsg"></div>
-  </div>
-</div>
-
-<div class="sec">
-  <div class="sec-ttl">&#9889; God Mode — Grant Access</div>
-  <div class="box box-pu">
-    <div class="bbar bbar-pu"></div>
-    <div class="boxtitle" style="color:#c4b5fd;">Grant Full Access Instantly</div>
-    <div class="boxsub">Creates Supabase record, NT license, Discord role, sends magic login link.</div>
-    <div class="row2">
-      <div><label>Email *</label><input type="text" id="godEmail" placeholder="their@email.com"></div>
-      <div><label>Access Type</label>
-        <select id="godRole">
-          <option value="monthly">Monthly Member</option>
-          <option value="lifetime">Lifetime Member</option>
-          <option value="discord">Discord Room ($37)</option>
-        </select>
-      </div>
-    </div>
-    <div class="row2">
-      <div><label>Full Name</label><input type="text" id="godName" placeholder="John Smith"></div>
-      <div><label>Discord Username</label><input type="text" id="godUser" placeholder="username"></div>
-    </div>
-    <div class="chks">
-      <label class="chk"><input type="checkbox" id="godSendEmail" checked> Send login email</label>
-      <label class="chk"><input type="checkbox" id="godNT" checked> Create NT license</label>
-      <label class="chk"><input type="checkbox" id="godDiscord"> Assign Discord role</label>
-    </div>
-    <button class="btn btn-pu" id="btnGodMode">&#9889; GRANT ACCESS NOW</button>
-    <div class="msg" id="godMsg"></div>
-  </div>
-</div>
-
-<div class="sec">
-  <div class="sec-ttl">Manual Access Removal</div>
-  <div class="box box-re">
-    <div class="bbar bbar-re"></div>
-    <div class="boxtitle">Cancel / Revoke by Email</div>
-    <div class="boxsub">Cancels Authnet sub, removes Discord role, revokes NT license, marks cancelled in Supabase.</div>
-    <label>Member Email</label>
-    <input type="email" id="manualEmail" placeholder="member@email.com">
-    <label>Membership Type</label>
-    <select id="manualType">
-      <option value="monthly">Monthly Membership</option>
-      <option value="lifetime">Lifetime License</option>
-      <option value="discord">Discord Room ($37)</option>
-    </select>
-    <button class="btn btn-re" id="btnCancel">&#128293; CANCEL ACCESS</button>
-    <div class="msg" id="cancelMsg"></div>
-  </div>
-</div>
-
-<div class="sec">
-  <div class="sec-ttl">Member Management</div>
-  <div class="tabs">
-    <button class="tab on" data-tab="monthly">Monthly (${mCount})</button>
-    <button class="tab" data-tab="lifetime">Lifetime (${lCount})</button>
-    <button class="tab" data-tab="discord37">Discord $37 (${dCount})</button>
-    <button class="tab" data-tab="live">Live on Discord (${lvCount})</button>
-  </div>
-  <div id="tp-monthly" class="panel"><div class="pt pt-b"></div>
-    <div style="overflow-x:auto"><table>
-      <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Expires</th><th>NT</th><th>Action</th></tr></thead>
-      <tbody>${memberRows}</tbody>
-    </table></div>
-  </div>
-  <div id="tp-lifetime" class="panel" style="display:none"><div class="pt pt-g"></div>
-    <div style="overflow-x:auto"><table>
-      <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>License Key</th><th>NT</th><th>Action</th></tr></thead>
-      <tbody>${licenseRows}</tbody>
-    </table></div>
-  </div>
-  <div id="tp-discord37" class="panel" style="display:none"><div class="pt pt-p"></div>
-    <div style="overflow-x:auto"><table>
-      <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Expires</th><th>Discord</th><th>Action</th></tr></thead>
-      <tbody>${discordRows}</tbody>
-    </table></div>
-  </div>
-  <div id="tp-live" class="panel" style="display:none"><div class="pt pt-gr"></div>
-    <div style="overflow-x:auto"><table>
-      <thead><tr><th>Display Name</th><th>Username</th><th>Discord ID</th><th>Action</th></tr></thead>
-      <tbody>${liveRows}</tbody>
-    </table></div>
-  </div>
-</div>
-
-<script>
-(function(){
-var K = ${AKEY};
-
-function post(url, body, okCb, errCb) {
-  fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(Object.assign({key:K}, body)) })
-    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
-    .then(function(x){ x.ok ? okCb(x.d) : errCb(x.d.error||JSON.stringify(x.d)); })
-    .catch(function(e){ errCb('Network error: '+e.message); });
-}
-
-function msg(id, ok, text) {
-  var el = document.getElementById(id);
-  el.className = 'msg '+(ok?'ok':'er')+' show';
-  el.textContent = text;
-}
-
-function loading(id, text) {
-  var el = document.getElementById(id);
-  el.className = 'msg ok show';
-  el.textContent = text||'Working...';
-}
-
-// ── TABS ──────────────────────────────────────────────────────────────────────
-document.querySelectorAll('.tab').forEach(function(btn){
-  btn.addEventListener('click', function(){
-    document.querySelectorAll('.tab').forEach(function(b){ b.classList.remove('on'); });
-    document.querySelectorAll('[id^="tp-"]').forEach(function(p){ p.style.display='none'; });
-    btn.classList.add('on');
-    var panel = document.getElementById('tp-'+btn.dataset.tab);
-    if(panel) panel.style.display='block';
-  });
-});
-
-// ── FORCE RE-LOGIN ────────────────────────────────────────────────────────────
-document.getElementById('btnRefreshNT').addEventListener('click', function(){
-  loading('ntMsg','Reconnecting...');
-  this.disabled = true;
-  var self = this;
-  fetch('/admin/refresh-nt-token', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:K}) })
-    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
-    .then(function(x){ msg('ntMsg',x.ok,x.d.message||(x.ok?'Done':'Error')); })
-    .catch(function(e){ msg('ntMsg',false,'Network error: '+e.message); })
-    .finally(function(){ self.disabled=false; });
-});
-
-// ── TEST STORAGE ──────────────────────────────────────────────────────────────
-document.getElementById('btnTestStorage').addEventListener('click', function(){
-  loading('storageMsg','Testing...');
-  this.disabled = true;
-  var self = this;
-  fetch('/admin/test-storage?key='+encodeURIComponent(K))
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      var lines=['Buckets: '+JSON.stringify(d.buckets),'Uploads root: '+JSON.stringify(d.uploads_root),'Installer: '+(d.installer_signed_url||'N/A'),'Template: '+(d.template_signed_url||'N/A')];
-      var ok=!!(d.installer_signed_url && d.installer_signed_url.length>10);
-      msg('storageMsg',ok,lines.join('\n'));
-    })
-    .catch(function(e){ msg('storageMsg',false,'Error: '+e.message); })
-    .finally(function(){ self.disabled=false; });
-});
-
-// ── GRANT ACCESS (GOD MODE) ───────────────────────────────────────────────────
-document.getElementById('btnGodMode').addEventListener('click', function(){
-  var email = (document.getElementById('godEmail').value||'').trim();
-  if(!email){ msg('godMsg',false,'Email is required.'); return; }
-  loading('godMsg','Granting access...');
-  this.disabled = true;
-  var self = this;
-  post('/admin/god-add',{
-    email:email,
-    role:document.getElementById('godRole').value,
-    full_name:(document.getElementById('godName').value||'').trim(),
-    discord_username:(document.getElementById('godUser').value||'').trim(),
-    send_email:document.getElementById('godSendEmail').checked,
-    create_nt:document.getElementById('godNT').checked,
-    assign_discord:document.getElementById('godDiscord').checked
-  }, function(d){
-    var parts=[];
-    if(d.supabase)   parts.push('\u2713 DB');
-    if(d.nt_license) parts.push('\u2713 NT');
-    if(d.discord)    parts.push('\u2713 Discord');
-    if(d.email_sent) parts.push('\u2713 Email');
-    msg('godMsg',true,'\u26a1 Done! '+(parts.length?parts.join(' | '):'Access granted'));
-    document.getElementById('godEmail').value='';
-    document.getElementById('godName').value='';
-    document.getElementById('godUser').value='';
-    self.disabled=false;
-  }, function(e){ msg('godMsg',false,'Error: '+e); self.disabled=false; });
-});
-
-// ── MANUAL CANCEL ─────────────────────────────────────────────────────────────
-document.getElementById('btnCancel').addEventListener('click', function(){
-  var email=(document.getElementById('manualEmail').value||'').trim();
-  var type=document.getElementById('manualType').value;
-  if(!email){ msg('cancelMsg',false,'Enter an email first.'); return; }
-  doCancel(email, type, 'cancelMsg');
-});
-
-// ── CANCEL / REVOKE in TABLE ROWS ─────────────────────────────────────────────
-document.addEventListener('click', function(e){
-  var btn = e.target.closest('.abtn');
-  if(!btn) return;
-
-  if(btn.classList.contains('abtn-remove')){
-    // Remove Discord role
-    if(btn.dataset.confirm!=='yes'){
-      btn.textContent='CONFIRM?'; btn.dataset.confirm='yes';
-      btn.style.background='linear-gradient(135deg,#92400e,#d97706)';
-      setTimeout(function(){ if(btn.dataset.confirm==='yes'){ btn.textContent='REMOVE'; btn.dataset.confirm=''; btn.style.background=''; } },3000);
-      return;
-    }
-    btn.disabled=true; btn.textContent='...';
-    loading('cancelMsg','Removing roles from @'+btn.dataset.uname+'...');
-    post('/admin/remove-role',{discord_user_id:btn.dataset.uid},
-      function(d){ msg('cancelMsg',true,'\u2713 Roles removed from @'+btn.dataset.uname); setTimeout(function(){location.reload();},1500); },
-      function(e){ msg('cancelMsg',false,'Error: '+e); btn.disabled=false; btn.textContent='REMOVE'; });
-    return;
-  }
-
-  // Cancel membership
-  if(btn.dataset.email){
-    if(btn.dataset.confirm!=='yes'){
-      btn.textContent='CONFIRM?'; btn.dataset.confirm='yes';
-      btn.style.background='linear-gradient(135deg,#92400e,#d97706)';
-      setTimeout(function(){ if(btn.dataset.confirm==='yes'){ btn.textContent=btn.dataset.label||'CANCEL'; btn.dataset.confirm=''; btn.style.background=''; } },3000);
-      return;
-    }
-    btn.disabled=true; btn.textContent='...';
-    doCancel(btn.dataset.email, btn.dataset.type, 'cancelMsg');
-  }
-});
-
-function doCancel(email, type, msgId){
-  loading(msgId,'Cancelling '+email+'...');
-  post('/admin/cancel',{email:email,type:type},
-    function(d){
-      msg(msgId,true,'\u2713 Cancelled: '+email+(d.db_updated?' \u2014 DB updated':''));
-      setTimeout(function(){location.reload();},1500);
-    },
-    function(e){ msg(msgId,false,'Error: '+e); }
-  );
-}
-
-})();
-</script>
-</body>
-</html>`);
-
+    res.send(html);
     } catch (e) { console.error('[AdminPanel]', e.message, e.stack); res.status(500).send('<h1 style="color:red">Admin panel error: ' + e.message + '</h1>'); }
 })
 app.get('/admin/test-storage', adm, adminGuard, async (req, res) => {
