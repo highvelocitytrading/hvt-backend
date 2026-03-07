@@ -631,6 +631,13 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;displa
 .topnav-right a.topnav-link:hover,.topnav-right a.topnav-out:hover{color:rgba(255,255,255,0.85);}
 .topnav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);letter-spacing:0.2px;transition:background .2s,color .2s,border-color .2s;}
 .topnav-cta:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18);}
+@media(max-width:600px){
+  .topnav{padding:0 12px;}
+  .topnav-left a.topnav-link{display:none;}
+  .topnav-right a.topnav-link,.topnav-right a.topnav-out{display:none;}
+  .topnav-right a.topnav-cta{display:inline-block;}
+  .topnav-logo img{height:34px;max-width:130px;}
+}
 .card{width:100%;max-width:460px;background:rgba(255,255,255,0.03);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(34,84,245,0.2);border-radius:20px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.6);position:relative;z-index:1;}
 .ct{height:3px;background:linear-gradient(90deg,#2254F5,#2254F5,#2254F5);}
 .cb{padding:36px 32px;}
@@ -1180,6 +1187,13 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 .topnav-out:hover{color:rgba(255,255,255,0.85)}
 .topnav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);letter-spacing:0.2px;transition:background .2s,color .2s,border-color .2s}
 .topnav-cta:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18)}
+@media(max-width:600px){
+  .topnav{padding:0 12px;}
+  .topnav-left a.topnav-link{display:none;}
+  .topnav-right a.topnav-out{display:none;}
+  .topnav-right a.topnav-cta{display:inline-block;}
+  .topnav-logo img{height:34px;max-width:130px;}
+}
 .portal-wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:100px 24px 64px}
 .hero-section{text-align:center;margin-bottom:32px}
 .hero-section .pill{display:inline-block;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.25);border-radius:999px;color:#2254F5;font-size:11px;letter-spacing:3px;text-transform:uppercase;padding:6px 18px;margin-bottom:14px}
