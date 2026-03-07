@@ -16,7 +16,7 @@ app.set('trust proxy', 1);
 const path = require('path');
 app.use(express.static(path.join(__dirname, 'public')));
 
-const PORT = process.env.PORT || 8154;
+const PORT = process.env.PORT || 8155;
 
 // ─── SECURITY HEADERS ────────────────────────────────────────────────────────
 app.use((req, res, next) => {
@@ -69,13 +69,6 @@ const DISCORD_ROOM_ROLE_ID     = process.env.DISCORD_ROOM_ROLE_ID     || '';
 const MEMBERSHIP_TABLE = process.env.SUPABASE_TABLE || 'membershipstab';
 const LICENSE_TABLE    = 'license_keys';
 const DISCORD_TABLE    = 'discord_members';
-
-// Supabase storage: bucket name and object paths (must match files in Storage exactly)
-const DOWNLOAD_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'uploads';
-const DOWNLOAD_PATHS   = {
-    installer: process.env.DOWNLOAD_INSTALLER_PATH || 'HVTMasterAccessNQ.zip',
-    template:  process.env.DOWNLOAD_TEMPLATE_PATH || 'HVT NQ TEMPLATE.xml'
-};
 
 // ─── NINJATRADER ECOSYSTEM API ────────────────────────────────────────────────
 const NT_PRODUCT_ID = process.env.NT_PRODUCT_ID || '1196';
@@ -484,9 +477,9 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;displa
 .hero-sub{font-family:'DM Sans',sans-serif;font-weight:400;font-size:15px;color:#94a3b8;line-height:1.6;max-width:360px;margin:0 auto 0;}
 .hero-div{height:1px;background:linear-gradient(90deg,transparent,rgba(34,84,245,0.3),transparent);margin:16px auto 0;max-width:200px;}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10;}
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:52px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative;}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:45px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative;}
 .topnav-logo{display:flex;align-items:center;gap:0;text-decoration:none;}
-.topnav-logo img{height:40px;width:auto;}
+.topnav-logo img{height:26px;width:auto;background:transparent;}
 .topnav-left{display:flex;align-items:center;gap:12px;}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s;}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85);}
@@ -536,9 +529,6 @@ input::placeholder{color:#334155;}
       <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png" alt="High Velocity Trading" /></a>
     </div>
     <div class="topnav-right" style="display:flex;align-items:center;gap:12px;">
-      <a href="/member" class="topnav-link" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Portal</a>
-      <a href="/billing/confirm-session" class="topnav-out" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Billing</a>
-      <a href="/logout" class="topnav-out" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Log out</a>
       <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>
     </div>
   </nav>
@@ -594,15 +584,15 @@ app.post('/webhooks/membership-jotform', wh, (req, res) => {
 });
 
 // ─── MEMBERSHIP AUTHNET ───────────────────────────────────────────────────────
-app.post('/webhooks/membership-authnet', wh, express.json(), async (req, res) => {
-    try {
+app.post('/webhooks/membership-authnet', wh, express.json(), (req, res) => {
+    res.status(200).send('OK'); // Respond immediately — prevents Authorize.net deactivation
+    (async () => { try {
         const { eventType = '', payload = {} } = req.body || {};
         const email = (payload?.customerDetails?.email || '').toLowerCase().trim();
         const subId = pickFirst(payload?.id);
         const CANCEL_EVENTS = ['net.authorize.customer.subscription.cancelled','net.authorize.customer.subscription.expired','net.authorize.customer.subscription.suspended','net.authorize.customer.subscription.terminated','net.authorize.customer.subscription.failed'];
-
         if (eventType === 'net.authorize.customer.subscription.created' || eventType === 'net.authorize.payment.capture.created') {
-            if (!email) return res.status(400).send('No email');
+            if (!email) return;
             const row = { email, plan_name: 'membership', status: 'active', source: 'authnet', expires_at: now30days(), updated_at: nowISO() };
             if (subId) row.authnet_subscription_id = subId;
             await supabase.from(MEMBERSHIP_TABLE).upsert(row, { onConflict: 'email' });
@@ -622,8 +612,7 @@ app.post('/webhooks/membership-authnet', wh, express.json(), async (req, res) =>
                 console.log(`🚫 Membership cancelled (AN): ${email || subId}`);
             }
         }
-        res.status(200).send('OK');
-    } catch (e) { console.error('[MemberAN]', e.message); res.status(500).send('Error'); }
+    } catch (e) { console.error('[MemberAN]', e.message); } })();
 });
 
 // ─── DISCORD $37 JOTFORM ─────────────────────────────────────────────────────
@@ -646,15 +635,15 @@ app.post('/webhooks/discord-jotform', wh, (req, res) => {
 });
 
 // ─── DISCORD $37 AUTHNET ──────────────────────────────────────────────────────
-app.post('/webhooks/discord-authnet', wh, express.json(), async (req, res) => {
-    try {
+app.post('/webhooks/discord-authnet', wh, express.json(), (req, res) => {
+    res.status(200).send('OK'); // Respond immediately — prevents Authorize.net deactivation
+    (async () => { try {
         const { eventType = '', payload = {} } = req.body || {};
         const email = (payload?.customerDetails?.email || '').toLowerCase().trim();
         const subId = pickFirst(payload?.id);
         const CANCEL_EVENTS = ['net.authorize.customer.subscription.cancelled','net.authorize.customer.subscription.expired','net.authorize.customer.subscription.suspended','net.authorize.customer.subscription.terminated','net.authorize.customer.subscription.failed'];
-
         if (eventType === 'net.authorize.customer.subscription.created' || eventType === 'net.authorize.payment.capture.created') {
-            if (!email) return res.status(400).send('No email');
+            if (!email) return;
             const row = { email, plan_name: 'discord_monthly', status: 'active', source: 'authnet', expires_at: now30days(), updated_at: nowISO() };
             if (subId) row.authnet_subscription_id = subId;
             await supabase.from(DISCORD_TABLE).upsert(row, { onConflict: 'email' });
@@ -670,8 +659,7 @@ app.post('/webhooks/discord-authnet', wh, express.json(), async (req, res) => {
                 console.log(`🚫 Discord cancelled (AN): ${email || subId}`);
             }
         }
-        res.status(200).send('OK');
-    } catch (e) { console.error('[DiscordAN]', e.message); res.status(500).send('Error'); }
+    } catch (e) { console.error('[DiscordAN]', e.message); } })();
 });
 
 app.get('/check-access', frm, async (req, res) => {
@@ -685,37 +673,32 @@ app.get('/check-access', frm, async (req, res) => {
 app.get('/downloads/installer', frm, async (req, res) => {
     if (!supabase) return res.status(503).json({ error: 'Service unavailable. Configure Supabase in .env and restart the server.' });
     try {
-        const objectPath = DOWNLOAD_PATHS.installer;
-        const { data, error } = await supabase.storage.from(DOWNLOAD_BUCKET).createSignedUrl(objectPath, 120);
+        const { data, error } = await supabase.storage.from('uploads').createSignedUrl('packages/HVTMasterAccessNQ.zip', 60);
         if (error) {
-            console.error('[DownloadInstaller] path=%s bucket=%s', objectPath, DOWNLOAD_BUCKET, error.message, error);
-            return res.status(500).json({ error: 'Failed to generate download link. Please try again later.', detail: error.message });
+            console.error('[DownloadInstaller]', error.message);
+            return res.status(500).json({ error: 'Failed to generate download link. Please try again later.' });
         }
-        const sep = data.signedUrl.includes('?') ? '&' : '?';
-        const url = `${data.signedUrl}${sep}download=${encodeURIComponent(DOWNLOAD_PATHS.installer.split('/').pop())}`;
+        const url = data.signedUrl + (data.signedUrl.includes('?') ? '&' : '?') + 'download=HVTMasterAccessNQ.zip';
         return res.redirect(302, url);
     } catch (e) {
-        console.error('[DownloadInstaller]', e.message, e);
-        return res.status(500).json({ error: 'Failed to generate download link. Please try again later.', detail: e.message });
+        console.error('[DownloadInstaller]', e.message);
+        return res.status(500).json({ error: 'Failed to generate download link. Please try again later.' });
     }
 });
 
 app.get('/downloads/template', frm, async (req, res) => {
     if (!supabase) return res.status(503).json({ error: 'Service unavailable. Configure Supabase in .env and restart the server.' });
     try {
-        const objectPath = DOWNLOAD_PATHS.template;
-        const { data, error } = await supabase.storage.from(DOWNLOAD_BUCKET).createSignedUrl(objectPath, 120);
+        const { data, error } = await supabase.storage.from('uploads').createSignedUrl('templates/HVT NQ TEMPLATE.xml', 60);
         if (error) {
-            console.error('[DownloadTemplate] path=%s bucket=%s', objectPath, DOWNLOAD_BUCKET, error.message, error);
-            return res.status(500).json({ error: 'Failed to generate download link. Please try again later.', detail: error.message });
+            console.error('[DownloadTemplate]', error.message);
+            return res.status(500).json({ error: 'Failed to generate download link. Please try again later.' });
         }
-        const sep = data.signedUrl.includes('?') ? '&' : '?';
-        const downloadName = 'HVT_NQ_TEMPLATE.xml';
-        const url = `${data.signedUrl}${sep}download=${encodeURIComponent(downloadName)}`;
+        const url = data.signedUrl + (data.signedUrl.includes('?') ? '&' : '?') + 'download=HVT_NQ_TEMPLATE.xml';
         return res.redirect(302, url);
     } catch (e) {
-        console.error('[DownloadTemplate]', e.message, e);
-        return res.status(500).json({ error: 'Failed to generate download link. Please try again later.', detail: e.message });
+        console.error('[DownloadTemplate]', e.message);
+        return res.status(500).json({ error: 'Failed to generate download link. Please try again later.' });
     }
 });
 
@@ -746,8 +729,8 @@ app.get('/trading-room', (req, res) => {
         <div style="background:rgba(34,84,245,0.05);border:1px solid rgba(34,84,245,0.15);border-radius:12px;padding:18px 20px;margin-bottom:24px;">
           <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#2254F5;margin-bottom:8px;font-weight:700;">Install Software</div>
           <div style="color:#94a3b8;font-size:13px;line-height:1.5;">Download and install both the HVT software and the template package before activating Discord access.</div>
-          <div style="margin-top:14px;text-align:center;"><a href="${APP_URL}/downloads/installer" id="install-software-link" class="tr-install-btn" download="HVTMasterAccessNQ.zip">Install Software</a></div>
-          <div style="margin-top:12px;text-align:center;"><a href="${APP_URL}/downloads/template" id="install-template-link" class="tr-install-btn" download="HVT_NQ_TEMPLATE.xml">Download Template</a></div>
+          <div style="margin-top:14px;text-align:center;"><a href="/downloads/installer" id="install-software-link" class="tr-install-btn">Install Software</a></div>
+          <div style="margin-top:12px;text-align:center;"><a href="/downloads/template" id="install-template-link" class="tr-install-btn">Download Template</a></div>
         </div>
         <div style="background:rgba(34,84,245,0.05);border:1px solid rgba(34,84,245,0.15);border-radius:12px;padding:18px 20px;margin-bottom:24px;">
           <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;margin-bottom:14px;font-weight:700;">Discord Trading Room</div>
@@ -928,9 +911,9 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 .member-bg::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(34,84,245,0.18) 0%,transparent 50%),radial-gradient(ellipse 60% 40% at 20% 30%,#00001C 0%,transparent 55%);pointer-events:none}
 .member-bg::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:600px;height:200px;background:radial-gradient(ellipse 100% 100% at 50% 100%,rgba(34,84,245,0.08) 0%,transparent 70%);pointer-events:none}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:52px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:45px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
 .topnav-logo{display:flex;align-items:center;text-decoration:none}
-.topnav-logo img{height:40px;width:auto}
+.topnav-logo img{height:26px;width:auto;background:transparent}
 .topnav-left{display:flex;align-items:center;gap:12px}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85)}
@@ -1119,9 +1102,9 @@ app.get('/course', requireSession, (req, res) => {
 *{box-sizing:border-box;margin:0;padding:0}html,body{height:100%;overflow:hidden}body{font-family:'DM Sans',sans-serif;background:#000;color:#fff;display:flex;flex-direction:column}
 .member-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:#000}.member-bg::before{content:'';position:absolute;top:0;left:0;width:70%;height:60%;background:radial-gradient(ellipse at 20% 20%,#00001C 0%,transparent 60%);pointer-events:none}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:52px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:45px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
 .topnav-logo{display:flex;align-items:center;text-decoration:none}
-.topnav-logo img{height:40px;width:auto}
+.topnav-logo img{height:26px;width:auto;background:transparent}
 .topnav-left{display:flex;align-items:center;gap:12px}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85)}
@@ -1597,24 +1580,23 @@ app.get('/cancel/confirm', async (req, res) => {
 });
 
 // ─── LIFETIME LICENSE WEBHOOKS ────────────────────────────────────────────────
-app.post('/webhooks/authorize-net', wh, express.raw({ type: '*/*', limit: '2mb' }), async (req, res) => {
-    try {
+app.post('/webhooks/authorize-net', wh, express.raw({ type: '*/*', limit: '2mb' }), (req, res) => {
+    res.status(200).json({ ok: true }); // Respond immediately — prevents Authorize.net deactivation
+    (async () => { try {
         const rawBody = req.body?.toString('utf8') || '';
         const sig     = verifyAuthnetSig(rawBody, req.headers['x-anet-signature']);
-        if (!sig.ok) return res.status(401).json({ ok: false, error: 'invalid_signature', reason: sig.reason });
+        if (!sig.ok) { console.error('[LicenseAN] bad sig:', sig.reason); return; }
         let body = {};
         try { body = rawBody ? JSON.parse(rawBody) : {}; } catch {}
         const txId  = pickFirst(body?.payload?.id);
         const eType = pickFirst(body?.eventType) || 'authorize_net';
-        if (!txId) return res.status(400).json({ ok: false, error: 'missing_transaction_id' });
+        if (!txId) { console.error('[LicenseAN] missing txId'); return; }
         const row = await upsertLicense(txId, { authorize_received: true, last_source: 'authorize', authorize_event_type: eType, raw_authorize: rawBody, authorize_body_json: body, status: 'pending_jotform' });
         if (row.email && row.full_name) {
             const act = await upsertLicense(txId, { authorize_received: true, last_source: 'authorize', status: 'active' });
             console.log(`✅ License (AN): ${act.email}`);
-            return res.json({ ok: true, transaction_id: txId, status: act.status });
         }
-        return res.json({ ok: true, transaction_id: txId, status: row.status });
-    } catch (e) { console.error('[LicenseAN]', e); res.status(500).json({ ok: false, error: 'server_error' }); }
+    } catch (e) { console.error('[LicenseAN]', e); } })();
 });
 
 app.post('/webhooks/jotform', wh, (req, res) => {
@@ -1664,21 +1646,13 @@ app.post('/admin/refresh-nt-token', adm, express.json(), async (req, res) => {
 
 app.get('/admin', adm, adminGuard, async (req, res) => {
     const key = req.query.key;
-    let members = [], licenses = [], discordMems = [];
-    try {
-        const results = await Promise.all([
-            supabase.from(MEMBERSHIP_TABLE).select('email,full_name,status,plan_name,expires_at,discord_user_id,nt_license_id').order('updated_at', { ascending: false }).limit(100),
-            supabase.from(LICENSE_TABLE).select('email,full_name,status,license_key,nt_license_id').order('updated_at', { ascending: false }).limit(100),
-            supabase.from(DISCORD_TABLE).select('email,full_name,status,expires_at,discord_user_id,discord_username').order('updated_at', { ascending: false }).limit(100)
-        ]);
-        members = results[0].data || [];
-        licenses = results[1].data || [];
-        discordMems = results[2].data || [];
-    } catch (e) {
-        console.error('[Admin] Data fetch error:', e.message);
-    }
+    const [{ data: members }, { data: licenses }, { data: discordMems }] = await Promise.all([
+        supabase.from(MEMBERSHIP_TABLE).select('email,full_name,status,plan_name,expires_at,discord_user_id,nt_license_id').order('updated_at', { ascending: false }).limit(100),
+        supabase.from(LICENSE_TABLE).select('email,full_name,status,license_key,nt_license_id').order('updated_at', { ascending: false }).limit(100),
+        supabase.from(DISCORD_TABLE).select('email,full_name,status,expires_at,discord_user_id,discord_username').order('updated_at', { ascending: false }).limit(100)
+    ]);
     let guildMembers = [];
-    try { guildMembers = await getGuildAll(); } catch (e) { console.error('[Admin] Guild fetch error:', e.message); }
+    try { guildMembers = await getGuildAll(); } catch {}
     const allRoles = [DISCORD_MONTHLY_ROLE_ID, DISCORD_LIFETIME_ROLE_ID, ...(DISCORD_ROOM_ROLE_ID ? [DISCORD_ROOM_ROLE_ID] : [])];
     const liveHVT  = guildMembers.filter(m => m.roles?.some(r => allRoles.includes(r)));
     const ntStatus = ntToken ? '✓ Authenticated' : '✗ Not Authenticated';
@@ -1691,10 +1665,7 @@ app.get('/admin', adm, adminGuard, async (req, res) => {
         const d = a ? (gold ? 'rgba(246,173,85,0.2)' : 'rgba(74,222,128,0.2)') : 'rgba(248,113,113,0.2)';
         return `<span style="background:${b};border:1px solid ${d};border-radius:20px;padding:3px 10px;font-size:11px;color:${c};letter-spacing:1px;font-weight:600;">${s}</span>`;
     };
-    const cancelBtn = (email, type, lbl) => {
-        const safe = String(email || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-        return `<button onclick="fireUser('${safe}','${type}')" style="background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;">${lbl}</button>`;
-    };
+    const cancelBtn = (email, type, lbl) => `<button onclick="fireUser('${email}','${type}')" style="background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;">${lbl}</button>`;
 
     const memberRows = (members || []).map(m => {
         const exp = m.expires_at ? new Date(m.expires_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : 'N/A';
@@ -1709,13 +1680,8 @@ app.get('/admin', adm, adminGuard, async (req, res) => {
         const exp = d.expires_at ? new Date(d.expires_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : 'N/A';
         return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:12px 14px;color:#94a3b8;font-size:13px;">${d.full_name || '—'}</td><td style="padding:12px 14px;color:#64748b;font-size:13px;">${d.email}</td><td style="padding:12px 14px;">${badge(d.status)}</td><td style="padding:12px 14px;color:#475569;font-size:12px;">${exp}</td><td style="padding:12px 14px;color:#a78bfa;font-size:12px;">${d.discord_username || (d.discord_user_id ? '✓ Linked' : '—')}</td><td style="padding:12px 14px;">${d.status === 'active' ? cancelBtn(d.email, 'discord', 'CANCEL') : '<span style="color:#334155;font-size:12px;">Inactive</span>'}</td></tr>`;
     }).join('');
-    const liveRows = liveHVT.map(m => {
-        const safeId = String(m.user?.id || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-        const safeUser = String(m.user?.username || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-        return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:12px 14px;color:#94a3b8;font-size:13px;">${m.nick || '—'}</td><td style="padding:12px 14px;color:#a78bfa;font-size:13px;">@${m.user?.username || '—'}</td><td style="padding:12px 14px;color:#475569;font-size:11px;font-family:monospace;">${m.user?.id || '—'}</td><td style="padding:12px 14px;"><button onclick="removeRoleById('${safeId}','${safeUser}')" style="background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;">REMOVE ROLE</button></td></tr>`;
-    }).join('');
+    const liveRows = liveHVT.map(m => `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:12px 14px;color:#94a3b8;font-size:13px;">${m.nick || '—'}</td><td style="padding:12px 14px;color:#a78bfa;font-size:13px;">@${m.user.username}</td><td style="padding:12px 14px;color:#475569;font-size:11px;font-family:monospace;">${m.user.id}</td><td style="padding:12px 14px;"><button onclick="removeRoleById('${m.user.id}','${m.user.username}')" style="background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;">REMOVE ROLE</button></td></tr>`).join('');
 
-    const adminKeyJson = JSON.stringify(key != null ? String(key) : '');
     res.send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>HVT Admin</title><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;padding:32px 24px;color:#fff;}.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.06);}.brand{font-size:20px;font-weight:700;letter-spacing:3px;text-transform:uppercase;}.restricted{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);border-radius:20px;padding:5px 14px;font-size:11px;color:#f87171;letter-spacing:2px;font-weight:700;}.sec{margin-bottom:36px;}.sec-ttl{font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#64748b;margin-bottom:16px;}.panel{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;overflow:hidden;}.pt{height:3px;background:linear-gradient(90deg,#2254F5,#2254F5,#2254F5);}.pt-red{background:linear-gradient(90deg,#7f1d1d,#dc2626,#7f1d1d);}.pt-gold{background:linear-gradient(90deg,#92610a,#f6ad55,#92610a);}.pt-purple{background:linear-gradient(90deg,#4c1d95,#7c3aed,#4c1d95);}.pt-green{background:linear-gradient(90deg,#14532d,#16a34a,#14532d);}.pt-cyan{background:linear-gradient(90deg,#164e63,#06b6d4,#164e63);}table{width:100%;border-collapse:collapse;}th{padding:12px 14px;text-align:left;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#334155;border-bottom:1px solid rgba(255,255,255,0.06);}.fc{padding:28px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;margin-bottom:20px;}.gc{padding:28px;background:rgba(124,58,237,0.05);border:1px solid rgba(124,58,237,0.15);border-radius:16px;margin-bottom:20px;}.ntc{padding:28px;background:rgba(6,182,212,0.04);border:1px solid rgba(6,182,212,0.15);border-radius:16px;margin-bottom:20px;}.bar{height:3px;margin:-28px -28px 24px;border-radius:16px 16px 0 0;}.bar-red{background:linear-gradient(90deg,#7f1d1d,#dc2626,#7f1d1d);}.bar-purple{background:linear-gradient(90deg,#4c1d95,#7c3aed,#4c1d95);}.bar-cyan{background:linear-gradient(90deg,#164e63,#06b6d4,#164e63);}input[type=email],input[type=text],input[type=password],select,textarea{width:100%;padding:12px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#fff;font-size:14px;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:12px;}input:focus,select:focus,textarea:focus{border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,0.15);}input::placeholder,textarea::placeholder{color:#334155;}.btn-red{padding:12px 32px;background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:999px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 20px rgba(220,38,38,0.3);}.btn-purple{padding:12px 32px;background:linear-gradient(135deg,#4c1d95,#7c3aed);color:#fff;border:none;border-radius:999px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 20px rgba(124,58,237,0.35);}.btn-cyan{padding:12px 32px;background:linear-gradient(135deg,#164e63,#06b6d4);color:#fff;border:none;border-radius:999px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 20px rgba(6,182,212,0.3);}.msg{margin-top:12px;padding:12px 16px;border-radius:10px;font-size:13px;display:none;line-height:1.5;}.msg.show{display:block;}.ok{background:rgba(74,222,128,0.08);color:#4ade80;border:1px solid rgba(74,222,128,0.2);}.er{background:rgba(248,113,113,0.08);color:#f87171;border:1px solid rgba(248,113,113,0.2);}.tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}.tab{padding:8px 18px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:1px solid rgba(255,255,255,0.08);color:#64748b;background:transparent;transition:all .2s;}.tab.active{background:rgba(34,84,245,0.1);border-color:rgba(34,84,245,0.3);color:#2254F5;}.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center;}.overlay.show{display:flex;}.modal{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:32px;max-width:420px;width:90%;text-align:center;backdrop-filter:blur(20px);}.mttl{font-size:20px;font-weight:700;color:#fff;margin-bottom:12px;}.msub{color:#94a3b8;font-size:14px;line-height:1.6;margin-bottom:24px;}.mbtns{display:flex;gap:12px;}.mok{flex:1;padding:12px;background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:999px;font-size:14px;font-weight:700;cursor:pointer;}.mno{flex:1;padding:12px;background:transparent;color:#94a3b8;border:1px solid rgba(255,255,255,0.1);border-radius:999px;font-size:14px;font-weight:700;cursor:pointer;}label{display:block;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}.lred{color:#64748b;}.lpurp{color:#7c3aed;}.lcyan{color:#06b6d4;}</style></head><body>
 <div class="hdr"><div><div class="brand">High Velocity Trading</div><div style="font-size:10px;color:#334155;letter-spacing:4px;text-transform:uppercase;margin-top:3px;">Admin Control Panel</div></div><div style="display:flex;align-items:center;gap:12px;"><span style="font-size:12px;color:${ntColor};font-weight:600;">NT ${ntStatus}</span><div class="restricted">&#9888; RESTRICTED</div></div></div>
 <div class="sec"><div class="sec-ttl">&#9670; NinjaTrader API Status</div><div class="ntc"><div class="bar bar-cyan"></div><div style="margin-bottom:20px;"><div style="font-size:16px;font-weight:700;color:#67e8f9;margin-bottom:4px;">NT Ecosystem API</div><div style="color:#64748b;font-size:13px;">Auto-authenticates every 45 min using stored credentials. Click below to force re-login immediately.</div></div><div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;"><div style="background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);border-radius:20px;padding:6px 16px;font-size:13px;color:${ntColor};font-weight:700;">${ntStatus}</div><div style="color:#334155;font-size:12px;">Auth failures: ${ntAuthFails}</div></div><button class="btn-cyan" onclick="refreshNT()">&#8635; FORCE RE-LOGIN NOW</button><div class="msg" id="ntMsg"></div></div></div>
@@ -1727,18 +1693,9 @@ app.get('/admin', adm, adminGuard, async (req, res) => {
 <div id="tab-discord37" class="panel" style="display:none;"><div class="pt pt-purple"></div><div style="overflow-x:auto;"><table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Expires</th><th>Discord Username</th><th>Action</th></tr></thead><tbody>${discordRows || '<tr><td colspan="6" style="padding:20px;text-align:center;color:#334155;">No records</td></tr>'}</tbody></table></div></div>
 <div id="tab-live" class="panel" style="display:none;"><div class="pt pt-green"></div><div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);"><p style="color:#64748b;font-size:12px;">Members currently in your Discord server with an HVT role. REMOVE ROLE strips all HVT roles instantly.</p></div><div style="overflow-x:auto;"><table><thead><tr><th>Display Name</th><th>Username</th><th>Discord ID</th><th>Action</th></tr></thead><tbody>${liveRows || '<tr><td colspan="4" style="padding:20px;text-align:center;color:#334155;">No members with HVT roles found</td></tr>'}</tbody></table></div></div></div>
 <div class="overlay" id="overlay"><div class="modal"><div style="font-size:32px;margin-bottom:16px;">&#9888;&#65039;</div><div class="mttl">Confirm Action</div><div class="msub" id="modalSub"></div><div class="mbtns"><button class="mno" onclick="closeModal()">BACK</button><button class="mok" onclick="confirm()">CONFIRM</button></div></div></div>
-<script>const KEY=${adminKeyJson};let pending=null;
-async function refreshNT(){const msg=document.getElementById('ntMsg');if(!msg)return;msg.className='msg';try{const r=await fetch('/admin/refresh-nt-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:KEY})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent=d.message||'\u2713 Done'}else{msg.className='msg er show';msg.textContent=d.message||'Error.'}}catch(e){msg.className='msg er show';msg.textContent='Network error.'}}
-function showTab(n,el){['monthly','lifetime','discord37','live'].forEach(t=>{const tab=document.getElementById('tab-'+t);if(tab)tab.style.display='none';});document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));const panel=document.getElementById('tab-'+n);if(panel)panel.style.display='block';if(el)el.classList.add('active')}
-function openModal(){const email=document.getElementById('manualEmail').value.trim();const type=document.getElementById('manualType').value;const m=document.getElementById('manualMsg');if(!email){if(m){m.className='msg er show';m.textContent='Please enter an email.'}return}pending={action:'cancel',email,type};const sub=document.getElementById('modalSub');if(sub)sub.innerHTML='Cancel access for:<br><strong style="color:#f87171;">'+email.replace(/\u0026/g,'&amp;').replace(/\u003c/g,'&lt;').replace(/\u003e/g,'&gt;')+'</strong><br><br>Discord role and NT license will be removed immediately.';const ov=document.getElementById('overlay');if(ov)ov.classList.add('show')}
-function closeModal(){const ov=document.getElementById('overlay');if(ov)ov.classList.remove('show');pending=null}
-async function confirm(){const p=pending;closeModal();if(!p)return;if(p.action==='cancel')await doCancel(p.email,p.type);if(p.action==='removeRole')await doRemoveRole(p.uid,p.username)}
-function fireUser(email,type){const manualEmail=document.getElementById('manualEmail');const manualType=document.getElementById('manualType');if(manualEmail)manualEmail.value=email;if(manualType)manualType.value=type;openModal()}
-async function doCancel(email,type){const msg=document.getElementById('manualMsg');if(msg)msg.className='msg';try{const r=await fetch('/admin/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,type:type,key:KEY})});const d=await r.json();if(r.ok){if(msg){msg.className='msg ok show';msg.textContent='\u2713 Cancelled: '+email}setTimeout(function(){location.reload()},1800)}else{if(msg){msg.className='msg er show';msg.textContent=d.error||'Error.'}}}catch(e){if(msg){msg.className='msg er show';msg.textContent='Network error.'}}}
-function removeRoleById(uid,username){pending={action:'removeRole',uid:uid,username:username};const sub=document.getElementById('modalSub');if(sub)sub.innerHTML='Strip ALL HVT roles from:<br><strong style="color:#a78bfa;">@'+String(username).replace(/\u0026/g,'&amp;').replace(/\u003c/g,'&lt;').replace(/\u003e/g,'&gt;')+'</strong><br><br>They will lose Discord access immediately.';const ov=document.getElementById('overlay');if(ov)ov.classList.add('show')}
-async function doRemoveRole(uid,username){const msg=document.getElementById('manualMsg');if(msg)msg.className='msg';try{const r=await fetch('/admin/remove-role',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({discord_user_id:uid,key:KEY})});const d=await r.json();if(r.ok){if(msg){msg.className='msg ok show';msg.textContent='\u2713 Roles removed from @'+username}setTimeout(function(){location.reload()},1800)}else{if(msg){msg.className='msg er show';msg.textContent=d.error||'Error.'}}}catch(e){if(msg){msg.className='msg er show';msg.textContent='Network error.'}}}
-async function godMode(){const username=document.getElementById('godUser').value.trim();const role=document.getElementById('godRole').value;const msg=document.getElementById('godMsg');if(!msg)return;msg.className='msg';if(!username){msg.className='msg er show';msg.textContent='Please enter a Discord username.';return}try{const r=await fetch('/admin/god-add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({discord_username:username,role:role,key:KEY})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\u26a1 Role assigned to @'+username+'!'}else{msg.className='msg er show';msg.textContent=d.error||'Error.'}}catch(e){msg.className='msg er show';msg.textContent='Network error.'}}
-var overlayEl=document.getElementById('overlay');if(overlayEl)overlayEl.addEventListener('click',function(e){if(e.target===e.currentTarget)closeModal()});</script></body></html>`);
+<script>const KEY='${key}';let pending=null;
+async function refreshNT(){const msg=document.getElementById('ntMsg');msg.className='msg';try{const r=await fetch('/admin/refresh-nt-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:KEY})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent=d.message||'\u2713 Done'}else{msg.className='msg er show';msg.textContent=d.message||'Error.'}}catch{msg.className='msg er show';msg.textContent='Network error.'}}
+function showTab(n,el){['monthly','lifetime','discord37','live'].forEach(t=>document.getElementById('tab-'+t).style.display='none');document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+n).style.display='block';el.classList.add('active')}function openModal(){const email=document.getElementById('manualEmail').value.trim();const type=document.getElementById('manualType').value;if(!email){const m=document.getElementById('manualMsg');m.className='msg er show';m.textContent='Please enter an email.';return}pending={action:'cancel',email,type};document.getElementById('modalSub').innerHTML='Cancel access for:<br><strong style="color:#f87171;">'+email+'</strong><br><br>Discord role and NT license will be removed immediately.';document.getElementById('overlay').classList.add('show')}function closeModal(){document.getElementById('overlay').classList.remove('show');pending=null}async function confirm(){closeModal();if(!pending)return;if(pending.action==='cancel')await doCancel(pending.email,pending.type);if(pending.action==='removeRole')await doRemoveRole(pending.uid,pending.username)}function fireUser(email,type){document.getElementById('manualEmail').value=email;document.getElementById('manualType').value=type;openModal()}async function doCancel(email,type){const msg=document.getElementById('manualMsg');msg.className='msg';try{const r=await fetch('/admin/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,type,key:KEY})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\\u2713 Cancelled: '+email;setTimeout(()=>location.reload(),1800)}else{msg.className='msg er show';msg.textContent=d.error||'Error.'}}catch{msg.className='msg er show';msg.textContent='Network error.'}}function removeRoleById(uid,username){pending={action:'removeRole',uid,username};document.getElementById('modalSub').innerHTML='Strip ALL HVT roles from:<br><strong style="color:#a78bfa;">@'+username+'</strong><br><br>They will lose Discord access immediately.';document.getElementById('overlay').classList.add('show')}async function doRemoveRole(uid,username){const msg=document.getElementById('manualMsg');msg.className='msg';try{const r=await fetch('/admin/remove-role',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({discord_user_id:uid,key:KEY})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\\u2713 Roles removed from @'+username;setTimeout(()=>location.reload(),1800)}else{msg.className='msg er show';msg.textContent=d.error||'Error.'}}catch{msg.className='msg er show';msg.textContent='Network error.'}}async function godMode(){const username=document.getElementById('godUser').value.trim();const role=document.getElementById('godRole').value;const msg=document.getElementById('godMsg');msg.className='msg';if(!username){msg.className='msg er show';msg.textContent='Please enter a Discord username.';return}try{const r=await fetch('/admin/god-add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({discord_username:username,role,key:KEY})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\\u26a1 Role assigned to @'+username+'!'}else{msg.className='msg er show';msg.textContent=d.error||'Error.'}}catch{msg.className='msg er show';msg.textContent='Network error.'}}document.getElementById('overlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal()});</script></body></html>`);
 });
 
 app.post('/admin/cancel', adm, express.json(), async (req, res) => {
@@ -1750,7 +1707,7 @@ app.post('/admin/cancel', adm, express.json(), async (req, res) => {
         if (type === 'lifetime') {
             const { data: l } = await supabase.from(LICENSE_TABLE).select('nt_license_id').eq('email', email).maybeSingle();
             if (l?.nt_license_id) try { await ntRevokeLicense(l.nt_license_id); } catch {}
-            await supabase.from(LICENSE_TABLE).update({ status: 'revoked', updated_at: nowISO() }).eq('email', email);
+            await supabase.from(LICENSE_TABLE).update({ status: 'cancelled', updated_at: nowISO() }).eq('email', email);
             console.log(`[Admin] Lifetime revoked: ${email}`);
         } else if (type === 'discord') {
             const { data: dm } = await supabase.from(DISCORD_TABLE).select('discord_user_id,authnet_subscription_id').eq('email', email).maybeSingle();
@@ -1806,7 +1763,6 @@ app.post('/admin/god-add', adm, express.json(), async (req, res) => {
 });
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.redirect(302, '/login'));
 app.use((req, res) => res.status(404).json({ ok: false, error: 'not_found' }));
 
 app.listen(PORT, () => console.log(`🚀 HVT Backend on port ${PORT}`));
