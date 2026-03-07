@@ -1667,7 +1667,14 @@ app.post('/webhooks/jotform', wh, (req, res) => {
 // ─── ADMIN PANEL ──────────────────────────────────────────────────────────────
 function adminGuard(req, res, next) {
     const k = req.query.key || req.body?.key;
-    if (!k || k !== ADMIN_SECRET) return res.status(403).send(resultPage('error', 'Access Denied', 'Invalid or missing admin key.'));
+    if (!k || k !== ADMIN_SECRET) {
+        return res.status(403).send(shell('Access Denied', `
+    <div class="card" style="max-width:460px;width:100%;"><div class="ct" style="background:linear-gradient(90deg,#7f1d1d,#dc2626);"></div><div class="cb" style="text-align:center;">
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:22px;color:#f87171;">&#10005;</div>
+      <div class="ttl" style="margin-bottom:16px;">Access Denied</div>
+      <div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:10px;padding:16px;color:#f87171;font-size:14px;line-height:1.6;">Invalid or missing admin key.</div>
+    </div></div>`, undefined, { nav: 'login' }));
+    }
     next();
 }
 
@@ -1679,6 +1686,11 @@ app.post('/admin/refresh-nt-token', adm, express.json(), async (req, res) => {
 });
 
 app.get('/admin', adm, adminGuard, async (req, res) => {
+    if (!supabase) return res.status(503).send(shell('Service Unavailable', `
+    <div class="card" style="max-width:460px;width:100%;"><div class="ct"></div><div class="cb" style="text-align:center;">
+      <div class="ttl" style="margin-bottom:16px;">Admin Unavailable</div>
+      <div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:10px;padding:16px;color:#f87171;font-size:14px;line-height:1.6;">Supabase is not configured. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to .env and restart the server.</div>
+    </div></div>`, undefined, { nav: 'login' }));
     const key = req.query.key;
     let members = [], licenses = [], discordMems = [];
     try {
