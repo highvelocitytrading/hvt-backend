@@ -845,11 +845,11 @@ app.get('/downloads/installer', frm, async (req, res) => {
     if (!supabase) return res.status(503).json({ error: 'Supabase not configured.' });
     try {
         // Try signed URL first
-        const { data, error } = await supabase.storage.from('uploads').createSignedUrl('packages/HVTMasterAccessNQ.zip', 300);
+        const { data, error } = await supabase.storage.from('uploads').createSignedUrl('HVTMasterAccessNQ.zip', 300);
         if (error) {
             console.error('[DownloadInstaller] Signed URL error:', error.message, error.statusCode || '');
             // Fallback: try public URL
-            const { data: pub } = supabase.storage.from('uploads').getPublicUrl('packages/HVTMasterAccessNQ.zip');
+            const { data: pub } = supabase.storage.from('uploads').getPublicUrl('HVTMasterAccessNQ.zip');
             if (pub?.publicUrl) {
                 console.log('[DownloadInstaller] Falling back to public URL');
                 return res.redirect(302, pub.publicUrl);
@@ -868,11 +868,11 @@ app.get('/downloads/template', frm, async (req, res) => {
     if (!supabase) return res.status(503).json({ error: 'Supabase not configured.' });
     try {
         // Try signed URL first
-        const { data, error } = await supabase.storage.from('uploads').createSignedUrl('templates/HVT NQ TEMPLATE.xml', 300);
+        const { data, error } = await supabase.storage.from('uploads').createSignedUrl('HVT NQ TEMPLATE.xml', 300);
         if (error) {
             console.error('[DownloadTemplate] Signed URL error:', error.message, error.statusCode || '');
             // Fallback: try public URL
-            const { data: pub } = supabase.storage.from('uploads').getPublicUrl('templates/HVT NQ TEMPLATE.xml');
+            const { data: pub } = supabase.storage.from('uploads').getPublicUrl('HVT NQ TEMPLATE.xml');
             if (pub?.publicUrl) {
                 console.log('[DownloadTemplate] Falling back to public URL');
                 return res.redirect(302, pub.publicUrl + '?download=HVT_NQ_TEMPLATE.xml');
@@ -2351,11 +2351,11 @@ app.get('/admin/test-storage', adm, adminGuard, async (req, res) => {
         results.templates_folder = tErr ? { error: tErr.message } : (tpl || []).map(f => f.name);
 
         // Try signed URL for installer
-        const { data: sd, error: sErr } = await supabase.storage.from('uploads').createSignedUrl('packages/HVTMasterAccessNQ.zip', 60);
+        const { data: sd, error: sErr } = await supabase.storage.from('uploads').createSignedUrl('HVTMasterAccessNQ.zip', 60);
         results.installer_signed_url = sErr ? { error: sErr.message } : 'OK — ' + sd.signedUrl.substring(0, 80) + '...';
 
         // Try signed URL for template
-        const { data: td, error: tde } = await supabase.storage.from('uploads').createSignedUrl('templates/HVT NQ TEMPLATE.xml', 60);
+        const { data: td, error: tde } = await supabase.storage.from('uploads').createSignedUrl('HVT NQ TEMPLATE.xml', 60);
         results.template_signed_url = tde ? { error: tde.message } : 'OK — ' + td.signedUrl.substring(0, 80) + '...';
 
     } catch (e) {
@@ -2401,6 +2401,15 @@ app.get('/admin/email-preview', adm, adminGuard, (req, res) => {
     );
     res.send(toggleBar + emailBody);
 });
+
+// ─── LOGOUT ───────────────────────────────────────────────────────────────────
+app.get('/logout', (req, res) => {
+    res.setHeader('Set-Cookie', `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
+    res.redirect(302, 'https://highvelocitytrading.com');
+});
+
+// ─── ROOT ─────────────────────────────────────────────────────────────────────
+app.get('/', (req, res) => res.redirect(302, '/login'));
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ ok: false, error: 'not_found' }));
