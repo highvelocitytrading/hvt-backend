@@ -70,6 +70,7 @@ const DISCORD_GUILD_ID         = process.env.DISCORD_GUILD_ID         || '146069
 const DISCORD_MONTHLY_ROLE_ID  = process.env.DISCORD_MONTHLY_ROLE_ID  || '1476634274424819897';
 const DISCORD_LIFETIME_ROLE_ID = process.env.DISCORD_LIFETIME_ROLE_ID || '1476634362811384001';
 const DISCORD_ROOM_ROLE_ID     = process.env.DISCORD_ROOM_ROLE_ID     || '';
+const DISCORD_INVITE_URL       = process.env.DISCORD_INVITE_URL       || 'https://discord.gg/highvelocitytrading';
 
 const MEMBERSHIP_TABLE = process.env.SUPABASE_TABLE || 'membershipstab';
 const LICENSE_TABLE    = 'license_keys';
