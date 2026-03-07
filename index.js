@@ -2240,10 +2240,10 @@ app.get('/admin', adm, adminGuard, async (req, res) => {
         return '<span style="background:' + bg + ';border:1px solid ' + bd + ';border-radius:20px;padding:3px 10px;font-size:11px;color:' + c + ';letter-spacing:1px;font-weight:600;">' + s + '</span>';
     }
 
-    // CANCEL button — calls cancelMember(email, type) directly, no modal needed
+    // CANCEL button — uses data attributes + event delegation (no inline JS, no escaping issues)
     function cancelBtn(email, type, label) {
-        const safe = email.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-        return '<button onclick="cancelMember(\'' + safe + '\',\'' + type + '\')" style="background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:opacity .2s;" onmouseover="this.style.opacity=.8" onmouseout="this.style.opacity=1">' + label + '</button>';
+        const safe = email.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+        return '<button class="act-btn" data-action="cancel" data-email="' + safe + '" data-type="' + type + '" data-label="' + label + '">' + label + '</button>';
     }
 
     const memberRows = (members || []).map(m => {
@@ -2284,12 +2284,12 @@ app.get('/admin', adm, adminGuard, async (req, res) => {
     }).join('');
 
     const liveRows = liveHVT.map(m => {
-        const safe = m.user.username.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const safeName = (m.user.username || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
         return '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">' +
             '<td style="padding:12px 14px;color:#94a3b8;font-size:13px;">' + (m.nick || '—') + '</td>' +
             '<td style="padding:12px 14px;color:#a78bfa;font-size:13px;">@' + m.user.username + '</td>' +
             '<td style="padding:12px 14px;color:#475569;font-size:11px;font-family:monospace;">' + m.user.id + '</td>' +
-            '<td style="padding:12px 14px;"><button onclick="removeRole(\'' + m.user.id + '\',\'' + safe + '\')" style="background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">REMOVE</button></td></tr>';
+            '<td style="padding:12px 14px;"><button class="act-btn" data-action="remove-role" data-uid="' + m.user.id + '" data-uname="' + safeName + '">REMOVE</button></td></tr>';
     }).join('');
 
     const mCount  = (members || []).length;
@@ -2337,62 +2337,61 @@ input::placeholder{color:#334155}
 .tab.active{background:rgba(34,84,245,0.1);border-color:rgba(37,99,235,0.3);color:#2254F5}
 `;
 
-    // The JS — written as a regular JS string with template literals
-    // The SECRET variable is safely embedded server-side
+    // Admin JS — all functions defined here, injected server-side
     const adminScript = `
+(function() {
 var ADMIN_KEY = ${SECRET};
 
+// Tab switching
 function showTab(n, el) {
-  ['monthly','lifetime','discord37','live'].forEach(function(t) {
-    document.getElementById('tab-' + t).style.display = 'none';
-  });
+  document.querySelectorAll('.tab-panel').forEach(function(p) { p.style.display = 'none'; });
   document.querySelectorAll('.tab').forEach(function(b) { b.classList.remove('active'); });
-  document.getElementById('tab-' + n).style.display = 'block';
-  el.classList.add('active');
+  var panel = document.getElementById('tab-' + n);
+  if (panel) panel.style.display = 'block';
+  if (el) el.classList.add('active');
 }
+window.showTab = showTab;
 
+// Message display
 function showMsg(id, ok, text) {
   var el = document.getElementById(id);
   if (!el) return;
   el.className = 'msg ' + (ok ? 'ok' : 'er') + ' show';
   el.textContent = text;
 }
+window.showMsg = showMsg;
 
+// Cancel member — called from data-action buttons
 function cancelMember(email, type) {
-  if (!confirm('Cancel ' + type + ' access for ' + email + '?')) return;
-  var msgId = 'cancelMsg';
-  showMsg(msgId, true, 'Working...');
+  showMsg('cancelMsg', true, 'Working...');
   fetch('/admin/cancel', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: email, type: type, key: ADMIN_KEY })
   })
-  .then(function(r) {
-    return r.json().then(function(d) { return { status: r.status, d: d }; });
-  })
+  .then(function(r) { return r.json().then(function(d) { return { status: r.status, d: d }; }); })
   .then(function(x) {
     if (x.d.ok) {
-      showMsg(msgId, true, '\\u2713 Cancelled: ' + email + ' (' + type + ')' + (x.d.db_updated ? ' — DB updated' : ''));
-      setTimeout(function() { location.reload(); }, 2000);
+      showMsg('cancelMsg', true, '\u2713 Cancelled: ' + email + ' (' + type + ')' + (x.d.db_updated ? ' \u2014 DB updated' : ''));
+      setTimeout(function() { location.reload(); }, 1800);
     } else {
-      showMsg(msgId, false, 'Error (' + x.status + '): ' + (x.d.error || JSON.stringify(x.d)));
+      showMsg('cancelMsg', false, 'Error (' + x.status + '): ' + (x.d.error || JSON.stringify(x.d)));
     }
   })
-  .catch(function(err) {
-    showMsg(msgId, false, 'Network error: ' + err.message);
-  });
+  .catch(function(err) { showMsg('cancelMsg', false, 'Network error: ' + err.message); });
 }
+window.cancelMember = cancelMember;
 
 function cancelManual() {
-  var email = document.getElementById('manualEmail').value.trim();
+  var email = (document.getElementById('manualEmail').value || '').trim();
   var type  = document.getElementById('manualType').value;
   if (!email) { showMsg('cancelMsg', false, 'Enter an email first.'); return; }
   cancelMember(email, type);
 }
+window.cancelManual = cancelManual;
 
 function removeRole(uid, username) {
-  if (!confirm('Remove ALL HVT roles from @' + username + '?')) return;
-  showMsg('cancelMsg', true, 'Working...');
+  showMsg('cancelMsg', true, 'Removing roles from @' + username + '...');
   fetch('/admin/remove-role', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -2401,17 +2400,18 @@ function removeRole(uid, username) {
   .then(function(r) { return r.json().then(function(d) { return { status: r.status, d: d }; }); })
   .then(function(x) {
     if (x.d.ok) {
-      showMsg('cancelMsg', true, '\\u2713 Roles removed from @' + username);
-      setTimeout(function() { location.reload(); }, 2000);
+      showMsg('cancelMsg', true, '\u2713 Roles removed from @' + username);
+      setTimeout(function() { location.reload(); }, 1800);
     } else {
       showMsg('cancelMsg', false, 'Error: ' + (x.d.error || JSON.stringify(x.d)));
     }
   })
   .catch(function(err) { showMsg('cancelMsg', false, 'Network error: ' + err.message); });
 }
+window.removeRole = removeRole;
 
 function refreshNT() {
-  showMsg('ntMsg', true, 'Working...');
+  showMsg('ntMsg', true, 'Reconnecting...');
   fetch('/admin/refresh-nt-token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -2421,35 +2421,35 @@ function refreshNT() {
   .then(function(x) { showMsg('ntMsg', x.ok, x.d.message || (x.ok ? 'Done' : 'Error')); })
   .catch(function(err) { showMsg('ntMsg', false, 'Network error: ' + err.message); });
 }
+window.refreshNT = refreshNT;
 
 function testStorage() {
-  showMsg('storageMsg', true, 'Testing...');
+  showMsg('storageMsg', true, 'Testing storage...');
   fetch('/admin/test-storage?key=' + encodeURIComponent(ADMIN_KEY))
   .then(function(r) { return r.json(); })
   .then(function(d) {
     var lines = [];
     lines.push('Buckets: ' + JSON.stringify(d.buckets));
-    lines.push('uploads/ root: ' + JSON.stringify(d.uploads_root));
-    lines.push('packages/: ' + JSON.stringify(d.packages_folder));
-    lines.push('templates/: ' + JSON.stringify(d.templates_folder));
-    lines.push('Installer URL: ' + JSON.stringify(d.installer_signed_url));
-    lines.push('Template URL: ' + JSON.stringify(d.template_signed_url));
-    var ok = !d.exception && typeof d.installer_signed_url === 'string' && d.installer_signed_url.startsWith('OK');
+    lines.push('Uploads root: ' + JSON.stringify(d.uploads_root));
+    lines.push('Installer URL: ' + (d.installer_signed_url || 'N/A'));
+    lines.push('Template URL: ' + (d.template_signed_url || 'N/A'));
+    var ok = d.installer_signed_url && d.installer_signed_url.length > 10;
     showMsg('storageMsg', ok, lines.join('\n'));
   })
   .catch(function(err) { showMsg('storageMsg', false, 'Error: ' + err.message); });
 }
+window.testStorage = testStorage;
 
 function godMode() {
-  var email   = document.getElementById('godEmail').value.trim();
+  var email   = (document.getElementById('godEmail').value || '').trim();
   var role    = document.getElementById('godRole').value;
-  var name    = document.getElementById('godName').value.trim();
-  var duser   = document.getElementById('godUser').value.trim();
+  var name    = (document.getElementById('godName').value || '').trim();
+  var duser   = (document.getElementById('godUser').value || '').trim();
   var doEmail = document.getElementById('godSendEmail').checked;
   var doNT    = document.getElementById('godNT').checked;
   var doDC    = document.getElementById('godDiscord').checked;
   if (!email) { showMsg('godMsg', false, 'Email is required.'); return; }
-  showMsg('godMsg', true, 'Working...');
+  showMsg('godMsg', true, 'Granting access...');
   fetch('/admin/god-add', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -2459,11 +2459,11 @@ function godMode() {
   .then(function(x) {
     if (x.ok) {
       var parts = [];
-      if (x.d.supabase)   parts.push('\\u2713 DB');
-      if (x.d.nt_license) parts.push('\\u2713 NT');
-      if (x.d.discord)    parts.push('\\u2713 Discord');
-      if (x.d.email_sent) parts.push('\\u2713 Email');
-      showMsg('godMsg', true, '\\u26a1 Done! ' + parts.join(' | '));
+      if (x.d.supabase)   parts.push('\u2713 DB');
+      if (x.d.nt_license) parts.push('\u2713 NT');
+      if (x.d.discord)    parts.push('\u2713 Discord');
+      if (x.d.email_sent) parts.push('\u2713 Email');
+      showMsg('godMsg', true, '\u26a1 Done! ' + (parts.length ? parts.join(' | ') : 'Access granted'));
       document.getElementById('godEmail').value = '';
       document.getElementById('godName').value  = '';
       document.getElementById('godUser').value  = '';
@@ -2473,9 +2473,47 @@ function godMode() {
   })
   .catch(function(err) { showMsg('godMsg', false, 'Network error: ' + err.message); });
 }
+window.godMode = godMode;
+
+// Event delegation for table action buttons — no inline onclick needed
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  var action = btn.dataset.action;
+  if (action === 'cancel') {
+    var email = btn.dataset.email;
+    var type  = btn.dataset.type;
+    if (btn.dataset.confirm !== 'yes') {
+      btn.textContent = 'CONFIRM?';
+      btn.dataset.confirm = 'yes';
+      btn.style.background = 'linear-gradient(135deg,#92400e,#d97706)';
+      setTimeout(function() { if (btn.dataset.confirm === 'yes') { btn.textContent = btn.dataset.label; btn.dataset.confirm = ''; btn.style.background = ''; } }, 3000);
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = '...';
+    cancelMember(email, type);
+  }
+  if (action === 'remove-role') {
+    var uid = btn.dataset.uid;
+    var uname = btn.dataset.uname;
+    if (btn.dataset.confirm !== 'yes') {
+      btn.textContent = 'CONFIRM?';
+      btn.dataset.confirm = 'yes';
+      btn.style.background = 'linear-gradient(135deg,#92400e,#d97706)';
+      setTimeout(function() { if (btn.dataset.confirm === 'yes') { btn.textContent = 'REMOVE'; btn.dataset.confirm = ''; btn.style.background = ''; } }, 3000);
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = '...';
+    removeRole(uid, uname);
+  }
+});
+
+})();
 `;
 
-    // Compute live stats for the stats cards
+    // Compute live stats for the stats cards for the stats cards
     const activeMonthly  = (members || []).filter(m => m.status === 'active').length;
     const activeLifetime = (licenses || []).filter(l => l.status === 'active').length;
     const activeDiscord  = (discordMems || []).filter(d => d.status === 'active').length;
@@ -2489,16 +2527,19 @@ function godMode() {
 <title>HVT Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>${css}
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:36px;}
-.stat-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px 22px;position:relative;overflow:hidden;}
-.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
-.stat-blue::before{background:linear-gradient(90deg,#1e3a8a,#2254F5,#1e3a8a);}
-.stat-gold::before{background:linear-gradient(90deg,#92610a,#f6ad55,#92610a);}
-.stat-purple::before{background:linear-gradient(90deg,#4c1d95,#7c3aed,#4c1d95);}
-.stat-green::before{background:linear-gradient(90deg,#14532d,#16a34a,#14532d);}
-.stat-cyan::before{background:linear-gradient(90deg,#164e63,#06b6d4,#164e63);}
-.stat-num{font-size:36px;font-weight:700;letter-spacing:-1px;color:#fff;line-height:1;}
-.stat-lbl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#475569;margin-top:6px;font-weight:600;}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:36px}
+.stat-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px 22px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat-blue::before{background:linear-gradient(90deg,#1e3a8a,#2254F5,#1e3a8a)}
+.stat-gold::before{background:linear-gradient(90deg,#92610a,#f6ad55,#92610a)}
+.stat-purple::before{background:linear-gradient(90deg,#4c1d95,#7c3aed,#4c1d95)}
+.stat-green::before{background:linear-gradient(90deg,#14532d,#16a34a,#14532d)}
+.stat-cyan::before{background:linear-gradient(90deg,#164e63,#06b6d4,#164e63)}
+.stat-num{font-size:36px;font-weight:700;letter-spacing:-1px;color:#fff;line-height:1}
+.stat-lbl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#475569;margin-top:6px;font-weight:600}
+.act-btn{display:inline-block;background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:opacity .15s}
+.act-btn:hover{opacity:.8}
+.act-btn:disabled{opacity:.4;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -2514,35 +2555,15 @@ function godMode() {
   </div>
 </div>
 
-<!-- STATS OVERVIEW -->
 <div class="stats-grid">
-  <div class="stat-card stat-blue">
-    <div class="stat-num">${totalActive}</div>
-    <div class="stat-lbl">Total Active</div>
-  </div>
-  <div class="stat-card stat-blue">
-    <div class="stat-num">${activeMonthly}</div>
-    <div class="stat-lbl">Monthly Active</div>
-  </div>
-  <div class="stat-card stat-gold">
-    <div class="stat-num">${activeLifetime}</div>
-    <div class="stat-lbl">Lifetime Active</div>
-  </div>
-  <div class="stat-card stat-purple">
-    <div class="stat-num">${activeDiscord}</div>
-    <div class="stat-lbl">Discord $37</div>
-  </div>
-  <div class="stat-card stat-green">
-    <div class="stat-num">${lvCount}</div>
-    <div class="stat-lbl">Live on Discord</div>
-  </div>
-  <div class="stat-card stat-cyan">
-    <div class="stat-num" style="color:${ntColor};">${ntToken ? '✓' : '✗'}</div>
-    <div class="stat-lbl">NT API Status</div>
-  </div>
+  <div class="stat-card stat-blue"><div class="stat-num">${totalActive}</div><div class="stat-lbl">Total Active</div></div>
+  <div class="stat-card stat-blue"><div class="stat-num">${activeMonthly}</div><div class="stat-lbl">Monthly Active</div></div>
+  <div class="stat-card stat-gold"><div class="stat-num">${activeLifetime}</div><div class="stat-lbl">Lifetime Active</div></div>
+  <div class="stat-card stat-purple"><div class="stat-num">${activeDiscord}</div><div class="stat-lbl">Discord $37</div></div>
+  <div class="stat-card stat-green"><div class="stat-num">${lvCount}</div><div class="stat-lbl">Live on Discord</div></div>
+  <div class="stat-card stat-cyan"><div class="stat-num" style="color:${ntColor};">${ntToken ? '✓' : '✗'}</div><div class="stat-lbl">NT API Status</div></div>
 </div>
 
-<!-- NT STATUS -->
 <div class="sec">
   <div class="sec-ttl">&#9670; NinjaTrader API Status</div>
   <div class="ntc">
@@ -2565,7 +2586,6 @@ function godMode() {
   </div>
 </div>
 
-<!-- GOD MODE -->
 <div class="sec">
   <div class="sec-ttl">&#9889; God Mode &mdash; Grant Access</div>
   <div class="gc">
@@ -2591,7 +2611,6 @@ function godMode() {
   </div>
 </div>
 
-<!-- CANCEL / REVOKE -->
 <div class="sec">
   <div class="sec-ttl">Manual Access Removal</div>
   <div class="fc">
@@ -2611,7 +2630,6 @@ function godMode() {
   </div>
 </div>
 
-<!-- MEMBER TABLES -->
 <div class="sec">
   <div class="sec-ttl">Member Management</div>
   <div class="tabs">
@@ -2621,29 +2639,29 @@ function godMode() {
     <button class="tab" onclick="showTab('live',this)">Live on Discord (${lvCount})</button>
   </div>
 
-  <div id="tab-monthly" class="panel"><div class="pt"></div>
+  <div id="tab-monthly" class="panel tab-panel"><div class="pt"></div>
     <div style="overflow-x:auto;"><table>
       <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Expires</th><th>NT License</th><th>Action</th></tr></thead>
       <tbody>${memberRows || '<tr><td colspan="6" style="padding:20px;text-align:center;color:#334155;">No records</td></tr>'}</tbody>
     </table></div>
   </div>
 
-  <div id="tab-lifetime" class="panel" style="display:none;"><div class="pt pt-gold"></div>
+  <div id="tab-lifetime" class="panel tab-panel" style="display:none;"><div class="pt pt-gold"></div>
     <div style="overflow-x:auto;"><table>
       <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>License Key</th><th>NT License</th><th>Action</th></tr></thead>
       <tbody>${licenseRows || '<tr><td colspan="6" style="padding:20px;text-align:center;color:#334155;">No records</td></tr>'}</tbody>
     </table></div>
   </div>
 
-  <div id="tab-discord37" class="panel" style="display:none;"><div class="pt pt-purple"></div>
+  <div id="tab-discord37" class="panel tab-panel" style="display:none;"><div class="pt pt-purple"></div>
     <div style="overflow-x:auto;"><table>
       <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Expires</th><th>Discord</th><th>Action</th></tr></thead>
       <tbody>${discordRows || '<tr><td colspan="6" style="padding:20px;text-align:center;color:#334155;">No records</td></tr>'}</tbody>
     </table></div>
   </div>
 
-  <div id="tab-live" class="panel" style="display:none;"><div class="pt pt-green"></div>
-    <div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);color:#64748b;font-size:12px;">Discord members with active HVT roles.</div>
+  <div id="tab-live" class="panel tab-panel" style="display:none;"><div class="pt pt-green"></div>
+    <div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);color:#64748b;font-size:12px;">Discord members with active HVT roles. Click REMOVE then CONFIRM? to strip roles.</div>
     <div style="overflow-x:auto;"><table>
       <thead><tr><th>Display Name</th><th>Username</th><th>Discord ID</th><th>Action</th></tr></thead>
       <tbody>${liveRows || '<tr><td colspan="4" style="padding:20px;text-align:center;color:#334155;">No members found</td></tr>'}</tbody>
