@@ -477,9 +477,9 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;displa
 .hero-sub{font-family:'DM Sans',sans-serif;font-weight:400;font-size:15px;color:#94a3b8;line-height:1.6;max-width:360px;margin:0 auto 0;}
 .hero-div{height:1px;background:linear-gradient(90deg,transparent,rgba(34,84,245,0.3),transparent);margin:16px auto 0;max-width:200px;}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10;}
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:45px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative;}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:52px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative;}
 .topnav-logo{display:flex;align-items:center;gap:0;text-decoration:none;}
-.topnav-logo img{height:26px;width:auto;background:transparent;}
+.topnav-logo img{height:40px;width:auto;}
 .topnav-left{display:flex;align-items:center;gap:12px;}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s;}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85);}
@@ -529,6 +529,9 @@ input::placeholder{color:#334155;}
       <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png" alt="High Velocity Trading" /></a>
     </div>
     <div class="topnav-right" style="display:flex;align-items:center;gap:12px;">
+      <a href="/member" class="topnav-link" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Portal</a>
+      <a href="/billing/confirm-session" class="topnav-out" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Billing</a>
+      <a href="/logout" class="topnav-out" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Log out</a>
       <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>
     </div>
   </nav>
@@ -584,15 +587,15 @@ app.post('/webhooks/membership-jotform', wh, (req, res) => {
 });
 
 // ─── MEMBERSHIP AUTHNET ───────────────────────────────────────────────────────
-app.post('/webhooks/membership-authnet', wh, express.json(), (req, res) => {
-    res.status(200).send('OK'); // Respond immediately — prevents Authorize.net deactivation
-    (async () => { try {
+app.post('/webhooks/membership-authnet', wh, express.json(), async (req, res) => {
+    try {
         const { eventType = '', payload = {} } = req.body || {};
         const email = (payload?.customerDetails?.email || '').toLowerCase().trim();
         const subId = pickFirst(payload?.id);
         const CANCEL_EVENTS = ['net.authorize.customer.subscription.cancelled','net.authorize.customer.subscription.expired','net.authorize.customer.subscription.suspended','net.authorize.customer.subscription.terminated','net.authorize.customer.subscription.failed'];
+
         if (eventType === 'net.authorize.customer.subscription.created' || eventType === 'net.authorize.payment.capture.created') {
-            if (!email) return;
+            if (!email) return res.status(400).send('No email');
             const row = { email, plan_name: 'membership', status: 'active', source: 'authnet', expires_at: now30days(), updated_at: nowISO() };
             if (subId) row.authnet_subscription_id = subId;
             await supabase.from(MEMBERSHIP_TABLE).upsert(row, { onConflict: 'email' });
@@ -612,7 +615,8 @@ app.post('/webhooks/membership-authnet', wh, express.json(), (req, res) => {
                 console.log(`🚫 Membership cancelled (AN): ${email || subId}`);
             }
         }
-    } catch (e) { console.error('[MemberAN]', e.message); } })();
+        res.status(200).send('OK');
+    } catch (e) { console.error('[MemberAN]', e.message); res.status(500).send('Error'); }
 });
 
 // ─── DISCORD $37 JOTFORM ─────────────────────────────────────────────────────
@@ -635,15 +639,15 @@ app.post('/webhooks/discord-jotform', wh, (req, res) => {
 });
 
 // ─── DISCORD $37 AUTHNET ──────────────────────────────────────────────────────
-app.post('/webhooks/discord-authnet', wh, express.json(), (req, res) => {
-    res.status(200).send('OK'); // Respond immediately — prevents Authorize.net deactivation
-    (async () => { try {
+app.post('/webhooks/discord-authnet', wh, express.json(), async (req, res) => {
+    try {
         const { eventType = '', payload = {} } = req.body || {};
         const email = (payload?.customerDetails?.email || '').toLowerCase().trim();
         const subId = pickFirst(payload?.id);
         const CANCEL_EVENTS = ['net.authorize.customer.subscription.cancelled','net.authorize.customer.subscription.expired','net.authorize.customer.subscription.suspended','net.authorize.customer.subscription.terminated','net.authorize.customer.subscription.failed'];
+
         if (eventType === 'net.authorize.customer.subscription.created' || eventType === 'net.authorize.payment.capture.created') {
-            if (!email) return;
+            if (!email) return res.status(400).send('No email');
             const row = { email, plan_name: 'discord_monthly', status: 'active', source: 'authnet', expires_at: now30days(), updated_at: nowISO() };
             if (subId) row.authnet_subscription_id = subId;
             await supabase.from(DISCORD_TABLE).upsert(row, { onConflict: 'email' });
@@ -659,7 +663,8 @@ app.post('/webhooks/discord-authnet', wh, express.json(), (req, res) => {
                 console.log(`🚫 Discord cancelled (AN): ${email || subId}`);
             }
         }
-    } catch (e) { console.error('[DiscordAN]', e.message); } })();
+        res.status(200).send('OK');
+    } catch (e) { console.error('[DiscordAN]', e.message); res.status(500).send('Error'); }
 });
 
 app.get('/check-access', frm, async (req, res) => {
@@ -911,9 +916,9 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 .member-bg::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(34,84,245,0.18) 0%,transparent 50%),radial-gradient(ellipse 60% 40% at 20% 30%,#00001C 0%,transparent 55%);pointer-events:none}
 .member-bg::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:600px;height:200px;background:radial-gradient(ellipse 100% 100% at 50% 100%,rgba(34,84,245,0.08) 0%,transparent 70%);pointer-events:none}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:45px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:52px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
 .topnav-logo{display:flex;align-items:center;text-decoration:none}
-.topnav-logo img{height:26px;width:auto;background:transparent}
+.topnav-logo img{height:40px;width:auto}
 .topnav-left{display:flex;align-items:center;gap:12px}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85)}
@@ -1102,9 +1107,9 @@ app.get('/course', requireSession, (req, res) => {
 *{box-sizing:border-box;margin:0;padding:0}html,body{height:100%;overflow:hidden}body{font-family:'DM Sans',sans-serif;background:#000;color:#fff;display:flex;flex-direction:column}
 .member-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:#000}.member-bg::before{content:'';position:absolute;top:0;left:0;width:70%;height:60%;background:radial-gradient(ellipse at 20% 20%,#00001C 0%,transparent 60%);pointer-events:none}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:45px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:52px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
 .topnav-logo{display:flex;align-items:center;text-decoration:none}
-.topnav-logo img{height:26px;width:auto;background:transparent}
+.topnav-logo img{height:40px;width:auto}
 .topnav-left{display:flex;align-items:center;gap:12px}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85)}
@@ -1580,23 +1585,24 @@ app.get('/cancel/confirm', async (req, res) => {
 });
 
 // ─── LIFETIME LICENSE WEBHOOKS ────────────────────────────────────────────────
-app.post('/webhooks/authorize-net', wh, express.raw({ type: '*/*', limit: '2mb' }), (req, res) => {
-    res.status(200).json({ ok: true }); // Respond immediately — prevents Authorize.net deactivation
-    (async () => { try {
+app.post('/webhooks/authorize-net', wh, express.raw({ type: '*/*', limit: '2mb' }), async (req, res) => {
+    try {
         const rawBody = req.body?.toString('utf8') || '';
         const sig     = verifyAuthnetSig(rawBody, req.headers['x-anet-signature']);
-        if (!sig.ok) { console.error('[LicenseAN] bad sig:', sig.reason); return; }
+        if (!sig.ok) return res.status(401).json({ ok: false, error: 'invalid_signature', reason: sig.reason });
         let body = {};
         try { body = rawBody ? JSON.parse(rawBody) : {}; } catch {}
         const txId  = pickFirst(body?.payload?.id);
         const eType = pickFirst(body?.eventType) || 'authorize_net';
-        if (!txId) { console.error('[LicenseAN] missing txId'); return; }
+        if (!txId) return res.status(400).json({ ok: false, error: 'missing_transaction_id' });
         const row = await upsertLicense(txId, { authorize_received: true, last_source: 'authorize', authorize_event_type: eType, raw_authorize: rawBody, authorize_body_json: body, status: 'pending_jotform' });
         if (row.email && row.full_name) {
             const act = await upsertLicense(txId, { authorize_received: true, last_source: 'authorize', status: 'active' });
             console.log(`✅ License (AN): ${act.email}`);
+            return res.json({ ok: true, transaction_id: txId, status: act.status });
         }
-    } catch (e) { console.error('[LicenseAN]', e); } })();
+        return res.json({ ok: true, transaction_id: txId, status: row.status });
+    } catch (e) { console.error('[LicenseAN]', e); res.status(500).json({ ok: false, error: 'server_error' }); }
 });
 
 app.post('/webhooks/jotform', wh, (req, res) => {
