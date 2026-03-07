@@ -669,7 +669,7 @@ input::placeholder{color:#334155;}
 <div class="topnav-wrap">
   <nav class="topnav">
     <div class="topnav-left">
-      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png" alt="High Velocity Trading" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span style="display:none;align-items:center;gap:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ffffff;white-space:nowrap;"><svg width='22' height='18' viewBox='0 0 20 18' fill='none'><path d='M1 1L10 16.5L19 1' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg>High Velocity Trading</span></a>
+      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="https://fnrisudnpwdxohwgfvjj.supabase.co/storage/v1/object/public/uploads/hvt-logo.png" alt="High Velocity Trading" style="height:40px;width:auto;max-width:160px;object-fit:contain;display:block;" onerror="this.onerror=null;this.src='/hvt-logo.png';" /></a>
     </div>
     <div class="topnav-right" style="display:flex;align-items:center;gap:12px;">
       ${hero && hero.hideNav ? '' : '<a href="/member" class="topnav-link" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Portal</a><a href="/billing/confirm-session" class="topnav-out" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Billing</a><a href="/logout" class="topnav-out" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Log out</a>'}
@@ -1215,7 +1215,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 <div class="topnav-wrap">
   <nav class="topnav">
     <div class="topnav-left">
-      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png" alt="High Velocity Trading" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span style="display:none;align-items:center;gap:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ffffff;white-space:nowrap;"><svg width='22' height='18' viewBox='0 0 20 18' fill='none'><path d='M1 1L10 16.5L19 1' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg>High Velocity Trading</span></a>
+      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="https://fnrisudnpwdxohwgfvjj.supabase.co/storage/v1/object/public/uploads/hvt-logo.png" alt="High Velocity Trading" style="height:40px;width:auto;max-width:160px;object-fit:contain;display:block;" onerror="this.onerror=null;this.src='/hvt-logo.png';" /></a>
     </div>
     <div class="topnav-right">
       <a href="/billing/confirm-session" class="topnav-out">Billing</a>
@@ -2228,318 +2228,137 @@ app.get('/admin', adm, adminGuard, async (req, res) => {
     let guildMembers = [];
     try { guildMembers = await getGuildAll(); } catch {}
     const allRoles = [DISCORD_MONTHLY_ROLE_ID, DISCORD_LIFETIME_ROLE_ID, ...(DISCORD_ROOM_ROLE_ID ? [DISCORD_ROOM_ROLE_ID] : [])];
-    const liveHVT  = guildMembers.filter(m => m.roles?.some(r => allRoles.includes(r)));
+    const liveHVT  = guildMembers.filter(m => m.roles && m.roles.some(r => allRoles.includes(r)));
     const ntStatus = ntToken ? '\u2713 Authenticated' : '\u2717 Not Authenticated';
     const ntColor  = ntToken ? '#4ade80' : '#f87171';
 
     function badge(s, gold) {
         const a = s === 'active';
-        const c = a ? (gold ? '#f6ad55' : '#4ade80') : '#f87171';
+        const c  = a ? (gold ? '#f6ad55' : '#4ade80') : '#f87171';
         const bg = a ? (gold ? 'rgba(246,173,85,0.08)' : 'rgba(74,222,128,0.08)') : 'rgba(248,113,113,0.08)';
         const bd = a ? (gold ? 'rgba(246,173,85,0.2)' : 'rgba(74,222,128,0.2)') : 'rgba(248,113,113,0.2)';
-        return '<span style="background:' + bg + ';border:1px solid ' + bd + ';border-radius:20px;padding:3px 10px;font-size:11px;color:' + c + ';letter-spacing:1px;font-weight:600;">' + s + '</span>';
+        return `<span style="background:${bg};border:1px solid ${bd};border-radius:20px;padding:3px 10px;font-size:11px;color:${c};letter-spacing:1px;font-weight:600;">${s}</span>`;
     }
 
-    // CANCEL button — uses data attributes + event delegation (no inline JS, no escaping issues)
-    function cancelBtn(email, type, label) {
-        const safe = email.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-        return '<button class="act-btn" data-action="cancel" data-email="' + safe + '" data-type="' + type + '" data-label="' + label + '">' + label + '</button>';
+    function actionBtn(email, type, label) {
+        const safeEmail = email.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+        return `<button class="abtn" data-email="${safeEmail}" data-type="${type}">${label}</button>`;
     }
 
     const memberRows = (members || []).map(m => {
-        const exp     = m.expires_at ? new Date(m.expires_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'N/A';
-        const ntBadge = m.nt_license_id ? '<span style="color:#60a5fa;font-size:11px;">NT#' + m.nt_license_id + '</span>' : '<span style="color:#334155;">—</span>';
-        const action  = m.status === 'active' ? cancelBtn(m.email, 'monthly', 'CANCEL') : '<span style="color:#334155;font-size:12px;">Inactive</span>';
-        return '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">' +
-            '<td style="padding:12px 14px;color:#94a3b8;font-size:13px;">' + (m.full_name || '—') + '</td>' +
-            '<td style="padding:12px 14px;color:#64748b;font-size:13px;">' + m.email + '</td>' +
-            '<td style="padding:12px 14px;">' + badge(m.status) + '</td>' +
-            '<td style="padding:12px 14px;color:#475569;font-size:12px;">' + exp + '</td>' +
-            '<td style="padding:12px 14px;">' + ntBadge + '</td>' +
-            '<td style="padding:12px 14px;">' + action + '</td></tr>';
-    }).join('');
+        const exp = m.expires_at ? new Date(m.expires_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'N/A';
+        const ntB = m.nt_license_id ? `<span style="color:#60a5fa;font-size:11px;">NT#${m.nt_license_id}</span>` : '<span style="color:#334155;">—</span>';
+        const act = m.status === 'active' ? actionBtn(m.email,'monthly','CANCEL') : '<span style="color:#334155;font-size:12px;">Inactive</span>';
+        return `<tr><td>${m.full_name||'—'}</td><td class="em">${m.email}</td><td>${badge(m.status)}</td><td class="dt">${exp}</td><td>${ntB}</td><td>${act}</td></tr>`;
+    }).join('') || '<tr><td colspan="6" class="empty">No records</td></tr>';
 
     const licenseRows = (licenses || []).map(l => {
-        const ntBadge = l.nt_license_id ? '<span style="color:#60a5fa;font-size:11px;">NT#' + l.nt_license_id + '</span>' : '<span style="color:#334155;">—</span>';
-        const action  = l.status === 'active' ? cancelBtn(l.email, 'lifetime', 'REVOKE') : '<span style="color:#334155;font-size:12px;">Inactive</span>';
-        return '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">' +
-            '<td style="padding:12px 14px;color:#94a3b8;font-size:13px;">' + (l.full_name || '—') + '</td>' +
-            '<td style="padding:12px 14px;color:#64748b;font-size:13px;">' + l.email + '</td>' +
-            '<td style="padding:12px 14px;">' + badge(l.status, true) + '</td>' +
-            '<td style="padding:12px 14px;color:#475569;font-size:12px;font-family:monospace;">' + (l.license_key || '') + '</td>' +
-            '<td style="padding:12px 14px;">' + ntBadge + '</td>' +
-            '<td style="padding:12px 14px;">' + action + '</td></tr>';
-    }).join('');
+        const ntB = l.nt_license_id ? `<span style="color:#60a5fa;font-size:11px;">NT#${l.nt_license_id}</span>` : '<span style="color:#334155;">—</span>';
+        const act = l.status === 'active' ? actionBtn(l.email,'lifetime','REVOKE') : '<span style="color:#334155;font-size:12px;">Inactive</span>';
+        return `<tr><td>${l.full_name||'—'}</td><td class="em">${l.email}</td><td>${badge(l.status,true)}</td><td class="dt" style="font-family:monospace;font-size:11px;">${l.license_key||''}</td><td>${ntB}</td><td>${act}</td></tr>`;
+    }).join('') || '<tr><td colspan="6" class="empty">No records</td></tr>';
 
     const discordRows = (discordMems || []).map(d => {
-        const exp    = d.expires_at ? new Date(d.expires_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'N/A';
-        const action = d.status === 'active' ? cancelBtn(d.email, 'discord', 'CANCEL') : '<span style="color:#334155;font-size:12px;">Inactive</span>';
-        return '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">' +
-            '<td style="padding:12px 14px;color:#94a3b8;font-size:13px;">' + (d.full_name || '—') + '</td>' +
-            '<td style="padding:12px 14px;color:#64748b;font-size:13px;">' + d.email + '</td>' +
-            '<td style="padding:12px 14px;">' + badge(d.status) + '</td>' +
-            '<td style="padding:12px 14px;color:#475569;font-size:12px;">' + exp + '</td>' +
-            '<td style="padding:12px 14px;color:#a78bfa;font-size:12px;">' + (d.discord_username || (d.discord_user_id ? 'Linked' : '—')) + '</td>' +
-            '<td style="padding:12px 14px;">' + action + '</td></tr>';
-    }).join('');
+        const exp = d.expires_at ? new Date(d.expires_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'N/A';
+        const act = d.status === 'active' ? actionBtn(d.email,'discord','CANCEL') : '<span style="color:#334155;font-size:12px;">Inactive</span>';
+        return `<tr><td>${d.full_name||'—'}</td><td class="em">${d.email}</td><td>${badge(d.status)}</td><td class="dt">${exp}</td><td style="color:#a78bfa;font-size:12px;">${d.discord_username||(d.discord_user_id?'Linked':'—')}</td><td>${act}</td></tr>`;
+    }).join('') || '<tr><td colspan="5" class="empty">No records</td></tr>';
 
     const liveRows = liveHVT.map(m => {
-        const safeName = (m.user.username || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-        return '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">' +
-            '<td style="padding:12px 14px;color:#94a3b8;font-size:13px;">' + (m.nick || '—') + '</td>' +
-            '<td style="padding:12px 14px;color:#a78bfa;font-size:13px;">@' + m.user.username + '</td>' +
-            '<td style="padding:12px 14px;color:#475569;font-size:11px;font-family:monospace;">' + m.user.id + '</td>' +
-            '<td style="padding:12px 14px;"><button class="act-btn" data-action="remove-role" data-uid="' + m.user.id + '" data-uname="' + safeName + '">REMOVE</button></td></tr>';
-    }).join('');
+        const safeId   = (m.user.id||'').replace(/"/g,'&quot;');
+        const safeUser = (m.user.username||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+        return `<tr><td>${m.nick||'—'}</td><td style="color:#a78bfa;">@${m.user.username}</td><td style="font-family:monospace;font-size:11px;color:#475569;">${m.user.id}</td><td><button class="abtn abtn-remove" data-uid="${safeId}" data-uname="${safeUser}">REMOVE</button></td></tr>`;
+    }).join('') || '<tr><td colspan="4" class="empty">No live members</td></tr>';
 
-    const mCount  = (members || []).length;
-    const lCount  = (licenses || []).length;
-    const dCount  = (discordMems || []).length;
-    const lvCount = liveHVT.length;
-
-    // Embed the admin secret directly in the page so fetch calls always have it
-    // The page is already protected by adminGuard, so this is safe
-    const SECRET = JSON.stringify(key);
-
-    const css = `
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;padding:32px 24px;color:#fff}
-.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.06)}
-.brand{font-size:20px;font-weight:700;letter-spacing:3px;text-transform:uppercase}
-.restricted{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);border-radius:20px;padding:5px 14px;font-size:11px;color:#f87171;letter-spacing:2px;font-weight:700}
-.sec{margin-bottom:36px}.sec-ttl{font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#64748b;margin-bottom:16px}
-.panel{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;overflow:hidden}
-.pt{height:3px;background:linear-gradient(90deg,#2254F5,#2254F5)}
-.pt-gold{background:linear-gradient(90deg,#92610a,#f6ad55,#92610a)}
-.pt-purple{background:linear-gradient(90deg,#4c1d95,#7c3aed,#4c1d95)}
-.pt-green{background:linear-gradient(90deg,#14532d,#16a34a,#14532d)}
-table{width:100%;border-collapse:collapse}
-th{padding:12px 14px;text-align:left;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#334155;border-bottom:1px solid rgba(255,255,255,0.06)}
-.fc{padding:28px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;margin-bottom:20px}
-.gc{padding:28px;background:rgba(124,58,237,0.05);border:1px solid rgba(124,58,237,0.15);border-radius:16px;margin-bottom:20px}
-.ntc{padding:28px;background:rgba(6,182,212,0.04);border:1px solid rgba(6,182,212,0.15);border-radius:16px;margin-bottom:20px}
-.bar{height:3px;margin:-28px -28px 24px;border-radius:16px 16px 0 0}
-.bar-red{background:linear-gradient(90deg,#7f1d1d,#dc2626,#7f1d1d)}
-.bar-purple{background:linear-gradient(90deg,#4c1d95,#7c3aed,#4c1d95)}
-.bar-cyan{background:linear-gradient(90deg,#164e63,#06b6d4,#164e63)}
-input[type=email],input[type=text],select{width:100%;padding:12px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#fff;font-size:14px;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:12px}
-input:focus,select:focus{border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,0.15)}
-input::placeholder{color:#334155}
-.btn-red{padding:12px 32px;background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:999px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
-.btn-purple{padding:12px 32px;background:linear-gradient(135deg,#4c1d95,#7c3aed);color:#fff;border:none;border-radius:999px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
-.btn-cyan{padding:12px 32px;background:linear-gradient(135deg,#164e63,#06b6d4);color:#fff;border:none;border-radius:999px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
-.msg{margin-top:14px;padding:12px 16px;border-radius:10px;font-size:13px;display:none;line-height:1.5;white-space:pre-wrap;word-break:break-all}
-.msg.show{display:block}
-.ok{background:rgba(74,222,128,0.08);color:#4ade80;border:1px solid rgba(74,222,128,0.2)}
-.er{background:rgba(248,113,113,0.08);color:#f87171;border:1px solid rgba(248,113,113,0.2)}
-.tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
-.tab{padding:8px 18px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:1px solid rgba(255,255,255,0.08);color:#64748b;background:transparent}
-.tab.active{background:rgba(34,84,245,0.1);border-color:rgba(37,99,235,0.3);color:#2254F5}
-`;
-
-    // Admin JS — all functions defined here, injected server-side
-    const adminScript = `
-(function() {
-var ADMIN_KEY = ${SECRET};
-
-// Tab switching
-function showTab(n, el) {
-  document.querySelectorAll('.tab-panel').forEach(function(p) { p.style.display = 'none'; });
-  document.querySelectorAll('.tab').forEach(function(b) { b.classList.remove('active'); });
-  var panel = document.getElementById('tab-' + n);
-  if (panel) panel.style.display = 'block';
-  if (el) el.classList.add('active');
-}
-window.showTab = showTab;
-
-// Message display
-function showMsg(id, ok, text) {
-  var el = document.getElementById(id);
-  if (!el) return;
-  el.className = 'msg ' + (ok ? 'ok' : 'er') + ' show';
-  el.textContent = text;
-}
-window.showMsg = showMsg;
-
-// Cancel member — called from data-action buttons
-function cancelMember(email, type) {
-  showMsg('cancelMsg', true, 'Working...');
-  fetch('/admin/cancel', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email, type: type, key: ADMIN_KEY })
-  })
-  .then(function(r) { return r.json().then(function(d) { return { status: r.status, d: d }; }); })
-  .then(function(x) {
-    if (x.d.ok) {
-      showMsg('cancelMsg', true, '\u2713 Cancelled: ' + email + ' (' + type + ')' + (x.d.db_updated ? ' \u2014 DB updated' : ''));
-      setTimeout(function() { location.reload(); }, 1800);
-    } else {
-      showMsg('cancelMsg', false, 'Error (' + x.status + '): ' + (x.d.error || JSON.stringify(x.d)));
-    }
-  })
-  .catch(function(err) { showMsg('cancelMsg', false, 'Network error: ' + err.message); });
-}
-window.cancelMember = cancelMember;
-
-function cancelManual() {
-  var email = (document.getElementById('manualEmail').value || '').trim();
-  var type  = document.getElementById('manualType').value;
-  if (!email) { showMsg('cancelMsg', false, 'Enter an email first.'); return; }
-  cancelMember(email, type);
-}
-window.cancelManual = cancelManual;
-
-function removeRole(uid, username) {
-  showMsg('cancelMsg', true, 'Removing roles from @' + username + '...');
-  fetch('/admin/remove-role', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ discord_user_id: uid, key: ADMIN_KEY })
-  })
-  .then(function(r) { return r.json().then(function(d) { return { status: r.status, d: d }; }); })
-  .then(function(x) {
-    if (x.d.ok) {
-      showMsg('cancelMsg', true, '\u2713 Roles removed from @' + username);
-      setTimeout(function() { location.reload(); }, 1800);
-    } else {
-      showMsg('cancelMsg', false, 'Error: ' + (x.d.error || JSON.stringify(x.d)));
-    }
-  })
-  .catch(function(err) { showMsg('cancelMsg', false, 'Network error: ' + err.message); });
-}
-window.removeRole = removeRole;
-
-function refreshNT() {
-  showMsg('ntMsg', true, 'Reconnecting...');
-  fetch('/admin/refresh-nt-token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ key: ADMIN_KEY })
-  })
-  .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d }; }); })
-  .then(function(x) { showMsg('ntMsg', x.ok, x.d.message || (x.ok ? 'Done' : 'Error')); })
-  .catch(function(err) { showMsg('ntMsg', false, 'Network error: ' + err.message); });
-}
-window.refreshNT = refreshNT;
-
-function testStorage() {
-  showMsg('storageMsg', true, 'Testing storage...');
-  fetch('/admin/test-storage?key=' + encodeURIComponent(ADMIN_KEY))
-  .then(function(r) { return r.json(); })
-  .then(function(d) {
-    var lines = [];
-    lines.push('Buckets: ' + JSON.stringify(d.buckets));
-    lines.push('Uploads root: ' + JSON.stringify(d.uploads_root));
-    lines.push('Installer URL: ' + (d.installer_signed_url || 'N/A'));
-    lines.push('Template URL: ' + (d.template_signed_url || 'N/A'));
-    var ok = d.installer_signed_url && d.installer_signed_url.length > 10;
-    showMsg('storageMsg', ok, lines.join('\n'));
-  })
-  .catch(function(err) { showMsg('storageMsg', false, 'Error: ' + err.message); });
-}
-window.testStorage = testStorage;
-
-function godMode() {
-  var email   = (document.getElementById('godEmail').value || '').trim();
-  var role    = document.getElementById('godRole').value;
-  var name    = (document.getElementById('godName').value || '').trim();
-  var duser   = (document.getElementById('godUser').value || '').trim();
-  var doEmail = document.getElementById('godSendEmail').checked;
-  var doNT    = document.getElementById('godNT').checked;
-  var doDC    = document.getElementById('godDiscord').checked;
-  if (!email) { showMsg('godMsg', false, 'Email is required.'); return; }
-  showMsg('godMsg', true, 'Granting access...');
-  fetch('/admin/god-add', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email, role: role, full_name: name, discord_username: duser, send_email: doEmail, create_nt: doNT, assign_discord: doDC, key: ADMIN_KEY })
-  })
-  .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d }; }); })
-  .then(function(x) {
-    if (x.ok) {
-      var parts = [];
-      if (x.d.supabase)   parts.push('\u2713 DB');
-      if (x.d.nt_license) parts.push('\u2713 NT');
-      if (x.d.discord)    parts.push('\u2713 Discord');
-      if (x.d.email_sent) parts.push('\u2713 Email');
-      showMsg('godMsg', true, '\u26a1 Done! ' + (parts.length ? parts.join(' | ') : 'Access granted'));
-      document.getElementById('godEmail').value = '';
-      document.getElementById('godName').value  = '';
-      document.getElementById('godUser').value  = '';
-    } else {
-      showMsg('godMsg', false, 'Error: ' + (x.d.error || JSON.stringify(x.d)));
-    }
-  })
-  .catch(function(err) { showMsg('godMsg', false, 'Network error: ' + err.message); });
-}
-window.godMode = godMode;
-
-// Event delegation for table action buttons — no inline onclick needed
-document.addEventListener('click', function(e) {
-  var btn = e.target.closest('[data-action]');
-  if (!btn) return;
-  var action = btn.dataset.action;
-  if (action === 'cancel') {
-    var email = btn.dataset.email;
-    var type  = btn.dataset.type;
-    if (btn.dataset.confirm !== 'yes') {
-      btn.textContent = 'CONFIRM?';
-      btn.dataset.confirm = 'yes';
-      btn.style.background = 'linear-gradient(135deg,#92400e,#d97706)';
-      setTimeout(function() { if (btn.dataset.confirm === 'yes') { btn.textContent = btn.dataset.label; btn.dataset.confirm = ''; btn.style.background = ''; } }, 3000);
-      return;
-    }
-    btn.disabled = true;
-    btn.textContent = '...';
-    cancelMember(email, type);
-  }
-  if (action === 'remove-role') {
-    var uid = btn.dataset.uid;
-    var uname = btn.dataset.uname;
-    if (btn.dataset.confirm !== 'yes') {
-      btn.textContent = 'CONFIRM?';
-      btn.dataset.confirm = 'yes';
-      btn.style.background = 'linear-gradient(135deg,#92400e,#d97706)';
-      setTimeout(function() { if (btn.dataset.confirm === 'yes') { btn.textContent = 'REMOVE'; btn.dataset.confirm = ''; btn.style.background = ''; } }, 3000);
-      return;
-    }
-    btn.disabled = true;
-    btn.textContent = '...';
-    removeRole(uid, uname);
-  }
-});
-
-})();
-`;
-
-    // Compute live stats for the stats cards for the stats cards
-    const activeMonthly  = (members || []).filter(m => m.status === 'active').length;
+    const activeMonthly  = (members  || []).filter(m => m.status === 'active').length;
     const activeLifetime = (licenses || []).filter(l => l.status === 'active').length;
     const activeDiscord  = (discordMems || []).filter(d => d.status === 'active').length;
     const totalActive    = activeMonthly + activeLifetime + activeDiscord;
+    const mCount = (members  || []).length;
+    const lCount = (licenses || []).length;
+    const dCount = (discordMems || []).length;
+    const lvCount = liveHVT.length;
 
-    let html = `<!DOCTYPE html>
+    const AKEY = JSON.stringify(key);
+
+    res.send(`<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>HVT Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>${css}
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:36px}
-.stat-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px 22px;position:relative;overflow:hidden}
-.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
-.stat-blue::before{background:linear-gradient(90deg,#1e3a8a,#2254F5,#1e3a8a)}
-.stat-gold::before{background:linear-gradient(90deg,#92610a,#f6ad55,#92610a)}
-.stat-purple::before{background:linear-gradient(90deg,#4c1d95,#7c3aed,#4c1d95)}
-.stat-green::before{background:linear-gradient(90deg,#14532d,#16a34a,#14532d)}
-.stat-cyan::before{background:linear-gradient(90deg,#164e63,#06b6d4,#164e63)}
-.stat-num{font-size:36px;font-weight:700;letter-spacing:-1px;color:#fff;line-height:1}
-.stat-lbl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#475569;margin-top:6px;font-weight:600}
-.act-btn{display:inline-block;background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:opacity .15s}
-.act-btn:hover{opacity:.8}
-.act-btn:disabled{opacity:.4;cursor:not-allowed}
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;padding:28px 20px;color:#fff}
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.brand{font-size:18px;font-weight:700;letter-spacing:3px;text-transform:uppercase}
+.restricted{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);border-radius:20px;padding:5px 14px;font-size:11px;color:#f87171;letter-spacing:2px;font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:28px}
+.sc{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.sc-b::before{background:linear-gradient(90deg,#1e3a8a,#2254F5,#1e3a8a)}
+.sc-g::before{background:linear-gradient(90deg,#92610a,#f6ad55,#92610a)}
+.sc-p::before{background:linear-gradient(90deg,#4c1d95,#7c3aed,#4c1d95)}
+.sc-gr::before{background:linear-gradient(90deg,#14532d,#16a34a,#14532d)}
+.sc-c::before{background:linear-gradient(90deg,#164e63,#06b6d4,#164e63)}
+.snum{font-size:32px;font-weight:700;color:#fff;line-height:1}
+.slbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#475569;margin-top:5px;font-weight:600}
+.sec{margin-bottom:28px}
+.sec-ttl{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#64748b;margin-bottom:14px}
+.box{border-radius:14px;padding:24px;margin-bottom:16px}
+.box-nt{background:rgba(6,182,212,0.04);border:1px solid rgba(6,182,212,0.15)}
+.box-gr{background:rgba(34,197,94,0.04);border:1px solid rgba(34,197,94,0.15)}
+.box-pu{background:rgba(124,58,237,0.05);border:1px solid rgba(124,58,237,0.15)}
+.box-re{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08)}
+.bbar{height:2px;margin:-24px -24px 20px;border-radius:14px 14px 0 0}
+.bbar-cy{background:linear-gradient(90deg,#164e63,#06b6d4,#164e63)}
+.bbar-gr{background:linear-gradient(90deg,#14532d,#16a34a,#14532d)}
+.bbar-pu{background:linear-gradient(90deg,#4c1d95,#7c3aed,#4c1d95)}
+.bbar-re{background:linear-gradient(90deg,#7f1d1d,#dc2626,#7f1d1d)}
+.boxtitle{font-size:15px;font-weight:700;margin-bottom:4px}
+.boxsub{color:#64748b;font-size:13px;margin-bottom:18px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+@media(max-width:600px){.row2{grid-template-columns:1fr}}
+label{display:block;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#64748b;margin-bottom:7px}
+input,select{width:100%;padding:11px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:9px;color:#fff;font-size:14px;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:12px}
+input:focus,select:focus{border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,0.15)}
+input::placeholder{color:#334155}
+select option{background:#111}
+.chks{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:18px}
+.chk{display:flex;align-items:center;gap:8px;color:#94a3b8;font-size:13px;cursor:pointer}
+.chk input{width:16px;height:16px;margin:0;accent-color:#a78bfa}
+.btn{padding:11px 28px;border:none;border-radius:999px;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:opacity .15s}
+.btn:hover{opacity:.8}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-cy{background:linear-gradient(135deg,#164e63,#06b6d4);color:#fff}
+.btn-gr{background:linear-gradient(135deg,#14532d,#16a34a);color:#fff}
+.btn-pu{background:linear-gradient(135deg,#4c1d95,#7c3aed);color:#fff}
+.btn-re{background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff}
+.msg{margin-top:14px;padding:11px 14px;border-radius:9px;font-size:13px;display:none;line-height:1.5;white-space:pre-wrap;word-break:break-all}
+.msg.show{display:block}
+.ok{background:rgba(74,222,128,0.08);color:#4ade80;border:1px solid rgba(74,222,128,0.2)}
+.er{background:rgba(248,113,113,0.08);color:#f87171;border:1px solid rgba(248,113,113,0.2)}
+.tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.tab{padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:1px solid rgba(255,255,255,0.08);color:#64748b;background:transparent;transition:all .15s}
+.tab.on{background:rgba(34,84,245,0.12);border-color:rgba(37,99,235,0.35);color:#2254F5}
+.panel{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:14px;overflow:hidden}
+.pt{height:3px}
+.pt-b{background:linear-gradient(90deg,#1e3a8a,#2254F5,#1e3a8a)}
+.pt-g{background:linear-gradient(90deg,#92610a,#f6ad55,#92610a)}
+.pt-p{background:linear-gradient(90deg,#4c1d95,#7c3aed,#4c1d95)}
+.pt-gr{background:linear-gradient(90deg,#14532d,#16a34a,#14532d)}
+table{width:100%;border-collapse:collapse}
+th{padding:11px 13px;text-align:left;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#334155;border-bottom:1px solid rgba(255,255,255,0.05)}
+td{padding:11px 13px;border-bottom:1px solid rgba(255,255,255,0.03);font-size:13px}
+tr:last-child td{border-bottom:none}
+.em{color:#64748b}
+.dt{color:#475569;font-size:12px}
+td.empty{padding:20px;text-align:center;color:#334155}
+.abtn{background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:6px;padding:5px 13px;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:opacity .15s}
+.abtn:hover{opacity:.8}
+.abtn:disabled{opacity:.4;cursor:not-allowed}
+.ntbadge{display:inline-flex;align-items:center;gap:8px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);border-radius:20px;padding:5px 14px;font-size:13px;font-weight:700}
 </style>
 </head>
 <body>
@@ -2547,7 +2366,7 @@ document.addEventListener('click', function(e) {
 <div class="hdr">
   <div>
     <div class="brand">High Velocity Trading</div>
-    <div style="font-size:10px;color:#334155;letter-spacing:4px;text-transform:uppercase;margin-top:3px;">Admin Control Panel</div>
+    <div style="font-size:10px;color:#334155;letter-spacing:3px;text-transform:uppercase;margin-top:2px;">Admin Control Panel</div>
   </div>
   <div style="display:flex;align-items:center;gap:12px;">
     <span style="font-size:12px;color:${ntColor};font-weight:600;">NT ${ntStatus}</span>
@@ -2555,77 +2374,81 @@ document.addEventListener('click', function(e) {
   </div>
 </div>
 
-<div class="stats-grid">
-  <div class="stat-card stat-blue"><div class="stat-num">${totalActive}</div><div class="stat-lbl">Total Active</div></div>
-  <div class="stat-card stat-blue"><div class="stat-num">${activeMonthly}</div><div class="stat-lbl">Monthly Active</div></div>
-  <div class="stat-card stat-gold"><div class="stat-num">${activeLifetime}</div><div class="stat-lbl">Lifetime Active</div></div>
-  <div class="stat-card stat-purple"><div class="stat-num">${activeDiscord}</div><div class="stat-lbl">Discord $37</div></div>
-  <div class="stat-card stat-green"><div class="stat-num">${lvCount}</div><div class="stat-lbl">Live on Discord</div></div>
-  <div class="stat-card stat-cyan"><div class="stat-num" style="color:${ntColor};">${ntToken ? '✓' : '✗'}</div><div class="stat-lbl">NT API Status</div></div>
+<div class="stats">
+  <div class="sc sc-b"><div class="snum">${totalActive}</div><div class="slbl">Total Active</div></div>
+  <div class="sc sc-b"><div class="snum">${activeMonthly}</div><div class="slbl">Monthly Active</div></div>
+  <div class="sc sc-g"><div class="snum">${activeLifetime}</div><div class="slbl">Lifetime Active</div></div>
+  <div class="sc sc-p"><div class="snum">${activeDiscord}</div><div class="slbl">Discord $37</div></div>
+  <div class="sc sc-gr"><div class="snum">${lvCount}</div><div class="slbl">Live on Discord</div></div>
+  <div class="sc sc-c"><div class="snum" style="color:${ntColor};">${ntToken ? '&#10003;' : '&#10007;'}</div><div class="slbl">NT API Status</div></div>
 </div>
 
 <div class="sec">
-  <div class="sec-ttl">&#9670; NinjaTrader API Status</div>
-  <div class="ntc">
-    <div class="bar bar-cyan"></div>
-    <div style="font-size:16px;font-weight:700;color:#67e8f9;margin-bottom:4px;">NT Ecosystem API</div>
-    <div style="color:#64748b;font-size:13px;margin-bottom:16px;">Auto-authenticates every 45 min.</div>
-    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
-      <span style="background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);border-radius:20px;padding:6px 16px;font-size:13px;color:${ntColor};font-weight:700;">${ntStatus}</span>
-      <span style="color:#334155;font-size:12px;">Auth failures: ${ntAuthFails}</span>
+  <div class="sec-ttl">&#9670; NinjaTrader API</div>
+  <div class="box box-nt">
+    <div class="bbar bbar-cy"></div>
+    <div class="boxtitle" style="color:#67e8f9;">NT Ecosystem API</div>
+    <div class="boxsub">Auto-authenticates every 45 min. Auth failures: ${ntAuthFails}</div>
+    <div style="margin-bottom:16px;">
+      <span class="ntbadge" style="color:${ntColor};">${ntStatus}</span>
     </div>
-    <button class="btn-cyan" onclick="refreshNT()">&#8635; FORCE RE-LOGIN</button>
+    <button class="btn btn-cy" id="btnRefreshNT">&#8635; FORCE RE-LOGIN</button>
     <div class="msg" id="ntMsg"></div>
   </div>
-  <div class="ntc" style="background:rgba(34,197,94,0.04);border-color:rgba(34,197,94,0.15);">
-    <div class="bar" style="background:linear-gradient(90deg,#14532d,#16a34a,#14532d);"></div>
-    <div style="font-size:16px;font-weight:700;color:#4ade80;margin-bottom:4px;">Supabase Storage Diagnostics</div>
-    <div style="color:#64748b;font-size:13px;margin-bottom:16px;">Test bucket access and file paths for downloads.</div>
-    <button class="btn-cyan" style="background:linear-gradient(135deg,#14532d,#16a34a);" onclick="testStorage()">&#128196; TEST STORAGE</button>
+  <div class="box box-gr">
+    <div class="bbar bbar-gr"></div>
+    <div class="boxtitle" style="color:#4ade80;">Supabase Storage</div>
+    <div class="boxsub">Test bucket access and file paths for downloads.</div>
+    <button class="btn btn-gr" id="btnTestStorage">&#128196; TEST STORAGE</button>
     <div class="msg" id="storageMsg"></div>
   </div>
 </div>
 
 <div class="sec">
-  <div class="sec-ttl">&#9889; God Mode &mdash; Grant Access</div>
-  <div class="gc">
-    <div class="bar bar-purple"></div>
-    <div style="font-size:16px;font-weight:700;color:#c4b5fd;margin-bottom:6px;">Grant Full Access Instantly</div>
-    <div style="color:#64748b;font-size:13px;margin-bottom:20px;">Creates Supabase record, NT license, Discord role, sends magic login link.</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-      <div><label style="display:block;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#7c3aed;margin-bottom:8px;">Email *</label><input type="text" id="godEmail" placeholder="their@email.com"/></div>
-      <div><label style="display:block;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#7c3aed;margin-bottom:8px;">Access Type</label>
-        <select id="godRole"><option value="monthly">Monthly Member</option><option value="lifetime">Lifetime Member</option><option value="discord">Discord Room ($37)</option></select></div>
+  <div class="sec-ttl">&#9889; God Mode — Grant Access</div>
+  <div class="box box-pu">
+    <div class="bbar bbar-pu"></div>
+    <div class="boxtitle" style="color:#c4b5fd;">Grant Full Access Instantly</div>
+    <div class="boxsub">Creates Supabase record, NT license, Discord role, sends magic login link.</div>
+    <div class="row2">
+      <div><label>Email *</label><input type="text" id="godEmail" placeholder="their@email.com"></div>
+      <div><label>Access Type</label>
+        <select id="godRole">
+          <option value="monthly">Monthly Member</option>
+          <option value="lifetime">Lifetime Member</option>
+          <option value="discord">Discord Room ($37)</option>
+        </select>
+      </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-      <div><label style="display:block;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#7c3aed;margin-bottom:8px;">Full Name</label><input type="text" id="godName" placeholder="John Smith"/></div>
-      <div><label style="display:block;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#7c3aed;margin-bottom:8px;">Discord Username</label><input type="text" id="godUser" placeholder="username"/></div>
+    <div class="row2">
+      <div><label>Full Name</label><input type="text" id="godName" placeholder="John Smith"></div>
+      <div><label>Discord Username</label><input type="text" id="godUser" placeholder="username"></div>
     </div>
-    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;">
-      <label style="display:flex;align-items:center;gap:8px;color:#94a3b8;font-size:13px;cursor:pointer;"><input type="checkbox" id="godSendEmail" checked style="accent-color:#a78bfa;width:16px;height:16px;"> Send login email</label>
-      <label style="display:flex;align-items:center;gap:8px;color:#94a3b8;font-size:13px;cursor:pointer;"><input type="checkbox" id="godNT" checked style="accent-color:#a78bfa;width:16px;height:16px;"> Create NT license</label>
-      <label style="display:flex;align-items:center;gap:8px;color:#94a3b8;font-size:13px;cursor:pointer;"><input type="checkbox" id="godDiscord" style="accent-color:#a78bfa;width:16px;height:16px;"> Assign Discord role</label>
+    <div class="chks">
+      <label class="chk"><input type="checkbox" id="godSendEmail" checked> Send login email</label>
+      <label class="chk"><input type="checkbox" id="godNT" checked> Create NT license</label>
+      <label class="chk"><input type="checkbox" id="godDiscord"> Assign Discord role</label>
     </div>
-    <button class="btn-purple" onclick="godMode()">&#9889; GRANT ACCESS NOW</button>
+    <button class="btn btn-pu" id="btnGodMode">&#9889; GRANT ACCESS NOW</button>
     <div class="msg" id="godMsg"></div>
   </div>
 </div>
 
 <div class="sec">
   <div class="sec-ttl">Manual Access Removal</div>
-  <div class="fc">
-    <div class="bar bar-red"></div>
-    <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:6px;">Cancel / Revoke by Email</div>
-    <div style="color:#64748b;font-size:13px;margin-bottom:20px;">Cancels Authnet sub, removes Discord role, revokes NT license, marks account cancelled in Supabase.</div>
-    <label style="display:block;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Member Email</label>
-    <input type="email" id="manualEmail" placeholder="member@email.com"/>
-    <label style="display:block;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Membership Type</label>
+  <div class="box box-re">
+    <div class="bbar bbar-re"></div>
+    <div class="boxtitle">Cancel / Revoke by Email</div>
+    <div class="boxsub">Cancels Authnet sub, removes Discord role, revokes NT license, marks cancelled in Supabase.</div>
+    <label>Member Email</label>
+    <input type="email" id="manualEmail" placeholder="member@email.com">
+    <label>Membership Type</label>
     <select id="manualType">
       <option value="monthly">Monthly Membership</option>
       <option value="lifetime">Lifetime License</option>
       <option value="discord">Discord Room ($37)</option>
     </select>
-    <button class="btn-red" onclick="cancelManual()" style="margin-top:4px;">&#128293; CANCEL ACCESS</button>
+    <button class="btn btn-re" id="btnCancel">&#128293; CANCEL ACCESS</button>
     <div class="msg" id="cancelMsg"></div>
   </div>
 </div>
@@ -2633,51 +2456,188 @@ document.addEventListener('click', function(e) {
 <div class="sec">
   <div class="sec-ttl">Member Management</div>
   <div class="tabs">
-    <button class="tab active" onclick="showTab('monthly',this)">Monthly (${mCount})</button>
-    <button class="tab" onclick="showTab('lifetime',this)">Lifetime (${lCount})</button>
-    <button class="tab" onclick="showTab('discord37',this)">Discord $37 (${dCount})</button>
-    <button class="tab" onclick="showTab('live',this)">Live on Discord (${lvCount})</button>
+    <button class="tab on" data-tab="monthly">Monthly (${mCount})</button>
+    <button class="tab" data-tab="lifetime">Lifetime (${lCount})</button>
+    <button class="tab" data-tab="discord37">Discord $37 (${dCount})</button>
+    <button class="tab" data-tab="live">Live on Discord (${lvCount})</button>
   </div>
-
-  <div id="tab-monthly" class="panel tab-panel"><div class="pt"></div>
-    <div style="overflow-x:auto;"><table>
-      <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Expires</th><th>NT License</th><th>Action</th></tr></thead>
-      <tbody>${memberRows || '<tr><td colspan="6" style="padding:20px;text-align:center;color:#334155;">No records</td></tr>'}</tbody>
+  <div id="tp-monthly" class="panel"><div class="pt pt-b"></div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Expires</th><th>NT</th><th>Action</th></tr></thead>
+      <tbody>${memberRows}</tbody>
     </table></div>
   </div>
-
-  <div id="tab-lifetime" class="panel tab-panel" style="display:none;"><div class="pt pt-gold"></div>
-    <div style="overflow-x:auto;"><table>
-      <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>License Key</th><th>NT License</th><th>Action</th></tr></thead>
-      <tbody>${licenseRows || '<tr><td colspan="6" style="padding:20px;text-align:center;color:#334155;">No records</td></tr>'}</tbody>
+  <div id="tp-lifetime" class="panel" style="display:none"><div class="pt pt-g"></div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>License Key</th><th>NT</th><th>Action</th></tr></thead>
+      <tbody>${licenseRows}</tbody>
     </table></div>
   </div>
-
-  <div id="tab-discord37" class="panel tab-panel" style="display:none;"><div class="pt pt-purple"></div>
-    <div style="overflow-x:auto;"><table>
+  <div id="tp-discord37" class="panel" style="display:none"><div class="pt pt-p"></div>
+    <div style="overflow-x:auto"><table>
       <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Expires</th><th>Discord</th><th>Action</th></tr></thead>
-      <tbody>${discordRows || '<tr><td colspan="6" style="padding:20px;text-align:center;color:#334155;">No records</td></tr>'}</tbody>
+      <tbody>${discordRows}</tbody>
     </table></div>
   </div>
-
-  <div id="tab-live" class="panel tab-panel" style="display:none;"><div class="pt pt-green"></div>
-    <div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);color:#64748b;font-size:12px;">Discord members with active HVT roles. Click REMOVE then CONFIRM? to strip roles.</div>
-    <div style="overflow-x:auto;"><table>
+  <div id="tp-live" class="panel" style="display:none"><div class="pt pt-gr"></div>
+    <div style="overflow-x:auto"><table>
       <thead><tr><th>Display Name</th><th>Username</th><th>Discord ID</th><th>Action</th></tr></thead>
-      <tbody>${liveRows || '<tr><td colspan="4" style="padding:20px;text-align:center;color:#334155;">No members found</td></tr>'}</tbody>
+      <tbody>${liveRows}</tbody>
     </table></div>
   </div>
 </div>
 
-<script>${adminScript}</script>
-</body>
-</html>`;
+<script>
+(function(){
+var K = ${AKEY};
 
-    res.send(html);
-    } catch (e) { console.error('[AdminPanel]', e.message, e.stack); res.status(500).send('<h1 style="color:red">Admin panel error: ' + e.message + '</h1>'); }
+function post(url, body, okCb, errCb) {
+  fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(Object.assign({key:K}, body)) })
+    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+    .then(function(x){ x.ok ? okCb(x.d) : errCb(x.d.error||JSON.stringify(x.d)); })
+    .catch(function(e){ errCb('Network error: '+e.message); });
+}
+
+function msg(id, ok, text) {
+  var el = document.getElementById(id);
+  el.className = 'msg '+(ok?'ok':'er')+' show';
+  el.textContent = text;
+}
+
+function loading(id, text) {
+  var el = document.getElementById(id);
+  el.className = 'msg ok show';
+  el.textContent = text||'Working...';
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.tab').forEach(function(b){ b.classList.remove('on'); });
+    document.querySelectorAll('[id^="tp-"]').forEach(function(p){ p.style.display='none'; });
+    btn.classList.add('on');
+    var panel = document.getElementById('tp-'+btn.dataset.tab);
+    if(panel) panel.style.display='block';
+  });
 });
 
-// ─── EMAIL PREVIEW (admin only) ───────────────────────────────────────────────
+// ── FORCE RE-LOGIN ────────────────────────────────────────────────────────────
+document.getElementById('btnRefreshNT').addEventListener('click', function(){
+  loading('ntMsg','Reconnecting...');
+  this.disabled = true;
+  var self = this;
+  fetch('/admin/refresh-nt-token', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:K}) })
+    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+    .then(function(x){ msg('ntMsg',x.ok,x.d.message||(x.ok?'Done':'Error')); })
+    .catch(function(e){ msg('ntMsg',false,'Network error: '+e.message); })
+    .finally(function(){ self.disabled=false; });
+});
+
+// ── TEST STORAGE ──────────────────────────────────────────────────────────────
+document.getElementById('btnTestStorage').addEventListener('click', function(){
+  loading('storageMsg','Testing...');
+  this.disabled = true;
+  var self = this;
+  fetch('/admin/test-storage?key='+encodeURIComponent(K))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var lines=['Buckets: '+JSON.stringify(d.buckets),'Uploads root: '+JSON.stringify(d.uploads_root),'Installer: '+(d.installer_signed_url||'N/A'),'Template: '+(d.template_signed_url||'N/A')];
+      var ok=!!(d.installer_signed_url && d.installer_signed_url.length>10);
+      msg('storageMsg',ok,lines.join('\n'));
+    })
+    .catch(function(e){ msg('storageMsg',false,'Error: '+e.message); })
+    .finally(function(){ self.disabled=false; });
+});
+
+// ── GRANT ACCESS (GOD MODE) ───────────────────────────────────────────────────
+document.getElementById('btnGodMode').addEventListener('click', function(){
+  var email = (document.getElementById('godEmail').value||'').trim();
+  if(!email){ msg('godMsg',false,'Email is required.'); return; }
+  loading('godMsg','Granting access...');
+  this.disabled = true;
+  var self = this;
+  post('/admin/god-add',{
+    email:email,
+    role:document.getElementById('godRole').value,
+    full_name:(document.getElementById('godName').value||'').trim(),
+    discord_username:(document.getElementById('godUser').value||'').trim(),
+    send_email:document.getElementById('godSendEmail').checked,
+    create_nt:document.getElementById('godNT').checked,
+    assign_discord:document.getElementById('godDiscord').checked
+  }, function(d){
+    var parts=[];
+    if(d.supabase)   parts.push('\u2713 DB');
+    if(d.nt_license) parts.push('\u2713 NT');
+    if(d.discord)    parts.push('\u2713 Discord');
+    if(d.email_sent) parts.push('\u2713 Email');
+    msg('godMsg',true,'\u26a1 Done! '+(parts.length?parts.join(' | '):'Access granted'));
+    document.getElementById('godEmail').value='';
+    document.getElementById('godName').value='';
+    document.getElementById('godUser').value='';
+    self.disabled=false;
+  }, function(e){ msg('godMsg',false,'Error: '+e); self.disabled=false; });
+});
+
+// ── MANUAL CANCEL ─────────────────────────────────────────────────────────────
+document.getElementById('btnCancel').addEventListener('click', function(){
+  var email=(document.getElementById('manualEmail').value||'').trim();
+  var type=document.getElementById('manualType').value;
+  if(!email){ msg('cancelMsg',false,'Enter an email first.'); return; }
+  doCancel(email, type, 'cancelMsg');
+});
+
+// ── CANCEL / REVOKE in TABLE ROWS ─────────────────────────────────────────────
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('.abtn');
+  if(!btn) return;
+
+  if(btn.classList.contains('abtn-remove')){
+    // Remove Discord role
+    if(btn.dataset.confirm!=='yes'){
+      btn.textContent='CONFIRM?'; btn.dataset.confirm='yes';
+      btn.style.background='linear-gradient(135deg,#92400e,#d97706)';
+      setTimeout(function(){ if(btn.dataset.confirm==='yes'){ btn.textContent='REMOVE'; btn.dataset.confirm=''; btn.style.background=''; } },3000);
+      return;
+    }
+    btn.disabled=true; btn.textContent='...';
+    loading('cancelMsg','Removing roles from @'+btn.dataset.uname+'...');
+    post('/admin/remove-role',{discord_user_id:btn.dataset.uid},
+      function(d){ msg('cancelMsg',true,'\u2713 Roles removed from @'+btn.dataset.uname); setTimeout(function(){location.reload();},1500); },
+      function(e){ msg('cancelMsg',false,'Error: '+e); btn.disabled=false; btn.textContent='REMOVE'; });
+    return;
+  }
+
+  // Cancel membership
+  if(btn.dataset.email){
+    if(btn.dataset.confirm!=='yes'){
+      btn.textContent='CONFIRM?'; btn.dataset.confirm='yes';
+      btn.style.background='linear-gradient(135deg,#92400e,#d97706)';
+      setTimeout(function(){ if(btn.dataset.confirm==='yes'){ btn.textContent=btn.dataset.label||'CANCEL'; btn.dataset.confirm=''; btn.style.background=''; } },3000);
+      return;
+    }
+    btn.disabled=true; btn.textContent='...';
+    doCancel(btn.dataset.email, btn.dataset.type, 'cancelMsg');
+  }
+});
+
+function doCancel(email, type, msgId){
+  loading(msgId,'Cancelling '+email+'...');
+  post('/admin/cancel',{email:email,type:type},
+    function(d){
+      msg(msgId,true,'\u2713 Cancelled: '+email+(d.db_updated?' \u2014 DB updated':''));
+      setTimeout(function(){location.reload();},1500);
+    },
+    function(e){ msg(msgId,false,'Error: '+e); }
+  );
+}
+
+})();
+</script>
+</body>
+</html>`);
+
+    } catch (e) { console.error('[AdminPanel]', e.message, e.stack); res.status(500).send('<h1 style="color:red">Admin panel error: ' + e.message + '</h1>'); }
+})
 app.get('/admin/test-storage', adm, adminGuard, async (req, res) => {
     const results = {};
     try {
