@@ -996,6 +996,9 @@ app.post('/trading-room/activate', frm, express.json(), async (req, res) => {
 
 // ─── COURSE / MEMBER ACCESS ───────────────────────────────────────────────────
 // ─── SESSION HELPERS ──────────────────────────────────────────────────────────
+// Sessions are stored BOTH in-memory (fast) AND in Supabase (survives Railway restarts).
+// On restart, the in-memory map is empty but the cookie is still valid — we fall back
+// to Supabase to re-hydrate the session so the member stays logged in.
 const SESSION_COOKIE = 'hvt_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const _sessions = new Map(); // token -> { email, name, plan, expires }
@@ -1003,25 +1006,98 @@ setInterval(() => { const n = Date.now(); for (const [k, s] of _sessions) if (n 
 
 function createSession(email, name, plan) {
     const token = crypto.randomBytes(32).toString('hex');
-    _sessions.set(token, { email, name, plan, expires: Date.now() + SESSION_TTL_MS });
+    const expires = Date.now() + SESSION_TTL_MS;
+    _sessions.set(token, { email, name, plan, expires });
+    // Persist to Supabase so session survives server restarts
+    const expiresISO = new Date(expires).toISOString();
+    // Try membership table first, fall back to license table — fire-and-forget
+    (async () => {
+        try {
+            const { data: mem } = await supabase.from(MEMBERSHIP_TABLE).select('email').eq('email', email).maybeSingle();
+            if (mem) {
+                await supabase.from(MEMBERSHIP_TABLE).update({ session_token: token, session_expires: expiresISO, updated_at: nowISO() }).eq('email', email);
+            } else {
+                await supabase.from(LICENSE_TABLE).update({ session_token: token, session_expires: expiresISO, updated_at: nowISO() }).eq('email', email);
+            }
+        } catch (e) { console.error('[Session persist]', e.message); }
+    })();
     return token;
 }
-function getSession(req) {
+
+function getSessionFromCookie(req) {
     const raw = req.headers.cookie || '';
     const match = raw.match(new RegExp(`${SESSION_COOKIE}=([a-f0-9]{64})`));
-    if (!match) return null;
-    const s = _sessions.get(match[1]);
-    if (!s || Date.now() > s.expires) return null;
-    return s;
+    if (!match) return { token: null, cached: null };
+    const token = match[1];
+    const s = _sessions.get(token);
+    if (s && Date.now() <= s.expires) return { token, cached: s };
+    // Token exists in cookie but not in memory (restart) — need DB lookup
+    return { token, cached: null };
 }
-function requireSession(req, res, next) {
-    if (getSession(req)) return next();
+
+function getSession(req) {
+    const { token, cached } = getSessionFromCookie(req);
+    if (!token) return null;
+    if (cached) return cached;
+    // Token in memory has expired or memory was wiped — caller must handle async
+    // For sync callers, return null (async version handles the restart case)
+    return null;
+}
+
+// Async version — used in requireSession and route handlers
+async function getSessionAsync(req) {
+    const { token, cached } = getSessionFromCookie(req);
+    if (!token) return null;
+    if (cached) return cached;
+    // Memory miss — re-hydrate from Supabase (handles Railway restart case)
+    try {
+        const now = new Date().toISOString();
+        // Check membership table
+        const { data: mem } = await supabase.from(MEMBERSHIP_TABLE)
+            .select('email,full_name,status,expires_at,session_token,session_expires')
+            .eq('session_token', token)
+            .maybeSingle();
+        if (mem && mem.session_expires && mem.session_expires > now) {
+            const isActive = mem.status === 'active' && new Date(mem.expires_at) > new Date();
+            const s = {
+                email: mem.email,
+                name: (mem.full_name || 'Trader').split(' ')[0],
+                plan: 'Monthly Membership',
+                expires: new Date(mem.session_expires).getTime()
+            };
+            _sessions.set(token, s); // re-hydrate memory cache
+            console.log(`[Session] Re-hydrated from DB (monthly): ${mem.email}`);
+            return s;
+        }
+        // Check lifetime license table
+        const { data: lic } = await supabase.from(LICENSE_TABLE)
+            .select('email,full_name,status,session_token,session_expires')
+            .eq('session_token', token)
+            .maybeSingle();
+        if (lic && lic.session_expires && lic.session_expires > now) {
+            const s = {
+                email: lic.email,
+                name: (lic.full_name || 'Trader').split(' ')[0],
+                plan: 'Lifetime Access',
+                expires: new Date(lic.session_expires).getTime()
+            };
+            _sessions.set(token, s); // re-hydrate memory cache
+            console.log(`[Session] Re-hydrated from DB (lifetime): ${lic.email}`);
+            return s;
+        }
+    } catch (e) { console.error('[Session re-hydrate]', e.message); }
+    return null;
+}
+
+async function requireSession(req, res, next) {
+    const s = await getSessionAsync(req);
+    if (s) { req._session = s; return next(); }
     res.redirect('/login');
 }
 
 // ─── LOGIN PAGE (was /course) ─────────────────────────────────────────────────
-app.get('/login', (req, res) => {
-    if (getSession(req)) return res.redirect('/member');
+app.get('/login', async (req, res) => {
+    if (await getSessionAsync(req)) return res.redirect('/member');
     res.send(shell('Member Login', `
     <div style="width:100%;max-width:520px;">
       <div class="card" style="max-width:520px;">
@@ -1221,13 +1297,13 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 
 // ─── MEMBER PORTAL (session-gated dashboard) ─────────────────────────────────
 app.get('/member', requireSession, (req, res) => {
-    const s = getSession(req);
+    const s = req._session;
     res.send(memberPortalHtml(s));
 });
 
 // ─── TRADING JOURNAL (session-gated) ──────────────────────────────────────────
 app.get('/trading-journal', requireSession, (req, res) => {
-    const s = getSession(req);
+    const s = req._session;
     const hero = { pill: 'TRADING JOURNAL', title: 'Track. Review. Improve.', sub: 'Every trade logged is a lesson earned.' };
     res.send(shell('Trading Journal', `
     <div class="journal-wrap" style="width:100%;max-width:1400px;margin:0 auto;padding:0 20px;box-sizing:border-box;">
@@ -1495,11 +1571,12 @@ app.get('/trading-journal', requireSession, (req, res) => {
 });
 
 // ─── BILLING SHORTCUT VIA SESSION ─────────────────────────────────────────────
-app.get('/billing/confirm-session', (req, res, next) => {
-    if (getSession(req)) return next();
-    res.redirect('/member');
+app.get('/billing/confirm-session', async (req, res, next) => {
+    const _s = await getSessionAsync(req);
+    if (_s) { req._session = _s; return next(); }
+    res.redirect('/login');
 }, async (req, res) => {
-    const s = getSession(req);
+    const s = req._session;
     let status = 'active', exAt = null, nextLabel = 'N/A', days = 0, isLifetime = false;
     let cancelHtml = `<div style="margin-top:24px;padding-top:24px;border-top:1px solid rgba(255,255,255,0.06);"><p style="color:#334155;font-size:12px;text-align:center;margin-bottom:16px;">Want to cancel?</p><a href="/cancel" style="display:block;width:100%;padding:12px;background:transparent;border:1px solid rgba(248,113,113,0.3);color:#f87171;border-radius:999px;font-size:14px;font-weight:700;text-align:center;text-decoration:none;">Cancel Membership</a></div>`;
     try {
@@ -1562,7 +1639,7 @@ app.get('/billing/confirm-session', (req, res, next) => {
 
 // ─── COURSE PLAYER (cookie-gated) ─────────────────────────────────────────────
 app.get('/course', requireSession, (req, res) => {
-    const s = getSession(req);
+    const s = req._session;
     res.send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Course — HVT</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -2655,7 +2732,19 @@ app.get('/admin/email-preview', adm, adminGuard, (req, res) => {
 });
 
 // ─── LOGOUT ───────────────────────────────────────────────────────────────────
-app.get('/logout', (req, res) => {
+app.get('/logout', async (req, res) => {
+    // Clear from memory
+    const { token } = getSessionFromCookie(req);
+    if (token) _sessions.delete(token);
+    // Clear from Supabase (both tables) — fire-and-forget
+    if (token) {
+        try {
+            await Promise.all([
+                supabase.from(MEMBERSHIP_TABLE).update({ session_token: null, session_expires: null, updated_at: nowISO() }).eq('session_token', token),
+                supabase.from(LICENSE_TABLE).update({ session_token: null, session_expires: null, updated_at: nowISO() }).eq('session_token', token)
+            ]);
+        } catch (e) { console.error('[Logout DB clear]', e.message); }
+    }
     res.setHeader('Set-Cookie', `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
     res.redirect(302, 'https://highvelocitytrading.com');
 });
