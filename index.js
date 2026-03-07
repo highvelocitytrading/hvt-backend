@@ -14,7 +14,7 @@ const fetchFn = global.fetch
 const app = express();
 app.set('trust proxy', 1);
 
-const PORT = process.env.PORT || 8155;
+const PORT = process.env.PORT || 8080;
 
 // ─── STATIC FILES (logo, images) ─────────────────────────────────────────────
 const path = require('path');
@@ -600,14 +600,11 @@ async function upsertLicense(txId, patch) {
 const V_LOGO_SVG = `<svg width="20" height="18" viewBox="0 0 20 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L10 16.5L19 1" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 // ─── PAGE SHELL ──────────────────────────────────────────────────────────────
-function shell(title, body, hero) {
-    const pill = (hero && hero.pill) ? hero.pill : 'MEMBER PORTAL';
-    const heroTitle = (hero && hero.title) ? hero.title : 'Your Edge Starts Here';
-    const heroSub = (hero && hero.sub) ? hero.sub : 'Access your live trading room, course, and billing — all in one place.';
+function shell(title, body) {
     return `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>${title} – High Velocity Trading</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Bebas+Neue&family=Montserrat:wght@800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:100px 20px 24px;color:#fff;position:relative;overflow-x:hidden;}
@@ -619,15 +616,12 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;displa
 .hero-sub{font-family:'DM Sans',sans-serif;font-weight:400;font-size:15px;color:#94a3b8;line-height:1.6;max-width:360px;margin:0 auto 0;}
 .hero-div{height:1px;background:linear-gradient(90deg,transparent,rgba(34,84,245,0.3),transparent);margin:16px auto 0;max-width:200px;}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10;}
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:45px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative;}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative;}
 .topnav-logo{display:flex;align-items:center;gap:0;text-decoration:none;}
-.topnav-logo img{height:26px;width:auto;background:transparent;}
+.topnav-logo img{height:44px;width:auto;filter:drop-shadow(0 0 8px rgba(34,84,245,0.35));}
 .topnav-left{display:flex;align-items:center;gap:12px;}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s;}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85);}
-.topnav-right{display:flex;align-items:center;gap:12px;flex-shrink:0;}
-.topnav-right a.topnav-link,.topnav-right a.topnav-out{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s;}
-.topnav-right a.topnav-link:hover,.topnav-right a.topnav-out:hover{color:rgba(255,255,255,0.85);}
 .topnav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);letter-spacing:0.2px;transition:background .2s,color .2s,border-color .2s;}
 .topnav-cta:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18);}
 .card{width:100%;max-width:460px;background:rgba(255,255,255,0.03);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(34,84,245,0.2);border-radius:20px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.6);position:relative;z-index:1;}
@@ -654,32 +648,21 @@ input::placeholder{color:#334155;}
 .ntIcon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(34,84,245,0.12);border:1px solid rgba(34,84,245,0.22);flex-shrink:0;}
 .ntTitle{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#2254F5;font-weight:700;line-height:1;}
 .ntDesc{color:#94a3b8;font-size:12.5px;line-height:1.55;margin-top:6px;}
-.nt-signup-wrap{text-align:center;margin-top:12px;}
-.nt-signup-btn{display:inline-block;padding:10px 18px;background:#D9452A;color:#000;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:15px;font-weight:800;letter-spacing:1.5px;text-decoration:none;box-shadow:0 4px 16px rgba(217,69,42,0.4);transition:transform .2s ease,box-shadow .2s ease,background .2s ease;margin-left:-36px;}
-.nt-signup-btn:hover{transform:scale(1.06);box-shadow:0 6px 24px rgba(217,69,42,0.5);background:#E04F35;}
-.tr-install-btn{display:inline-block;padding:12px 24px;background:#2254F5;color:#fff;border:1px solid rgba(255,255,255,0.12);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.5px;text-decoration:none;box-shadow:0 2px 12px rgba(34,84,245,0.25);transition:background .2s,box-shadow .2s,transform .2s;}
-.tr-install-btn:hover{background:#2d5cf7;box-shadow:0 4px 20px rgba(34,84,245,0.35);transform:translateY(-1px);}
-.tr-install-btn:active{transform:translateY(0);box-shadow:0 1px 8px rgba(34,84,245,0.2);}
-.discord-join-btn{display:inline-flex;align-items:center;gap:10px;padding:12px 24px;background:#5865F2;color:#fff;border:1px solid rgba(255,255,255,0.12);border-radius:8px;font-size:13px;font-weight:600;letter-spacing:0.3px;text-decoration:none;box-shadow:0 2px 12px rgba(88,101,242,0.25);transition:background .2s,box-shadow .2s,transform .2s;}
-.discord-join-btn:hover{background:#4752C4;box-shadow:0 4px 20px rgba(88,101,242,0.35);transform:translateY(-1px);}
-.discord-join-btn img{height:22px;width:auto;object-fit:contain;flex-shrink:0;display:block;}
 </style></head><body>
 <div class="hvt-bg" aria-hidden="true"></div>
 <div class="topnav-wrap">
   <nav class="topnav">
     <div class="topnav-left">
-      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png" alt="High Velocity Trading" /></a>
+      <a href="/login" class="topnav-logo"><img src="/hvt-logo.png" alt="High Velocity Trading" /></a>
+      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-link">Home</a>
     </div>
-    <div class="topnav-right" style="display:flex;align-items:center;gap:12px;">
-      ${hero && hero.hideNav ? '' : '<a href="/member" class="topnav-link" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Portal</a><a href="/billing/confirm-session" class="topnav-out" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Billing</a><a href="/logout" class="topnav-out" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Log out</a>'}
-      <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>
-    </div>
+    <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>
   </nav>
 </div>
 <div class="hero">
-  <span class="hero-pill">${pill}</span>
-  <h1>${heroTitle}</h1>
-  <p class="hero-sub">${heroSub}</p>
+  <span class="hero-pill">MEMBER PORTAL</span>
+  <h1>Your Edge Starts Here</h1>
+  <p class="hero-sub">Access your live trading room, course, and billing — all in one place.</p>
   <div class="hero-div"></div>
 </div>
 ${body}
@@ -729,7 +712,6 @@ app.post('/webhooks/membership-jotform', wh, (req, res) => {
 
 // ─── MEMBERSHIP AUTHNET ───────────────────────────────────────────────────────
 app.post('/webhooks/membership-authnet', wh, express.json(), async (req, res) => {
-    res.status(200).send('OK'); // Respond immediately — prevents Authorize.net deactivation
     // ALWAYS respond 200 immediately — Authnet deactivates webhooks on repeated non-200 responses
     res.status(200).send('OK');
     try {
@@ -794,7 +776,6 @@ app.post('/webhooks/discord-jotform', wh, (req, res) => {
 
 // ─── DISCORD $37 AUTHNET ──────────────────────────────────────────────────────
 app.post('/webhooks/discord-authnet', wh, express.json(), async (req, res) => {
-    res.status(200).send('OK'); // Respond immediately — prevents Authorize.net deactivation
     // ALWAYS respond 200 immediately — Authnet deactivates webhooks on repeated non-200 responses
     res.status(200).send('OK');
     try {
@@ -1038,7 +1019,7 @@ app.get('/login', (req, res) => {
     <script>
       async function go(){const email=document.getElementById('email').value.trim();const msg=document.getElementById('msg');const btn=document.getElementById('btn');msg.className='msg';if(!email){msg.className='msg er show';msg.textContent='Please enter your email.';return}btn.disabled=true;btn.textContent='Sending...';try{const r=await fetch('/course/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\u2713 Check your email \u2014 your secure link is on the way!';btn.textContent='Link Sent \u2713'}else{msg.className='msg er show';msg.textContent=d.error||'Something went wrong.';btn.disabled=false;btn.textContent='Send My Access Link'}}catch{msg.className='msg er show';msg.textContent='Network error.';btn.disabled=false;btn.textContent='Send My Access Link'}}
       document.getElementById('email').addEventListener('keydown',e=>{if(e.key==='Enter')go();});
-    </script>`, {hideNav:true, pill:'MEMBER LOGIN', title:'Member Access', sub:'Enter your email to receive a secure login link.'} ));
+    </script>`));
 });
 
 // /course GET is defined below as the full course player (cookie-gated)
@@ -1091,12 +1072,11 @@ function memberPortalHtml(s) {
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:#fff;position:relative;overflow-x:hidden}
 .member-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:#000000}
-.member-bg::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(34,84,245,0.18) 0%,transparent 50%),radial-gradient(ellipse 60% 40% at 20% 30%,#00001C 0%,transparent 55%);pointer-events:none}
-.member-bg::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:600px;height:200px;background:radial-gradient(ellipse 100% 100% at 50% 100%,rgba(34,84,245,0.08) 0%,transparent 70%);pointer-events:none}
+.member-bg::before{content:'';position:absolute;top:0;left:0;width:70%;height:60%;background:radial-gradient(ellipse at 20% 20%,#00001C 0%,transparent 60%);pointer-events:none}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:45px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
 .topnav-logo{display:flex;align-items:center;text-decoration:none}
-.topnav-logo img{height:26px;width:auto;background:transparent}
+.topnav-logo img{height:44px;width:auto;filter:drop-shadow(0 0 8px rgba(34,84,245,0.35));}
 .topnav-left{display:flex;align-items:center;gap:12px}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85)}
@@ -1106,13 +1086,11 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 .topnav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);letter-spacing:0.2px;transition:background .2s,color .2s,border-color .2s}
 .topnav-cta:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18)}
 .portal-wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:96px 24px 64px}
-.hero-section{text-align:center;margin-bottom:32px;position:relative;padding:32px 20px 24px;border-radius:20px;box-shadow:0 0 0 1px rgba(34,84,245,0.06),0 0 60px rgba(34,84,245,0.08);animation:heroFade 0.6s ease-out}
-@keyframes heroFade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.hero-section .pill{display:inline-block;background:rgba(34,84,245,0.12);border:1px solid rgba(34,84,245,0.35);border-radius:999px;color:#2254F5;font-size:11px;letter-spacing:3px;text-transform:uppercase;padding:6px 18px;margin-bottom:18px;box-shadow:0 0 20px rgba(34,84,245,0.2);animation:heroFade 0.5s ease-out 0.1s both}
-.hero-section h1{font-size:44px;font-weight:800;letter-spacing:-0.5px;margin-bottom:0;color:#fff;line-height:1.2;animation:heroFade 0.5s ease-out 0.15s both}
-.hero-section .hero-name{background:linear-gradient(135deg,#60a5fa,#93c5fd);-webkit-background-clip:text;background-clip:text;color:transparent}
-.hero-section .hero-tagline{color:#94a3b8;font-size:17px;letter-spacing:0.3px;margin-top:12px;animation:heroFade 0.5s ease-out 0.2s both}
-.hero-div{height:2px;background:linear-gradient(90deg,transparent,rgba(34,84,245,0.2),rgba(34,84,245,0.6),rgba(34,84,245,0.2),transparent);margin:20px auto 0;max-width:280px;border-radius:1px;animation:heroFade 0.5s ease-out 0.25s both}
+.hero-section{text-align:center;margin-bottom:32px}
+.hero-section .pill{display:inline-block;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.25);border-radius:999px;color:#2254F5;font-size:11px;letter-spacing:3px;text-transform:uppercase;padding:6px 18px;margin-bottom:14px}
+.hero-section h1{font-size:38px;font-weight:700;letter-spacing:-0.5px;margin-bottom:0;color:#fff}
+.hero-section p{color:#94a3b8;font-size:16px;line-height:1.5}
+.hero-div{height:1px;background:linear-gradient(90deg,transparent,rgba(34,84,245,0.3),transparent);margin:16px auto 0;max-width:200px}
 .section-label{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#64748b;margin:0 0 16px;text-align:center}
 .carousel-section{margin-bottom:40px}
 .carousel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:16px;flex-wrap:wrap}
@@ -1125,7 +1103,6 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 .carousel-scroll::-webkit-scrollbar{height:6px}
 .carousel-scroll::-webkit-scrollbar-track{background:rgba(255,255,255,0.04);border-radius:3px}
 .carousel-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:3px}
-.cards{display:contents}
 .pcard{display:block;text-decoration:none;border-radius:20px;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.03);overflow:hidden;transition:all .25s;position:relative;flex:0 0 300px;scroll-snap-align:start;min-height:260px;--c:#2254F5;--c2:#2254F5;--cb:rgba(34,84,245,0.12)}
 .pcard:hover{transform:translateY(-4px);border-color:rgba(34,84,245,0.6);box-shadow:0 16px 48px rgba(34,84,245,0.25)}
 .pcard .bar{height:3px;background:linear-gradient(90deg,var(--c2),var(--c),var(--c2))}
@@ -1143,20 +1120,18 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 <div class="topnav-wrap">
   <nav class="topnav">
     <div class="topnav-left">
-      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png" alt="High Velocity Trading" /></a>
-    </div>
-    <div class="topnav-right">
-      <a href="/billing/confirm-session" class="topnav-out">Billing</a>
+      <a href="/member" class="topnav-logo"><img src="/hvt-logo.png" alt="High Velocity Trading" /></a>
+      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-link">Home</a>
       <a href="/logout" class="topnav-out">Log out</a>
-      <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>
     </div>
+    <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>
   </nav>
 </div>
 <div class="portal-wrap">
   <div class="hero-section">
     <span class="pill">MEMBER PORTAL</span>
-    <h1>Welcome back, <span class="hero-name">${s.name}</span></h1>
-    <p class="hero-tagline">Stay sharp. Stay ahead.</p>
+    <h1>Welcome back, ${s.name}</h1>
+    <p style="font-family:'DM Sans',sans-serif;font-weight:400;font-size:17px;color:#4a6a8a;text-align:center;letter-spacing:0.2px;margin:10px 0 0 0">Stay sharp. Stay ahead.</p>
     <div class="hero-div"></div>
   </div>
   <p class="section-label">Your dashboard</p>
@@ -1169,15 +1144,6 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
       </div>
     </div>
     <div class="carousel-scroll" id="carousel-scroll">
-    <a class="pcard" href="/trading-room">
-      <div class="bar"></div>
-      <div class="inner">
-        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"/></svg></div>
-        <h3>Get Started</h3>
-        <p>Activate your Discord access and trade live with the HVT team every market day.</p>
-        <div class="arrow">Get Started <span class="arr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
-      </div>
-    </a>
     <a class="pcard" href="/course">
       <div class="bar"></div>
       <div class="inner">
@@ -1187,6 +1153,15 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
         <div class="arrow">Watch Now <span class="arr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
       </div>
     </a>
+    <a class="pcard" href="/trading-room">
+      <div class="bar"></div>
+      <div class="inner">
+        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"/></svg></div>
+        <h3>Trading Room</h3>
+        <p>Activate your Discord access and trade live with the HVT team every market day.</p>
+        <div class="arrow">Activate <span class="arr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
+      </div>
+    </a>
     <a class="pcard" href="/trading-journal">
       <div class="bar"></div>
       <div class="inner">
@@ -1194,6 +1169,15 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
         <h3>Trading Journal</h3>
         <p>Log your trades, review performance, and track your progress with the HVT system.</p>
         <div class="arrow">Open Journal <span class="arr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
+      </div>
+    </a>
+    <a class="pcard" href="/billing/confirm-session">
+      <div class="bar"></div>
+      <div class="inner">
+        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z"/></svg></div>
+        <h3>Billing</h3>
+        <p>View your subscription status, renewal date, and manage your membership.</p>
+        <div class="arrow">View Billing <span class="arr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
       </div>
     </a>
   </div>
@@ -1619,7 +1603,6 @@ app.get('/cancel/confirm', async (req, res) => {
 
 // ─── LIFETIME LICENSE WEBHOOKS ────────────────────────────────────────────────
 app.post('/webhooks/authorize-net', wh, express.raw({ type: '*/*', limit: '2mb' }), async (req, res) => {
-    res.status(200).json({ ok: true }); // Respond immediately — prevents Authorize.net deactivation
     // Respond 200 immediately so Authnet never deactivates the webhook
     // Process the payload asynchronously after responding
     res.status(200).json({ ok: true, received: true });
