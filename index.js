@@ -611,7 +611,7 @@ function shell(title, body, hero) {
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Bebas+Neue&family=Montserrat:wght@800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:100px 20px 24px;color:#fff;position:relative;overflow-x:hidden;}
+body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:110px 20px 24px;color:#fff;position:relative;overflow-x:hidden;}
 .hvt-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:#000000;}
 .hvt-bg::before{content:'';position:absolute;top:0;left:0;width:65%;height:65%;background:radial-gradient(ellipse at 15% 30%,#00001C 0%,transparent 65%);pointer-events:none;}
 .hero{text-align:center;margin-bottom:16px;position:relative;z-index:1;}
@@ -620,14 +620,14 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;displa
 .hero-sub{font-family:'DM Sans',sans-serif;font-weight:400;font-size:15px;color:#94a3b8;line-height:1.6;max-width:360px;margin:0 auto 0;}
 .hero-div{height:1px;background:linear-gradient(90deg,transparent,rgba(34,84,245,0.3),transparent);margin:16px auto 0;max-width:200px;}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10;}
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:58px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative;}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:64px;width:100%;background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.08);position:relative;}
 .topnav-logo{display:flex;align-items:center;gap:0;text-decoration:none;}
-.topnav-logo img{height:32px;width:auto;background:transparent;}
+.topnav-logo img{height:38px;width:auto;background:transparent;}
 .topnav-left{display:flex;align-items:center;gap:12px;}
-.topnav-left a.topnav-link{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s;}
+.topnav-left a.topnav-link{color:rgba(255,255,255,0.65);font-size:14px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s;}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85);}
 .topnav-right{display:flex;align-items:center;gap:12px;flex-shrink:0;}
-.topnav-right a.topnav-link,.topnav-right a.topnav-out{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s;}
+.topnav-right a.topnav-link,.topnav-right a.topnav-out{color:rgba(255,255,255,0.65);font-size:14px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s;}
 .topnav-right a.topnav-link:hover,.topnav-right a.topnav-out:hover{color:rgba(255,255,255,0.85);}
 .topnav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);letter-spacing:0.2px;transition:background .2s,color .2s,border-color .2s;}
 .topnav-cta:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18);}
@@ -669,10 +669,10 @@ input::placeholder{color:#334155;}
 <div class="topnav-wrap">
   <nav class="topnav">
     <div class="topnav-left">
-      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png" alt="High Velocity Trading" /></a>
+      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo" style="display:flex;align-items:center;gap:10px;text-decoration:none;"><svg width="26" height="22" viewBox="0 0 20 18" fill="none" style="flex-shrink:0;"><path d="M1 1L10 16.5L19 1" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-family:&apos;DM Sans&apos;,sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ffffff;white-space:nowrap;">High Velocity Trading</span></a>
     </div>
     <div class="topnav-right" style="display:flex;align-items:center;gap:12px;">
-      ${hero && hero.hideNav ? '' : '<a href="/member" class="topnav-link" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Portal</a><a href="/billing/confirm-session" class="topnav-out" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Billing</a><a href="/logout" class="topnav-out" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;">Log out</a>'}
+      ${hero && hero.hideNav ? '' : '<a href="/member" class="topnav-link" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Portal</a><a href="/billing/confirm-session" class="topnav-out" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Billing</a><a href="/logout" class="topnav-out" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Log out</a>'}
       <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>
     </div>
   </nav>
@@ -1032,7 +1032,6 @@ app.get('/login', (req, res) => {
           <button class="btn" id="btn" onclick="go()">Send My Access Link</button>
           <div class="msg" id="msg"></div>
           <p style="text-align:center;color:#334155;font-size:11px;margin-top:20px;margin-bottom:0;">Not a member? <a href="https://highvelocitytrading.com/#packages" style="color:#2254F5;text-decoration:none;font-weight:600;">View Packages &rarr;</a></p>
-          <p style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);"><a href="/member?demo=1" style="color:#94a3b8;font-size:13px;text-decoration:none;">Try the demo portal instead &rarr;</a></p>
         </div>
       </div>
     </div>
@@ -1094,18 +1093,18 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 .member-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:#000000}
 .member-bg::before{content:'';position:absolute;top:0;left:0;width:70%;height:60%;background:radial-gradient(ellipse at 20% 20%,#00001C 0%,transparent 60%);pointer-events:none}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:58px;width:100%;background:rgba(10,10,12,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);position:relative}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;width:100%;background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.08);position:relative}
 .topnav-logo{display:flex;align-items:center;text-decoration:none}
-.topnav-logo img{height:32px;width:auto;background:transparent;}
+.topnav-logo img{height:38px;width:auto;background:transparent;}
 .topnav-left{display:flex;align-items:center;gap:12px}
-.topnav-left a.topnav-link{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s}
+.topnav-left a.topnav-link{color:rgba(255,255,255,0.65);font-size:14px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85)}
 .topnav-right{display:flex;align-items:center;gap:12px}
-.topnav-out{color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;transition:color .2s}
+.topnav-out{color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;transition:color .2s}
 .topnav-out:hover{color:rgba(255,255,255,0.85)}
 .topnav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);letter-spacing:0.2px;transition:background .2s,color .2s,border-color .2s}
 .topnav-cta:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18)}
-.portal-wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:96px 24px 64px}
+.portal-wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:100px 24px 64px}
 .hero-section{text-align:center;margin-bottom:32px}
 .hero-section .pill{display:inline-block;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.25);border-radius:999px;color:#2254F5;font-size:11px;letter-spacing:3px;text-transform:uppercase;padding:6px 18px;margin-bottom:14px}
 .hero-section h1{font-size:38px;font-weight:700;letter-spacing:-0.5px;margin-bottom:0;color:#fff}
@@ -1140,7 +1139,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 <div class="topnav-wrap">
   <nav class="topnav">
     <div class="topnav-left">
-      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png" alt="High Velocity Trading" /></a>
+      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo" style="display:flex;align-items:center;gap:10px;text-decoration:none;"><svg width="26" height="22" viewBox="0 0 20 18" fill="none" style="flex-shrink:0;"><path d="M1 1L10 16.5L19 1" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-family:&apos;DM Sans&apos;,sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ffffff;white-space:nowrap;">High Velocity Trading</span></a>
     </div>
     <div class="topnav-right">
       <a href="/billing/confirm-session" class="topnav-out">Billing</a>
@@ -1220,18 +1219,8 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 </body></html>`;
 }
 
-// ─── MEMBER PORTAL (cookie-gated dashboard) ───────────────────────────────────
-app.get('/member', (req, res, next) => {
-    if (req.query.demo === '1' || !getSession(req)) {
-        const s = getSession(req) || { name: 'Demo', plan: 'Monthly Membership', email: 'demo@example.com' };
-        if (!getSession(req)) {
-            const token = createSession(s.email, s.name, s.plan);
-            res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${7*24*3600}`);
-        }
-        return res.send(memberPortalHtml(s));
-    }
-    next();
-}, (req, res) => {
+// ─── MEMBER PORTAL (session-gated dashboard) ─────────────────────────────────
+app.get('/member', requireSession, (req, res) => {
     const s = getSession(req);
     res.send(memberPortalHtml(s));
 });
