@@ -1239,26 +1239,270 @@ app.get('/member', (req, res, next) => {
 // ─── TRADING JOURNAL (session-gated) ──────────────────────────────────────────
 app.get('/trading-journal', requireSession, (req, res) => {
     const s = getSession(req);
-    // Journal page — session data available: s.email, s.name, s.plan
-    // Tomorrow: full journal UI with Supabase trade logging will be built here
+    const hero = { pill: 'TRADING JOURNAL', title: 'Track. Review. Improve.', sub: 'Every trade logged is a lesson earned.' };
     res.send(shell('Trading Journal', `
-    <div class="card" style="max-width:560px;">
-      <div class="ct"></div>
-      <div class="cb">
-        <div style="margin-bottom:24px;">
-          <a href="/member" style="color:#2254F5;font-size:13px;text-decoration:none;">&larr; Back to Portal</a>
+    <div class="journal-wrap" style="width:100%;max-width:1400px;margin:0 auto;padding:0 20px;box-sizing:border-box;">
+      <div style="margin-top:8px;margin-bottom:16px;">
+        <a href="/member" style="color:#2254F5;font-size:13px;text-decoration:none;font-weight:500;">&larr; Back to Portal</a>
+      </div>
+
+      <!-- Period filter -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:#64748b;font-weight:600;">Period:</span>
+        <button type="button" class="journal-tab active" data-period="day">Today</button>
+        <button type="button" class="journal-tab" data-period="week">This Week</button>
+        <button type="button" class="journal-tab" data-period="month">This Month</button>
+        <button type="button" class="journal-tab" data-period="all">All</button>
+      </div>
+
+      <!-- Row 1: Net P&L, Avg win/loss, Day Streak -->
+      <div class="journal-metrics" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px;">
+        <div class="card j-card" style="padding:18px 20px;">
+          <div class="j-card-label">Net P&L</div>
+          <div class="j-card-value" id="stat-pnl" style="color:#94a3b8;">$0.00</div>
+          <div class="j-chart-line j-chart-empty" aria-hidden="true"></div>
         </div>
-        <div style="display:inline-block;background:rgba(34,84,245,0.1);border:1px solid rgba(34,84,245,0.2);border-radius:20px;padding:6px 18px;margin-bottom:16px;">
-          <span style="color:#2254F5;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;">Trading Journal</span>
+        <div class="card j-card" style="padding:18px 20px;">
+          <div class="j-card-label">Avg win/loss trade</div>
+          <div class="j-card-value" id="stat-avgwl" style="color:#94a3b8;">—</div>
+          <div class="j-bar-wrap j-bar-empty"><div class="j-bar j-bar-win" style="width:0;"></div><div class="j-bar j-bar-loss" style="width:0;"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:6px;color:#64748b;"><span>—</span><span>—</span></div>
         </div>
-        <div class="ttl" style="margin-bottom:8px;">Your Trading Journal</div>
-        <div class="sub" style="margin-bottom:24px;">Log your trades, review performance, and track your progress with the HVT system.</div>
-        <div class="div"></div>
-        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:32px;text-align:center;">
-          <p style="color:#64748b;font-size:14px;line-height:1.6;margin:0;">Full trading journal launching soon. Your account: <strong style="color:#fff;">${s.email}</strong></p>
+        <div class="card j-card" style="padding:18px 20px;">
+          <div class="j-card-label">Current Day Streak</div>
+          <div class="j-card-value" id="stat-daystreak" style="color:#94a3b8;">0 days</div>
+          <div style="display:flex;gap:12px;font-size:12px;margin-top:6px;color:#64748b;"><span>0W</span><span>0L</span></div>
         </div>
       </div>
-    </div>`));
+
+      <!-- Row 2: Win %, Profit Factor, Trade Streak -->
+      <div class="journal-metrics" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
+        <div class="card j-card" style="padding:18px 20px;">
+          <div class="j-card-label">Trade Win %</div>
+          <div class="j-card-value" id="stat-wins" style="color:#94a3b8;">—</div>
+          <div class="j-donut j-donut-half j-donut-empty" style="--p:0;" aria-hidden="true"></div>
+          <div style="display:flex;justify-content:center;gap:16px;font-size:11px;margin-top:6px;color:#64748b;"><span>0</span><span>0</span></div>
+        </div>
+        <div class="card j-card" style="padding:18px 20px;">
+          <div class="j-card-label">Profit Factor</div>
+          <div class="j-card-value" id="stat-pf" style="color:#94a3b8;">—</div>
+          <div class="j-donut j-donut-full j-donut-empty" style="--p:0;" aria-hidden="true"></div>
+        </div>
+        <div class="card j-card" style="padding:18px 20px;">
+          <div class="j-card-label">Current Trade Streak</div>
+          <div class="j-card-value" id="stat-tradestreak" style="color:#94a3b8;">0 trades</div>
+          <div style="display:flex;gap:12px;font-size:12px;margin-top:6px;color:#64748b;"><span>0W</span><span>0L</span></div>
+        </div>
+      </div>
+
+      <!-- Two columns: Trades table | Calendar -->
+      <div class="journal-bottom-grid" style="display:grid;grid-template-columns:minmax(200px,280px) minmax(560px,1fr);gap:24px;align-items:start;min-width:0;">
+        <!-- Trades panel -->
+        <div class="card" style="overflow:hidden;max-width:100%;">
+          <div class="ct"></div>
+          <div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:12px;font-weight:700;letter-spacing:1px;color:#e2e8f0;">Trades</span>
+            <button type="button" class="j-info-btn" aria-label="Info">i</button>
+          </div>
+          <div style="display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <button type="button" class="j-panel-tab active" data-tab="recent">Recent</button>
+            <button type="button" class="j-panel-tab" data-tab="open">Open Positions</button>
+          </div>
+          <div id="trades-recent" class="j-trades-content">
+            <table class="j-trades-table"><thead><tr><th>Symbol</th><th>Close Date</th><th>Net P&L</th></tr></thead><tbody>
+              <tr><td colspan="3" style="text-align:center;color:#64748b;padding:28px 16px;">No trades recorded yet</td></tr>
+            </tbody></table>
+          </div>
+          <div id="trades-open" class="j-trades-content" style="display:none;">
+            <table class="j-trades-table"><thead><tr><th>Symbol</th><th>Side</th><th>Unrealized P&L</th></tr></thead><tbody><tr><td colspan="3" style="text-align:center;color:#64748b;padding:24px;">No open positions</td></tr></tbody></table>
+          </div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="card journal-calendar-card" style="overflow:visible;width:100%;min-width:560px;">
+          <div class="ct"></div>
+          <div style="padding:0;">
+            <div style="padding:10px 20px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <button type="button" id="cal-prev" aria-label="Previous month" class="cal-nav-btn">&#9664;</button>
+                <button type="button" id="cal-prev-yr" aria-label="Previous year" class="cal-nav-btn" style="font-size:11px;">&#171;</button>
+                <button type="button" id="cal-today" class="cal-today-btn">TODAY</button>
+                <button type="button" id="cal-next-yr" aria-label="Next year" class="cal-nav-btn" style="font-size:11px;">&#187;</button>
+                <button type="button" id="cal-next" aria-label="Next month" class="cal-nav-btn">&#9654;</button>
+              </div>
+              <span id="cal-month-year" style="flex:1;text-align:center;font-size:14px;font-weight:700;color:#fff;letter-spacing:0.5px;">March 2026</span>
+              <button type="button" id="cal-info" aria-label="Info" class="j-info-btn">i</button>
+            </div>
+            <div style="padding:12px 20px 20px;">
+              <div style="display:grid;grid-template-columns:repeat(7,minmax(72px,1fr));gap:10px;margin-bottom:10px;">
+                <div style="text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e2e8f0;font-weight:700;padding:4px 0;">Sun</div>
+                <div style="text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e2e8f0;font-weight:700;padding:4px 0;">Mon</div>
+                <div style="text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e2e8f0;font-weight:700;padding:4px 0;">Tue</div>
+                <div style="text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e2e8f0;font-weight:700;padding:4px 0;">Wed</div>
+                <div style="text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e2e8f0;font-weight:700;padding:4px 0;">Thu</div>
+                <div style="text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e2e8f0;font-weight:700;padding:4px 0;">Fri</div>
+                <div style="text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e2e8f0;font-weight:700;padding:4px 0;">Sat</div>
+              </div>
+              <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,minmax(72px,1fr));gap:10px;min-width:0;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="cal-tooltip" style="display:none;position:fixed;z-index:100;background:#0f172a;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:12px 16px;box-shadow:0 20px 40px rgba(0,0,0,0.5);pointer-events:none;font-size:13px;">
+        <div id="cal-tooltip-date" style="font-weight:700;color:#fff;margin-bottom:4px;"></div>
+        <div id="cal-tooltip-pnl" style="font-weight:700;"></div>
+        <div id="cal-tooltip-trades" style="color:#64748b;font-size:11px;margin-top:2px;"></div>
+      </div>
+
+      <p style="text-align:center;color:#334155;font-size:12px;margin-top:16px;">Daily PnL from closed trades. NinjaTrader connection coming soon.</p>
+    </div>
+
+    <style>
+      .journal-wrap .card{max-width:none;}
+      .journal-tab{padding:8px 18px;border-radius:999px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;}
+      .journal-tab:hover{background:rgba(255,255,255,0.08);color:#e2e8f0;}
+      .journal-tab.active{background:rgba(34,84,245,0.15);border-color:rgba(34,84,245,0.35);color:#60a5fa;}
+      .j-card-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:600;margin-bottom:4px;}
+      .j-card-value{font-size:22px;font-weight:700;}
+      .j-chart-line{height:32px;margin-top:10px;border-radius:4px;overflow:hidden;}
+      .j-chart-empty{background:rgba(255,255,255,0.04);}
+      .j-bar-empty .j-bar{display:none;}
+      .j-donut-empty{background:rgba(255,255,255,0.06) !important;}
+      .j-bar-wrap{display:flex;height:8px;border-radius:4px;overflow:hidden;margin-top:8px;background:rgba(255,255,255,0.06);}
+      .j-bar{height:100%;}.j-bar-win{background:#22c55e;}.j-bar-loss{background:#ef4444;}
+      .j-donut{width:64px;height:32px;margin:8px auto 0;border-radius:32px 32px 0 0;background:conic-gradient(#22c55e calc(var(--p)*1.8deg),#ef4444 0);}
+      .j-donut-full{width:56px;height:56px;margin:8px auto 0;border-radius:50%;background:conic-gradient(#22c55e calc(var(--p)*3.6deg),rgba(239,68,68,0.4) 0);}
+      .j-info-btn{width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#64748b;cursor:pointer;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+      .j-panel-tab{padding:10px 18px;border:none;background:transparent;color:#64748b;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;}
+      .j-panel-tab:hover{color:#94a3b8;}
+      .j-panel-tab.active{color:#2254F5;border-bottom-color:#2254F5;}
+      .j-trades-table{width:100%;border-collapse:collapse;font-size:13px;}
+      .j-trades-table th{text-align:left;padding:10px 14px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#64748b;border-bottom:1px solid rgba(255,255,255,0.06);}
+      .j-trades-table td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.04);color:#e2e8f0;}
+      .cal-nav-btn,.cal-today-btn{width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#94a3b8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;}
+      .cal-today-btn{width:auto;padding:5px 10px;font-size:11px;}
+      #cal-prev:hover,#cal-next:hover,#cal-prev-yr:hover,#cal-next-yr:hover,#cal-today:hover{background:rgba(255,255,255,0.08);color:#fff;}
+      .cal-day{aspect-ratio:1;min-width:0;border-radius:8px;display:flex;flex-direction:column;align-items:stretch;cursor:pointer;transition:all .15s;border:2px solid transparent;position:relative;padding:10px 8px;box-sizing:border-box;background:rgba(255,255,255,0.02);gap:6px;}
+      .cal-day:hover{background:rgba(255,255,255,0.06);}
+      .cal-day.other-month .cal-num{color:#334155;}
+      .cal-day.has-pnl.profit{background:rgba(34,197,94,0.25);border-color:rgba(34,197,94,0.5);}
+      .cal-day.has-pnl.profit:hover{background:rgba(34,197,94,0.35);}
+      .cal-day.has-pnl.loss{background:rgba(239,68,68,0.25);border-color:rgba(239,68,68,0.5);}
+      .cal-day.has-pnl.loss:hover{background:rgba(239,68,68,0.35);}
+      .cal-day.is-today .cal-num{box-shadow:0 0 0 2px rgba(34,84,245,0.7);border-radius:50%;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;}
+      .cal-num{font-size:15px;font-weight:700;color:#e2e8f0;flex-shrink:0;line-height:1;}
+      .cal-day-content{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:0;overflow:hidden;padding:0 2px;}
+      .cal-pnl{font-size:12px;font-weight:700;line-height:1.3;word-break:break-all;}
+      .cal-trades{font-size:10px;color:inherit;opacity:0.9;margin-top:2px;line-height:1.2;}
+      .cal-day.has-pnl.profit .cal-pnl,.cal-day.has-pnl.profit .cal-trades{color:#22c55e;}
+      .cal-day.has-pnl.loss .cal-pnl,.cal-day.has-pnl.loss .cal-trades{color:#ef4444;}
+      @media(max-width:900px){.journal-metrics{grid-template-columns:1fr !important;} .journal-bottom-grid{grid-template-columns:1fr !important;}}
+    </style>
+    <script>
+      (function(){
+        var period = 'day';
+        document.querySelectorAll('.journal-tab').forEach(function(btn){
+          btn.addEventListener('click', function(){
+            document.querySelectorAll('.journal-tab').forEach(function(b){ b.classList.remove('active'); });
+            btn.classList.add('active');
+            period = btn.getAttribute('data-period');
+          });
+        });
+        var cur = new Date();
+        var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        var samplePnL = {};
+        var sampleTrades = {};
+        function dateKey(d){ return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate(); }
+        function formatPnl(n){ var a = Math.abs(n); if (a >= 1000) return (n >= 0 ? '' : '-') + '$' + (a/1000).toFixed(1) + 'k'; return (n >= 0 ? '+' : '') + '$' + n.toFixed(1); }
+        var todayKey = dateKey(new Date());
+        document.querySelectorAll('.j-panel-tab').forEach(function(btn){
+          btn.addEventListener('click', function(){
+            document.querySelectorAll('.j-panel-tab').forEach(function(b){ b.classList.remove('active'); });
+            btn.classList.add('active');
+            var t = btn.getAttribute('data-tab');
+            document.getElementById('trades-recent').style.display = t === 'recent' ? 'block' : 'none';
+            document.getElementById('trades-open').style.display = t === 'open' ? 'block' : 'none';
+          });
+        });
+        function render(){
+          var y = cur.getFullYear(), m = cur.getMonth();
+          document.getElementById('cal-month-year').textContent = monthNames[m] + ' ' + y;
+          var first = new Date(y, m, 1);
+          var last = new Date(y, m + 1, 0);
+          var startPad = first.getDay();
+          var days = last.getDate();
+          var prevLast = new Date(y, m, 0).getDate();
+          var grid = document.getElementById('cal-grid');
+          grid.innerHTML = '';
+          for (var i = 0; i < startPad; i++) {
+            var cell = document.createElement('div');
+            cell.className = 'cal-day other-month';
+            cell.innerHTML = '<span class="cal-num">' + (prevLast - startPad + i + 1) + '</span>';
+            grid.appendChild(cell);
+          }
+          for (var d = 1; d <= days; d++) {
+            var dt = new Date(y, m, d);
+            var key = dateKey(dt);
+            var pnl = samplePnL[key];
+            var trades = sampleTrades[key] || 0;
+            var cell = document.createElement('div');
+            cell.className = 'cal-day' + (pnl != null ? ' has-pnl ' + (pnl >= 0 ? 'profit' : 'loss') : '') + (key === todayKey ? ' is-today' : '');
+            cell.setAttribute('data-date', key);
+            cell.setAttribute('data-pnl', pnl != null ? pnl : '');
+            cell.setAttribute('data-trades', trades);
+            var pnlStr = pnl != null ? formatPnl(pnl) : '';
+            var tradesStr = (pnl != null ? trades : 0) + ' trade' + (trades !== 1 ? 's' : '');
+            cell.innerHTML = '<span class="cal-num">' + d + '</span>' + (pnlStr ? '<div class="cal-day-content"><span class="cal-pnl">' + pnlStr + '</span><span class="cal-trades">' + tradesStr + '</span></div>' : '');
+            cell.addEventListener('mouseenter', showTooltip);
+            cell.addEventListener('mouseleave', hideTooltip);
+            cell.addEventListener('mousemove', moveTooltip);
+            grid.appendChild(cell);
+          }
+          var rest = (startPad + days <= 35 ? 35 : 42) - (startPad + days);
+          for (var j = 0; j < rest; j++) {
+            var cell = document.createElement('div');
+            cell.className = 'cal-day other-month';
+            cell.innerHTML = '<span class="cal-num">' + (j + 1) + '</span>';
+            grid.appendChild(cell);
+          }
+        }
+        function showTooltip(e){
+          var el = e.target.closest('.cal-day');
+          if (!el || el.classList.contains('other-month')) return;
+          var dateStr = el.getAttribute('data-date');
+          var pnl = el.getAttribute('data-pnl');
+          var trades = el.getAttribute('data-trades') || '0';
+          if (!dateStr) return;
+          var parts = dateStr.split('-');
+          var d = new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, parseInt(parts[2],10));
+          document.getElementById('cal-tooltip-date').textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+          if (pnl !== '' && pnl != null) {
+            var n = parseFloat(pnl);
+            document.getElementById('cal-tooltip-pnl').textContent = (n >= 0 ? '+' : '') + '$' + n.toFixed(2);
+            document.getElementById('cal-tooltip-pnl').style.color = n >= 0 ? '#4ade80' : '#f87171';
+          } else {
+            document.getElementById('cal-tooltip-pnl').textContent = 'No trades';
+            document.getElementById('cal-tooltip-pnl').style.color = '#64748b';
+          }
+          document.getElementById('cal-tooltip-trades').textContent = trades + ' trade(s) closed';
+          document.getElementById('cal-tooltip').style.display = 'block';
+        }
+        function hideTooltip(){ document.getElementById('cal-tooltip').style.display = 'none'; }
+        function moveTooltip(e){
+          var tt = document.getElementById('cal-tooltip');
+          tt.style.left = (e.clientX + 14) + 'px';
+          tt.style.top = (e.clientY + 14) + 'px';
+        }
+        document.getElementById('cal-prev').onclick = function(){ cur.setMonth(cur.getMonth()-1); render(); };
+        document.getElementById('cal-next').onclick = function(){ cur.setMonth(cur.getMonth()+1); render(); };
+        document.getElementById('cal-prev-yr').onclick = function(){ cur.setFullYear(cur.getFullYear()-1); render(); };
+        document.getElementById('cal-next-yr').onclick = function(){ cur.setFullYear(cur.getFullYear()+1); render(); };
+        document.getElementById('cal-today').onclick = function(){ cur = new Date(); render(); };
+        document.getElementById('cal-info').onclick = function(){ alert('Daily PnL shows realized profit/loss for each day. Green = profit, red = loss. Data from NinjaTrader when connected.'); };
+        render();
+      })();
+    </script>`, hero));
 });
 
 // ─── BILLING SHORTCUT VIA SESSION ─────────────────────────────────────────────
