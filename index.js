@@ -842,34 +842,48 @@ app.get('/check-access', frm, async (req, res) => {
 
 // ─── DOWNLOADS ────────────────────────────────────────────────────────────────
 app.get('/downloads/installer', frm, async (req, res) => {
-    if (!supabase) return res.status(503).json({ error: 'Service unavailable. Configure Supabase in .env and restart the server.' });
+    if (!supabase) return res.status(503).json({ error: 'Supabase not configured.' });
     try {
-        const { data, error } = await supabase.storage.from('uploads').createSignedUrl('packages/HVTMasterAccessNQ.zip', 60);
+        // Try signed URL first
+        const { data, error } = await supabase.storage.from('uploads').createSignedUrl('packages/HVTMasterAccessNQ.zip', 300);
         if (error) {
-            console.error('[DownloadInstaller]', error.message);
-            return res.status(500).json({ error: 'Failed to generate download link. Please try again later.' });
+            console.error('[DownloadInstaller] Signed URL error:', error.message, error.statusCode || '');
+            // Fallback: try public URL
+            const { data: pub } = supabase.storage.from('uploads').getPublicUrl('packages/HVTMasterAccessNQ.zip');
+            if (pub?.publicUrl) {
+                console.log('[DownloadInstaller] Falling back to public URL');
+                return res.redirect(302, pub.publicUrl);
+            }
+            return res.status(500).json({ error: 'Download unavailable. Please contact support.', detail: error.message });
         }
         const url = data.signedUrl + (data.signedUrl.includes('?') ? '&' : '?') + 'download=HVTMasterAccessNQ.zip';
         return res.redirect(302, url);
     } catch (e) {
-        console.error('[DownloadInstaller]', e.message);
-        return res.status(500).json({ error: 'Failed to generate download link. Please try again later.' });
+        console.error('[DownloadInstaller] Exception:', e.message);
+        return res.status(500).json({ error: 'Download unavailable. Please contact support.' });
     }
 });
 
 app.get('/downloads/template', frm, async (req, res) => {
-    if (!supabase) return res.status(503).json({ error: 'Service unavailable. Configure Supabase in .env and restart the server.' });
+    if (!supabase) return res.status(503).json({ error: 'Supabase not configured.' });
     try {
-        const { data, error } = await supabase.storage.from('uploads').createSignedUrl('templates/HVT NQ TEMPLATE.xml', 60);
+        // Try signed URL first
+        const { data, error } = await supabase.storage.from('uploads').createSignedUrl('templates/HVT NQ TEMPLATE.xml', 300);
         if (error) {
-            console.error('[DownloadTemplate]', error.message);
-            return res.status(500).json({ error: 'Failed to generate download link. Please try again later.' });
+            console.error('[DownloadTemplate] Signed URL error:', error.message, error.statusCode || '');
+            // Fallback: try public URL
+            const { data: pub } = supabase.storage.from('uploads').getPublicUrl('templates/HVT NQ TEMPLATE.xml');
+            if (pub?.publicUrl) {
+                console.log('[DownloadTemplate] Falling back to public URL');
+                return res.redirect(302, pub.publicUrl + '?download=HVT_NQ_TEMPLATE.xml');
+            }
+            return res.status(500).json({ error: 'Download unavailable. Please contact support.', detail: error.message });
         }
         const url = data.signedUrl + (data.signedUrl.includes('?') ? '&' : '?') + 'download=HVT_NQ_TEMPLATE.xml';
         return res.redirect(302, url);
     } catch (e) {
-        console.error('[DownloadTemplate]', e.message);
-        return res.status(500).json({ error: 'Failed to generate download link. Please try again later.' });
+        console.error('[DownloadTemplate] Exception:', e.message);
+        return res.status(500).json({ error: 'Download unavailable. Please contact support.' });
     }
 });
 
@@ -1984,7 +1998,7 @@ input::placeholder{color:#334155}
 .btn-red{padding:12px 32px;background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:999px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
 .btn-purple{padding:12px 32px;background:linear-gradient(135deg,#4c1d95,#7c3aed);color:#fff;border:none;border-radius:999px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
 .btn-cyan{padding:12px 32px;background:linear-gradient(135deg,#164e63,#06b6d4);color:#fff;border:none;border-radius:999px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
-.msg{margin-top:14px;padding:12px 16px;border-radius:10px;font-size:13px;display:none;line-height:1.5}
+.msg{margin-top:14px;padding:12px 16px;border-radius:10px;font-size:13px;display:none;line-height:1.5;white-space:pre-wrap;word-break:break-all}
 .msg.show{display:block}
 .ok{background:rgba(74,222,128,0.08);color:#4ade80;border:1px solid rgba(74,222,128,0.2)}
 .er{background:rgba(248,113,113,0.08);color:#f87171;border:1px solid rgba(248,113,113,0.2)}
@@ -2076,6 +2090,25 @@ function refreshNT() {
   .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d }; }); })
   .then(function(x) { showMsg('ntMsg', x.ok, x.d.message || (x.ok ? 'Done' : 'Error')); })
   .catch(function(err) { showMsg('ntMsg', false, 'Network error: ' + err.message); });
+}
+
+function testStorage() {
+  showMsg('storageMsg', true, 'Testing...');
+  fetch('/admin/test-storage?key=' + encodeURIComponent(ADMIN_KEY))
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    var lines = [];
+    lines.push('Buckets: ' + JSON.stringify(d.buckets));
+    lines.push('uploads/ root: ' + JSON.stringify(d.uploads_root));
+    lines.push('packages/: ' + JSON.stringify(d.packages_folder));
+    lines.push('templates/: ' + JSON.stringify(d.templates_folder));
+    lines.push('Installer URL: ' + JSON.stringify(d.installer_signed_url));
+    lines.push('Template URL: ' + JSON.stringify(d.template_signed_url));
+    var ok = !d.exception && typeof d.installer_signed_url === 'string' && d.installer_signed_url.startsWith('OK');
+    showMsg('storageMsg', ok, lines.join('\n'));
+  })
+  .catch(function(err) { showMsg('storageMsg', false, 'Error: ' + err.message); });
+}
 }
 
 function godMode() {
@@ -2194,6 +2227,13 @@ function godMode() {
     <button class="btn-cyan" onclick="refreshNT()">&#8635; FORCE RE-LOGIN</button>
     <div class="msg" id="ntMsg"></div>
   </div>
+  <div class="ntc" style="background:rgba(34,197,94,0.04);border-color:rgba(34,197,94,0.15);">
+    <div class="bar" style="background:linear-gradient(90deg,#14532d,#16a34a,#14532d);"></div>
+    <div style="font-size:16px;font-weight:700;color:#4ade80;margin-bottom:4px;">Supabase Storage Diagnostics</div>
+    <div style="color:#64748b;font-size:13px;margin-bottom:16px;">Test bucket access and file paths for downloads.</div>
+    <button class="btn-cyan" style="background:linear-gradient(135deg,#14532d,#16a34a);" onclick="testStorage()">&#128196; TEST STORAGE</button>
+    <div class="msg" id="storageMsg"></div>
+  </div>
 </div>
 
 <!-- GOD MODE -->
@@ -2291,6 +2331,39 @@ function godMode() {
 });
 
 // ─── EMAIL PREVIEW (admin only) ───────────────────────────────────────────────
+app.get('/admin/test-storage', adm, adminGuard, async (req, res) => {
+    const results = {};
+    try {
+        // List buckets
+        const { data: buckets, error: bErr } = await supabase.storage.listBuckets();
+        results.buckets = bErr ? { error: bErr.message } : (buckets || []).map(b => b.name);
+
+        // List files in uploads bucket root
+        const { data: files, error: fErr } = await supabase.storage.from('uploads').list('', { limit: 20 });
+        results.uploads_root = fErr ? { error: fErr.message } : (files || []).map(f => f.name);
+
+        // List packages folder
+        const { data: pkg, error: pErr } = await supabase.storage.from('uploads').list('packages', { limit: 20 });
+        results.packages_folder = pErr ? { error: pErr.message } : (pkg || []).map(f => f.name);
+
+        // List templates folder
+        const { data: tpl, error: tErr } = await supabase.storage.from('uploads').list('templates', { limit: 20 });
+        results.templates_folder = tErr ? { error: tErr.message } : (tpl || []).map(f => f.name);
+
+        // Try signed URL for installer
+        const { data: sd, error: sErr } = await supabase.storage.from('uploads').createSignedUrl('packages/HVTMasterAccessNQ.zip', 60);
+        results.installer_signed_url = sErr ? { error: sErr.message } : 'OK — ' + sd.signedUrl.substring(0, 80) + '...';
+
+        // Try signed URL for template
+        const { data: td, error: tde } = await supabase.storage.from('uploads').createSignedUrl('templates/HVT NQ TEMPLATE.xml', 60);
+        results.template_signed_url = tde ? { error: tde.message } : 'OK — ' + td.signedUrl.substring(0, 80) + '...';
+
+    } catch (e) {
+        results.exception = e.message;
+    }
+    res.json(results);
+});
+
 app.get('/admin/email-preview', adm, adminGuard, (req, res) => {
     const type    = req.query.type || 'monthly';
     const name    = 'Alex';
