@@ -1815,7 +1815,10 @@ app.post('/admin/god-add', adm, express.json(), async (req, res) => {
 });
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.redirect(302, '/login'));
+app.get('/', (req, res) => {
+    if (getSession(req)) return res.redirect(302, '/member');
+    res.redirect(302, '/login');
+});
 app.use((req, res) => res.status(404).json({ ok: false, error: 'not_found' }));
 
 app.listen(PORT, () => console.log(`🚀 HVT Backend on port ${PORT}`));
