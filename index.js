@@ -622,7 +622,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;displa
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10;}
 .topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:64px;width:100%;background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.08);position:relative;}
 .topnav-logo{display:flex;align-items:center;gap:0;text-decoration:none;}
-.topnav-logo img{height:38px;width:auto;background:transparent;}
+.topnav-logo img{height:40px;width:auto;max-width:180px;object-fit:contain;background:transparent;}
 .topnav-left{display:flex;align-items:center;gap:12px;}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.65);font-size:14px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s;}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85);}
@@ -669,7 +669,7 @@ input::placeholder{color:#334155;}
 <div class="topnav-wrap">
   <nav class="topnav">
     <div class="topnav-left">
-      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo" style="display:flex;align-items:center;gap:10px;text-decoration:none;"><svg width="26" height="22" viewBox="0 0 20 18" fill="none" style="flex-shrink:0;"><path d="M1 1L10 16.5L19 1" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-family:&apos;DM Sans&apos;,sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ffffff;white-space:nowrap;">High Velocity Trading</span></a>
+      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png" alt="High Velocity Trading" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span style="display:none;align-items:center;gap:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ffffff;white-space:nowrap;"><svg width='22' height='18' viewBox='0 0 20 18' fill='none'><path d='M1 1L10 16.5L19 1' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg>High Velocity Trading</span></a>
     </div>
     <div class="topnav-right" style="display:flex;align-items:center;gap:12px;">
       ${hero && hero.hideNav ? '' : '<a href="/member" class="topnav-link" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Portal</a><a href="/billing/confirm-session" class="topnav-out" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Billing</a><a href="/logout" class="topnav-out" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Log out</a>'}
@@ -1095,7 +1095,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
 .topnav{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;width:100%;background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.08);position:relative}
 .topnav-logo{display:flex;align-items:center;text-decoration:none}
-.topnav-logo img{height:38px;width:auto;background:transparent;}
+.topnav-logo img{height:40px;width:auto;max-width:180px;object-fit:contain;background:transparent;}
 .topnav-left{display:flex;align-items:center;gap:12px}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.65);font-size:14px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85)}
@@ -1139,7 +1139,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 <div class="topnav-wrap">
   <nav class="topnav">
     <div class="topnav-left">
-      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo" style="display:flex;align-items:center;gap:10px;text-decoration:none;"><svg width="26" height="22" viewBox="0 0 20 18" fill="none" style="flex-shrink:0;"><path d="M1 1L10 16.5L19 1" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-family:&apos;DM Sans&apos;,sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ffffff;white-space:nowrap;">High Velocity Trading</span></a>
+      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.png" alt="High Velocity Trading" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span style="display:none;align-items:center;gap:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ffffff;white-space:nowrap;"><svg width='22' height='18' viewBox='0 0 20 18' fill='none'><path d='M1 1L10 16.5L19 1' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg>High Velocity Trading</span></a>
     </div>
     <div class="topnav-right">
       <a href="/billing/confirm-session" class="topnav-out">Billing</a>
@@ -1500,24 +1500,44 @@ app.get('/billing/confirm-session', (req, res, next) => {
     res.redirect('/member');
 }, async (req, res) => {
     const s = getSession(req);
-    let status = 'active', exAt = null, nextLabel = 'N/A', days = 0;
+    let status = 'active', exAt = null, nextLabel = 'N/A', days = 0, isLifetime = false;
     let cancelHtml = `<div style="margin-top:24px;padding-top:24px;border-top:1px solid rgba(255,255,255,0.06);"><p style="color:#334155;font-size:12px;text-align:center;margin-bottom:16px;">Want to cancel?</p><a href="/cancel" style="display:block;width:100%;padding:12px;background:transparent;border:1px solid rgba(248,113,113,0.3);color:#f87171;border-radius:999px;font-size:14px;font-weight:700;text-align:center;text-decoration:none;">Cancel Membership</a></div>`;
     try {
-        if (supabase) {
-            const { data } = await supabase.from(MEMBERSHIP_TABLE).select('email,full_name,status,expires_at').eq('email', s.email).maybeSingle();
-            status = data?.status || 'unknown';
-            exAt = data?.expires_at ? new Date(data.expires_at) : null;
+        // Check monthly membership table first, then lifetime license table
+        const [{ data: mem }, { data: lic }] = await Promise.all([
+            supabase.from(MEMBERSHIP_TABLE).select('status,expires_at').eq('email', s.email).maybeSingle(),
+            supabase.from(LICENSE_TABLE).select('status').eq('email', s.email).maybeSingle()
+        ]);
+        isLifetime = lic?.status === 'active';
+        if (isLifetime) {
+            // Lifetime — no expiry date, always active
+            status = 'active';
+            nextLabel = 'Lifetime';
+            days = 99999;
+        } else if (mem) {
+            status = mem.status || 'inactive';
+            exAt = mem.expires_at ? new Date(mem.expires_at) : null;
             nextLabel = exAt ? exAt.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}) : 'N/A';
             days = exAt ? Math.max(0, Math.ceil((exAt - new Date()) / 86400000)) : 0;
-            if (status !== 'active') cancelHtml = `<div style="margin-top:24px;text-align:center;"><p style="color:#64748b;font-size:13px;">Membership is no longer active.</p></div>`;
+            // If expiry has passed, mark as expired even if DB status is 'active'
+            if (status === 'active' && exAt && exAt < new Date()) { status = 'expired'; days = 0; }
         } else {
-            nextLabel = 'N/A';
-            days = 0;
+            // No record found at all — membership ended
+            status = 'ended';
         }
-    } catch (e) { console.error('[BillingSession]', e.message); }
-    const sc = status === 'active' ? '#4ade80' : '#f87171';
-    const sb = status === 'active' ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)';
-    const sbd = status === 'active' ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.2)';
+        // Status labels map: never show raw db values
+        if (status !== 'active') {
+            cancelHtml = `<div style="margin-top:24px;padding-top:24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;"><p style="color:#64748b;font-size:13px;line-height:1.6;">Your membership has ended. To reactivate, visit <a href="https://highvelocitytrading.com/#packages" style="color:#2254F5;text-decoration:none;font-weight:600;">highvelocitytrading.com</a> or call <strong style="color:#94a3b8;">786-461-4235</strong>.</p></div>`;
+        }
+    } catch (e) { console.error('[BillingSession]', e.message); status = 'error'; }
+    // Human-readable status labels
+    const statusLabels = { active: '&#9679; Active', cancelled: 'Membership Ended', expired: 'Membership Ended', ended: 'Membership Ended', inactive: 'Membership Ended', error: 'Unable to Load' };
+    const statusLabel = statusLabels[status] || 'Membership Ended';
+    const isActive = status === 'active';
+    const sc = isActive ? '#4ade80' : '#f87171';
+    const sb = isActive ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)';
+    const sbd = isActive ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.2)';
+    const daysDisplay = isLifetime ? '<span style="color:#f6ad55;font-size:13px;font-weight:600;">Lifetime</span>' : `<span style="color:${days > 7 ? '#4ade80' : (days > 0 ? '#f6ad55' : '#f87171')};font-size:13px;font-weight:600;">${days > 0 ? days + ' days' : 'Expired'}</span>`;
     res.send(shell('Billing', `
         <div class="card" style="max-width:480px;width:100%;"><div class="ct"></div><div class="cb">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -1528,14 +1548,14 @@ app.get('/billing/confirm-session', (req, res, next) => {
               <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;margin-bottom:4px;">Welcome back</div>
               <div style="font-size:22px;font-weight:700;color:#fff;">${s.name}</div>
             </div>
-            <div style="background:${sb};border:1px solid ${sbd};border-radius:20px;padding:6px 14px;font-size:12px;color:${sc};font-weight:600;">${status === 'active' ? '&#9679; Active' : status}</div>
+            <div style="background:${sb};border:1px solid ${sbd};border-radius:20px;padding:6px 14px;font-size:12px;color:${sc};font-weight:600;">${statusLabel}</div>
           </div>
           <div class="div"></div>
           <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;overflow:hidden;margin-bottom:16px;">
             <div style="display:flex;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:#64748b;font-size:13px;">Plan</span><span style="color:#94a3b8;font-size:13px;">${s.plan}</span></div>
             <div style="display:flex;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:#64748b;font-size:13px;">Email</span><span style="color:#94a3b8;font-size:13px;">${s.email}</span></div>
             <div style="display:flex;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:#64748b;font-size:13px;">Next Billing</span><span style="color:#94a3b8;font-size:13px;">${nextLabel}</span></div>
-            <div style="display:flex;justify-content:space-between;padding:14px 18px;"><span style="color:#64748b;font-size:13px;">Days Remaining</span><span style="color:${days > 7 ? '#4ade80' : '#f6ad55'};font-size:13px;font-weight:600;">${days} days</span></div>
+            <div style="display:flex;justify-content:space-between;padding:14px 18px;"><span style="color:#64748b;font-size:13px;">Days Remaining</span>${daysDisplay}</div>
           </div>${cancelHtml}
         </div></div>`));
 });
