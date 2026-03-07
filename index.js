@@ -1712,6 +1712,12 @@ app.get('/admin', adm, adminGuard, async (req, res) => {
     const ntStatus = ntToken ? '✓ Authenticated' : '✗ Not Authenticated';
     const ntColor  = ntToken ? '#4ade80' : '#f87171';
 
+    function esc(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/`/g, '&#96;').replace(/\$/g, '&#36;');
+    }
+
     const badge = (s, gold = false) => {
         const a = s === 'active';
         const c = a ? (gold ? '#f6ad55' : '#4ade80') : '#f87171';
@@ -1726,21 +1732,22 @@ app.get('/admin', adm, adminGuard, async (req, res) => {
 
     const memberRows = (members || []).map(m => {
         const exp = m.expires_at ? new Date(m.expires_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : 'N/A';
-        const ntBadge = m.nt_license_id ? `<span style="color:#2254F5;font-size:11px;">NT#${m.nt_license_id}</span>` : '<span style="color:#334155;font-size:11px;">—</span>';
-        return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:12px 14px;color:#94a3b8;font-size:13px;">${m.full_name || '—'}</td><td style="padding:12px 14px;color:#64748b;font-size:13px;">${m.email}</td><td style="padding:12px 14px;">${badge(m.status)}</td><td style="padding:12px 14px;color:#475569;font-size:12px;">${exp}</td><td style="padding:12px 14px;">${ntBadge}</td><td style="padding:12px 14px;">${m.status === 'active' ? cancelBtn(m.email, 'monthly', 'CANCEL') : '<span style="color:#334155;font-size:12px;">Inactive</span>'}</td></tr>`;
+        const ntBadge = m.nt_license_id ? `<span style="color:#2254F5;font-size:11px;">NT#${esc(m.nt_license_id)}</span>` : '<span style="color:#334155;font-size:11px;">—</span>';
+        return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:12px 14px;color:#94a3b8;font-size:13px;">${esc(m.full_name) || '—'}</td><td style="padding:12px 14px;color:#64748b;font-size:13px;">${esc(m.email)}</td><td style="padding:12px 14px;">${badge(esc(m.status))}</td><td style="padding:12px 14px;color:#475569;font-size:12px;">${esc(exp)}</td><td style="padding:12px 14px;">${ntBadge}</td><td style="padding:12px 14px;">${m.status === 'active' ? cancelBtn(m.email, 'monthly', 'CANCEL') : '<span style="color:#334155;font-size:12px;">Inactive</span>'}</td></tr>`;
     }).join('');
     const licenseRows = (licenses || []).map(l => {
-        const ntBadge = l.nt_license_id ? `<span style="color:#2254F5;font-size:11px;">NT#${l.nt_license_id}</span>` : '<span style="color:#334155;font-size:11px;">—</span>';
-        return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:12px 14px;color:#94a3b8;font-size:13px;">${l.full_name || '—'}</td><td style="padding:12px 14px;color:#64748b;font-size:13px;">${l.email}</td><td style="padding:12px 14px;">${badge(l.status, true)}</td><td style="padding:12px 14px;color:#475569;font-size:12px;font-family:monospace;">${l.license_key}</td><td style="padding:12px 14px;">${ntBadge}</td><td style="padding:12px 14px;">${l.status === 'active' ? cancelBtn(l.email, 'lifetime', 'REVOKE') : '<span style="color:#334155;font-size:12px;">Inactive</span>'}</td></tr>`;
+        const ntBadge = l.nt_license_id ? `<span style="color:#2254F5;font-size:11px;">NT#${esc(l.nt_license_id)}</span>` : '<span style="color:#334155;font-size:11px;">—</span>';
+        return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:12px 14px;color:#94a3b8;font-size:13px;">${esc(l.full_name) || '—'}</td><td style="padding:12px 14px;color:#64748b;font-size:13px;">${esc(l.email)}</td><td style="padding:12px 14px;">${badge(esc(l.status), true)}</td><td style="padding:12px 14px;color:#475569;font-size:12px;font-family:monospace;">${esc(l.license_key)}</td><td style="padding:12px 14px;">${ntBadge}</td><td style="padding:12px 14px;">${l.status === 'active' ? cancelBtn(l.email, 'lifetime', 'REVOKE') : '<span style="color:#334155;font-size:12px;">Inactive</span>'}</td></tr>`;
     }).join('');
     const discordRows = (discordMems || []).map(d => {
         const exp = d.expires_at ? new Date(d.expires_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : 'N/A';
-        return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:12px 14px;color:#94a3b8;font-size:13px;">${d.full_name || '—'}</td><td style="padding:12px 14px;color:#64748b;font-size:13px;">${d.email}</td><td style="padding:12px 14px;">${badge(d.status)}</td><td style="padding:12px 14px;color:#475569;font-size:12px;">${exp}</td><td style="padding:12px 14px;color:#a78bfa;font-size:12px;">${d.discord_username || (d.discord_user_id ? '✓ Linked' : '—')}</td><td style="padding:12px 14px;">${d.status === 'active' ? cancelBtn(d.email, 'discord', 'CANCEL') : '<span style="color:#334155;font-size:12px;">Inactive</span>'}</td></tr>`;
+        const discordLabel = d.discord_username || (d.discord_user_id ? '✓ Linked' : '—');
+        return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:12px 14px;color:#94a3b8;font-size:13px;">${esc(d.full_name) || '—'}</td><td style="padding:12px 14px;color:#64748b;font-size:13px;">${esc(d.email)}</td><td style="padding:12px 14px;">${badge(esc(d.status))}</td><td style="padding:12px 14px;color:#475569;font-size:12px;">${esc(exp)}</td><td style="padding:12px 14px;color:#a78bfa;font-size:12px;">${esc(discordLabel)}</td><td style="padding:12px 14px;">${d.status === 'active' ? cancelBtn(d.email, 'discord', 'CANCEL') : '<span style="color:#334155;font-size:12px;">Inactive</span>'}</td></tr>`;
     }).join('');
     const liveRows = liveHVT.map(m => {
         const safeId = String(m.user?.id || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const safeUser = String(m.user?.username || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-        return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:12px 14px;color:#94a3b8;font-size:13px;">${m.nick || '—'}</td><td style="padding:12px 14px;color:#a78bfa;font-size:13px;">@${m.user?.username || '—'}</td><td style="padding:12px 14px;color:#475569;font-size:11px;font-family:monospace;">${m.user?.id || '—'}</td><td style="padding:12px 14px;"><button onclick="removeRoleById('${safeId}','${safeUser}')" style="background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;">REMOVE ROLE</button></td></tr>`;
+        return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:12px 14px;color:#94a3b8;font-size:13px;">${esc(m.nick) || '—'}</td><td style="padding:12px 14px;color:#a78bfa;font-size:13px;">@${esc(m.user?.username || '—')}</td><td style="padding:12px 14px;color:#475569;font-size:11px;font-family:monospace;">${esc(m.user?.id || '') || '—'}</td><td style="padding:12px 14px;"><button onclick="removeRoleById('${safeId}','${safeUser}')" style="background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;">REMOVE ROLE</button></td></tr>`;
     }).join('');
 
     const adminKeyJson = JSON.stringify(key != null ? String(key) : '');
