@@ -1762,7 +1762,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 <div class="topbar">
   <div class="topbar-left">
     <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topbar-logo">
-      <img src="${LOGO_URL}" alt="High Velocity Trading" onerror="this.onerror=null;this.src='/hvt-logo.png';" />
+      <img src="${LOGO_URL}" alt="High Velocity Trading" style="height:36px;width:auto;max-width:150px;object-fit:contain;display:block;" onerror="this.onerror=null;this.src='/hvt-logo.png';" />
     </a>
     <div class="topbar-divider"></div>
     <a class="back-btn" href="/member">
@@ -2153,7 +2153,7 @@ app.post('/admin/cancel', adm, express.json(), async (req, res) => {
                 catch (e) { console.error('[AdminCancel] NT revoke failed:', e.message); }
             }
 
-            // 3. Update Supabase — use 'cancelled' to match the license_keys_status_chk constraint
+            // 3. Update Supabase — use 'cancelled' to satisfy license_keys_status_chk constraint
             const { data: upd, error: updErr } = await supabase.from(LICENSE_TABLE).update({ status: 'cancelled', updated_at: nowISO() }).eq('email', email).select();
             console.log('[AdminCancel] lifetime update result:', upd, updErr?.message);
             if (updErr) return res.status(500).json({ error: 'DB update failed: ' + updErr.message });
