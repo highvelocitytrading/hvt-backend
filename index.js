@@ -1654,197 +1654,283 @@ app.get('/billing/confirm-session', async (req, res, next) => {
 // ─── COURSE PLAYER (cookie-gated) ─────────────────────────────────────────────
 app.get('/course', requireSession, (req, res) => {
     const s = req._session;
-    res.send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Course — HVT</title>
+    const LOGO_URL = 'https://fnrisudnpwdxohwgfvjj.supabase.co/storage/v1/object/public/uploads/hvt-logo.png';
+    res.send(`<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Course Library — HVT</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
-body{background:#080c14;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;flex-direction:column}
-/* TOPBAR */
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:54px;border-bottom:1px solid rgba(255,255,255,0.07);background:#080c14;flex-shrink:0;z-index:100}
-.topbar-left{display:flex;align-items:center;gap:16px}
-.back-btn{display:flex;align-items:center;gap:6px;color:#475569;font-size:12px;text-decoration:none;font-weight:600;letter-spacing:0.5px;transition:color .15s}
+body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-serif;display:flex;flex-direction:column}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:60px;border-bottom:1px solid rgba(255,255,255,0.07);background:rgba(6,8,16,0.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);flex-shrink:0;z-index:200;position:relative}
+.topbar-left{display:flex;align-items:center;gap:0;min-width:0;flex-shrink:0}
+.topbar-logo{display:flex;align-items:center;text-decoration:none;flex-shrink:0}
+.topbar-logo img{height:36px;width:auto;max-width:150px;object-fit:contain;display:block;flex-shrink:0}
+.topbar-divider{width:1px;height:24px;background:rgba(255,255,255,0.1);margin:0 16px;flex-shrink:0}
+.back-btn{display:flex;align-items:center;gap:6px;color:#475569;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;white-space:nowrap;transition:color .15s;flex-shrink:0}
 .back-btn:hover{color:#94a3b8}
-.logo{font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#fff;border-left:1px solid rgba(255,255,255,0.1);padding-left:16px}
-.logo span{color:#f6ad55}
-.user-pill{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:4px 12px;font-size:11px;color:#64748b;font-weight:600}
-/* LAYOUT */
-.layout{display:flex;flex:1;overflow:hidden}
-/* SIDEBAR */
-.sidebar{width:280px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.07);background:#080c14;display:flex;flex-direction:column;overflow:hidden}
-.sidebar-header{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0}
-.sidebar-header h2{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#475569}
-.sidebar-scroll{flex:1;overflow-y:auto;padding:8px 0}
-.sidebar-scroll::-webkit-scrollbar{width:4px}
+.back-btn svg{flex-shrink:0}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.course-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f6ad55;opacity:0.9;white-space:nowrap}
+.user-pill{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:5px 13px;font-size:11px;color:#64748b;font-weight:600;white-space:nowrap;flex-shrink:0}
+.mob-menu{display:none;align-items:center;justify-content:center;width:36px;height:36px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;color:#94a3b8;font-size:18px;flex-shrink:0;transition:background .15s}
+.mob-menu:hover{background:rgba(255,255,255,0.09)}
+
+/* ── LAYOUT ── */
+.layout{display:flex;flex:1;overflow:hidden;position:relative}
+
+/* ── SIDEBAR ── */
+.sidebar{width:288px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.07);background:#060810;display:flex;flex-direction:column;overflow:hidden;transition:transform .25s ease}
+.sidebar-header{padding:16px 20px 14px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0}
+.sidebar-header h2{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#334155}
+.sidebar-scroll{flex:1;overflow-y:auto;padding:6px 0 16px}
+.sidebar-scroll::-webkit-scrollbar{width:3px}
 .sidebar-scroll::-webkit-scrollbar-track{background:transparent}
-.sidebar-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:2px}
-/* SECTION */
-.section{margin-bottom:2px}
-.section-header{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;cursor:pointer;user-select:none;transition:background .15s}
-.section-header:hover{background:rgba(255,255,255,0.03)}
-.section-title{font-size:12px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;flex:1}
-.section-count{font-size:10px;color:#334155;font-weight:600;margin-right:8px}
-.section-chevron{color:#334155;font-size:10px;transition:transform .2s}
-.section.open .section-chevron{transform:rotate(90deg)}
-.section-videos{display:none;padding:0 0 4px}
+.sidebar-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.07);border-radius:2px}
+
+/* ── SECTION ── */
+.section{margin-bottom:1px}
+.section-header{display:flex;align-items:center;gap:8px;padding:10px 18px;cursor:pointer;user-select:none;transition:background .15s}
+.section-header:hover{background:rgba(255,255,255,0.025)}
+.section-dot{width:6px;height:6px;border-radius:50%;background:#1e2d3d;flex-shrink:0;transition:background .2s}
+.section.open .section-dot{background:#f6ad55}
+.section-title{font-size:11px;font-weight:700;color:#64748b;letter-spacing:0.8px;text-transform:uppercase;flex:1;transition:color .2s}
+.section.open .section-title{color:#94a3b8}
+.section-count{font-size:10px;color:#1e2d3d;font-weight:600;margin-right:4px}
+.section-chevron{color:#1e2d3d;font-size:9px;transition:transform .2s,color .2s}
+.section.open .section-chevron{transform:rotate(90deg);color:#334155}
+.section-videos{display:none;padding:2px 0 4px}
 .section.open .section-videos{display:block}
-/* VIDEO ITEM */
-.video-item{display:flex;align-items:center;gap:12px;padding:9px 20px 9px 28px;cursor:pointer;transition:background .15s;position:relative}
-.video-item:hover{background:rgba(255,255,255,0.03)}
-.video-item.active{background:rgba(246,173,85,0.06)}
-.video-item.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:#f6ad55}
-.video-thumb{width:48px;height:30px;border-radius:5px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+
+/* ── VIDEO ITEM ── */
+.video-item{display:flex;align-items:center;gap:11px;padding:8px 18px 8px 26px;cursor:pointer;transition:background .12s;position:relative}
+.video-item:hover{background:rgba(255,255,255,0.025)}
+.video-item.active{background:rgba(246,173,85,0.05)}
+.video-item.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:#f6ad55;border-radius:0 2px 2px 0}
+.video-thumb{width:52px;height:32px;border-radius:5px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .video-thumb img{width:100%;height:100%;object-fit:cover}
-.play-icon{width:14px;height:14px;color:#475569}
+.play-icon{width:13px;height:13px;color:#2d3f52}
 .video-item.active .play-icon{color:#f6ad55}
 .video-info{flex:1;min-width:0}
-.video-title{font-size:12px;font-weight:600;color:#64748b;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.video-item.active .video-title{color:#e2e8f0}
-.video-dur{font-size:10px;color:#334155;margin-top:2px;font-weight:500}
-/* MAIN */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#080c14}
+.video-title{font-size:12px;font-weight:500;color:#475569;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .15s}
+.video-item:hover .video-title{color:#64748b}
+.video-item.active .video-title{color:#e2e8f0;font-weight:600}
+.video-dur{font-size:10px;color:#1e2d3d;margin-top:1px;font-weight:500}
+
+/* ── MAIN CONTENT ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#060810;min-width:0}
 .player-wrap{flex:1;display:flex;align-items:center;justify-content:center;background:#000;position:relative;min-height:0}
-.player-wrap iframe{width:100%;height:100%;border:none}
-.player-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#1e293b;text-align:center;padding:40px}
-.player-placeholder svg{opacity:0.3}
-.player-placeholder h3{font-size:20px;font-weight:700;color:#1e293b}
-.player-placeholder p{font-size:13px;color:#1e293b;max-width:320px;line-height:1.6}
-.video-meta{padding:20px 28px;border-top:1px solid rgba(255,255,255,0.06);flex-shrink:0;background:#080c14}
-.video-meta h2{font-size:18px;font-weight:700;color:#fff;margin-bottom:4px}
-.video-meta-sub{display:flex;align-items:center;gap:16px;font-size:12px;color:#475569}
-.section-badge{background:rgba(246,173,85,0.1);border:1px solid rgba(246,173,85,0.2);border-radius:20px;padding:2px 10px;font-size:10px;font-weight:700;color:#f6ad55;letter-spacing:1px;text-transform:uppercase}
-/* MOBILE */
+.player-wrap iframe{width:100%;height:100%;border:none;display:block}
+.player-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#0f1623;text-align:center;padding:40px;width:100%;height:100%}
+.player-placeholder svg{opacity:0.25}
+.player-placeholder h3{font-size:18px;font-weight:700;color:#0f1623}
+.player-placeholder p{font-size:13px;color:#0f1623;max-width:300px;line-height:1.6}
+.video-meta{padding:16px 24px;border-top:1px solid rgba(255,255,255,0.06);flex-shrink:0;background:#060810;display:none;align-items:center;gap:14px;flex-wrap:wrap}
+.video-meta h2{font-size:16px;font-weight:700;color:#fff;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.video-meta-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.section-badge{background:rgba(246,173,85,0.08);border:1px solid rgba(246,173,85,0.18);border-radius:20px;padding:3px 11px;font-size:10px;font-weight:700;color:#f6ad55;letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap}
+.video-dur-meta{font-size:12px;color:#334155;font-weight:500;white-space:nowrap}
+
+/* ── SIDEBAR OVERLAY (mobile) ── */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:149;backdrop-filter:blur(2px)}
+.sidebar-overlay.show{display:block}
+
+/* ── MOBILE ── */
 @media(max-width:768px){
-  .sidebar{position:fixed;left:-280px;top:54px;bottom:0;z-index:50;transition:left .25s;box-shadow:4px 0 24px rgba(0,0,0,0.4)}
-  .sidebar.open{left:0}
-  .layout{position:relative}
-  .mob-menu{display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;color:#94a3b8;font-size:16px}
+  .topbar{padding:0 12px;height:56px}
+  .topbar-logo img{height:30px;max-width:120px}
+  .topbar-divider{margin:0 10px}
+  .course-label{display:none}
+  .mob-menu{display:flex}
+  .sidebar{position:fixed;left:0;top:56px;bottom:0;width:280px;z-index:150;transform:translateX(-100%);box-shadow:4px 0 32px rgba(0,0,0,0.6)}
+  .sidebar.open{transform:translateX(0)}
+  .video-meta{padding:12px 16px}
+  .video-meta h2{font-size:14px}
 }
-@media(min-width:769px){.mob-menu{display:none}}
-</style></head><body>
+@media(max-width:400px){
+  .topbar-logo img{height:26px;max-width:100px}
+  .topbar-divider{margin:0 8px}
+  .user-pill{display:none}
+}
+</style>
+</head><body>
+
 <div class="topbar">
   <div class="topbar-left">
-    <button class="mob-menu" onclick="toggleSidebar()" title="Menu">&#9776;</button>
+    <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topbar-logo">
+      <img src="${LOGO_URL}" alt="High Velocity Trading" onerror="this.onerror=null;this.src='/hvt-logo.png';" />
+    </a>
+    <div class="topbar-divider"></div>
     <a class="back-btn" href="/member">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/></svg>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/></svg>
       Portal
     </a>
-    <div class="logo">HVT <span>Course</span></div>
   </div>
-  <div class="user-pill">${s.name}</div>
+  <div class="topbar-right">
+    <span class="course-label">Course Library</span>
+    <div class="user-pill">${s.name}</div>
+    <button class="mob-menu" id="mobMenu" aria-label="Toggle course menu">&#9776;</button>
+  </div>
 </div>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <div class="layout">
   <div class="sidebar" id="sidebar">
     <div class="sidebar-header"><h2>Course Content</h2></div>
-    <div class="sidebar-scroll" id="sidebarScroll">
-      <!-- Sections injected by JS -->
-    </div>
+    <div class="sidebar-scroll" id="sidebarScroll"></div>
   </div>
   <div class="main">
     <div class="player-wrap" id="playerWrap">
       <div class="player-placeholder" id="placeholder">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"/>
+        </svg>
         <h3>Select a lesson</h3>
-        <p>Choose a video from the course menu on the left to get started.</p>
+        <p>Choose a video from the course menu to get started.</p>
       </div>
-      <iframe id="player" style="display:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe>
+      <iframe id="player" style="display:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;web-share" allowfullscreen></iframe>
     </div>
-    <div class="video-meta" id="videoMeta" style="display:none">
+    <div class="video-meta" id="videoMeta">
       <h2 id="videoTitle"></h2>
-      <div class="video-meta-sub">
+      <div class="video-meta-right">
         <span class="section-badge" id="videoSection"></span>
-        <span id="videoDur"></span>
+        <span class="video-dur-meta" id="videoDur"></span>
       </div>
     </div>
   </div>
 </div>
+
 <script>
-// ── COURSE DATA (add sections/videos here) ──────────────────────────────────
-const COURSE = [
-  {
-    title: 'Psychology',
-    videos: [
-      { title: 'Welcome to HVT', duration: '1m', ytId: '' },
-      { title: 'Why Traders Fail in the Long Run', duration: '4m', ytId: '' },
-      { title: 'How to Set Yourself Up for Success', duration: '4m', ytId: '' },
-      { title: 'Expand Your Horizon', duration: '3m', ytId: '' },
-      { title: 'Next Steps', duration: '1m', ytId: '' },
-    ]
-  },
-  {
-    title: 'Basic Technicals',
-    videos: [
-      { title: 'Anatomy of a Candlestick', duration: '9m', ytId: '' },
-      { title: 'Structure — Uptrend vs Downtrend', duration: '7m', ytId: '' },
-    ]
-  },
-  // ── ADD MORE SECTIONS BELOW ──
-  // { title: 'Section Name', videos: [ { title: 'Video Title', duration: '5m', ytId: 'YOUTUBE_ID' } ] }
+(function(){
+// ── COURSE DATA ──────────────────────────────────────────────────────────────
+// To add a video: add ytId: 'YOUTUBE_VIDEO_ID' to any video object
+// To add a section: copy the section block pattern below
+var COURSE = [
+  { title: 'Psychology', videos: [
+    { title: 'Welcome to HVT',                      dur: '1m',  ytId: '' },
+    { title: 'Why Traders Fail in the Long Run',    dur: '4m',  ytId: '' },
+    { title: 'How to Set Yourself Up for Success',  dur: '4m',  ytId: '' },
+    { title: 'Expand Your Horizon',                 dur: '3m',  ytId: '' },
+    { title: 'Next Steps',                          dur: '1m',  ytId: '' }
+  ]},
+  { title: 'Basic Technicals', videos: [
+    { title: 'Anatomy of a Candlestick',            dur: '9m',  ytId: '' },
+    { title: 'Structure \u2014 Uptrend vs Downtrend', dur: '7m', ytId: '' }
+  ]}
+  // ADD MORE SECTIONS HERE:
+  // ,{ title: 'Section Name', videos: [
+  //   { title: 'Video Title', dur: '5m', ytId: 'YOUTUBE_ID' }
+  // ]}
 ];
 
-// ── BUILD SIDEBAR ─────────────────────────────────────────────────────────────
-let activeSection = 0, activeVideo = 0;
-const scroll = document.getElementById('sidebarScroll');
+// ── STATE ────────────────────────────────────────────────────────────────────
+var activeSec = 0, activeVid = 0;
+var sidebarEl  = document.getElementById('sidebar');
+var overlayEl  = document.getElementById('sidebarOverlay');
+var scrollEl   = document.getElementById('sidebarScroll');
+var playerEl   = document.getElementById('player');
+var placeholderEl = document.getElementById('placeholder');
+var metaEl     = document.getElementById('videoMeta');
+var titleEl    = document.getElementById('videoTitle');
+var sectionEl  = document.getElementById('videoSection');
+var durEl      = document.getElementById('videoDur');
 
-function buildSidebar() {
-  scroll.innerHTML = '';
-  COURSE.forEach((sec, si) => {
-    const secEl = document.createElement('div');
-    secEl.className = 'section' + (si === activeSection ? ' open' : '');
-    secEl.innerHTML = \`
-      <div class="section-header" onclick="toggleSection(\${si})">
-        <div class="section-title">\${sec.title}</div>
-        <div class="section-count">\${sec.videos.length} videos</div>
-        <div class="section-chevron">&#9654;</div>
-      </div>
-      <div class="section-videos">\${sec.videos.map((v, vi) => \`
-        <div class="video-item\${si===activeSection&&vi===activeVideo?' active':''}" onclick="playVideo(\${si},\${vi})">
-          <div class="video-thumb">
-            \${v.ytId ? \`<img src="https://img.youtube.com/vi/\${v.ytId}/mqdefault.jpg" alt="">\` : \`<svg class="play-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg>\`}
-          </div>
-          <div class="video-info">
-            <div class="video-title">\${v.title}</div>
-            <div class="video-dur">\${v.duration}</div>
-          </div>
-        </div>\`).join('')}
-      </div>\`;
-    scroll.appendChild(secEl);
+// ── SIDEBAR TOGGLE ───────────────────────────────────────────────────────────
+document.getElementById('mobMenu').addEventListener('click', function(){
+  var open = sidebarEl.classList.toggle('open');
+  overlayEl.classList.toggle('show', open);
+});
+overlayEl.addEventListener('click', function(){
+  sidebarEl.classList.remove('open');
+  overlayEl.classList.remove('show');
+});
+
+// ── BUILD SIDEBAR ────────────────────────────────────────────────────────────
+function buildSidebar(){
+  scrollEl.innerHTML = '';
+  COURSE.forEach(function(sec, si){
+    var secEl = document.createElement('div');
+    secEl.className = 'section' + (si === activeSec ? ' open' : '');
+
+    var header = document.createElement('div');
+    header.className = 'section-header';
+    header.innerHTML =
+      '<div class="section-dot"></div>' +
+      '<div class="section-title">' + esc(sec.title) + '</div>' +
+      '<div class="section-count">' + sec.videos.length + '</div>' +
+      '<div class="section-chevron">&#9654;</div>';
+    header.addEventListener('click', function(){ toggleSection(si); });
+
+    var vids = document.createElement('div');
+    vids.className = 'section-videos';
+    sec.videos.forEach(function(v, vi){
+      var item = document.createElement('div');
+      item.className = 'video-item' + (si===activeSec && vi===activeVid ? ' active' : '');
+      var thumb = v.ytId
+        ? '<img src="https://img.youtube.com/vi/' + v.ytId + '/mqdefault.jpg" alt="" loading="lazy">'
+        : '<svg class="play-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg>';
+      item.innerHTML =
+        '<div class="video-thumb">' + thumb + '</div>' +
+        '<div class="video-info">' +
+          '<div class="video-title">' + esc(v.title) + '</div>' +
+          '<div class="video-dur">' + esc(v.dur) + '</div>' +
+        '</div>';
+      item.addEventListener('click', function(){ playVideo(si, vi); });
+      vids.appendChild(item);
+    });
+
+    secEl.appendChild(header);
+    secEl.appendChild(vids);
+    scrollEl.appendChild(secEl);
   });
 }
 
-function toggleSection(si) {
-  const els = scroll.querySelectorAll('.section');
-  els[si].classList.toggle('open');
+// ── TOGGLE SECTION ───────────────────────────────────────────────────────────
+function toggleSection(si){
+  var els = scrollEl.querySelectorAll('.section');
+  if(els[si]) els[si].classList.toggle('open');
 }
 
-function playVideo(si, vi) {
-  activeSection = si; activeVideo = vi;
+// ── PLAY VIDEO ───────────────────────────────────────────────────────────────
+function playVideo(si, vi){
+  activeSec = si; activeVid = vi;
   buildSidebar();
-  const v = COURSE[si].videos[vi];
-  const player = document.getElementById('player');
-  const placeholder = document.getElementById('placeholder');
-  const meta = document.getElementById('videoMeta');
-  if (v.ytId) {
-    player.src = \`https://www.youtube.com/embed/\${v.ytId}?autoplay=1&rel=0\`;
-    player.style.display = 'block';
-    placeholder.style.display = 'none';
+  var v = COURSE[si].videos[vi];
+  if(v.ytId){
+    playerEl.src = 'https://www.youtube.com/embed/' + v.ytId + '?autoplay=1&rel=0&modestbranding=1';
+    playerEl.style.display = 'block';
+    placeholderEl.style.display = 'none';
   } else {
-    player.style.display = 'none';
-    placeholder.style.display = 'flex';
-    placeholder.innerHTML = \`<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"/></svg><h3>Coming Soon</h3><p>This video will be available shortly.</p>\`;
+    playerEl.style.display = 'none';
+    playerEl.src = '';
+    placeholderEl.style.display = 'flex';
+    placeholderEl.innerHTML =
+      '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.8" style="opacity:.2">' +
+      '<path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>' +
+      '<h3>Coming Soon</h3><p>This lesson will be available shortly. Check back soon.</p>';
   }
-  document.getElementById('videoTitle').textContent = v.title;
-  document.getElementById('videoSection').textContent = COURSE[si].title;
-  document.getElementById('videoDur').textContent = v.duration;
-  meta.style.display = 'flex';
-  // Close sidebar on mobile after selection
-  if (window.innerWidth < 769) document.getElementById('sidebar').classList.remove('open');
+  titleEl.textContent   = v.title;
+  sectionEl.textContent = COURSE[si].title;
+  durEl.textContent     = v.dur;
+  metaEl.style.display  = 'flex';
+  // Close mobile sidebar after selection
+  if(window.innerWidth < 769){
+    sidebarEl.classList.remove('open');
+    overlayEl.classList.remove('show');
+  }
 }
 
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-}
+// ── HTML ESCAPE ──────────────────────────────────────────────────────────────
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+// ── INIT ─────────────────────────────────────────────────────────────────────
 buildSidebar();
+})();
 </script>
 </body></html>`);
 });
