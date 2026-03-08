@@ -2153,8 +2153,8 @@ app.post('/admin/cancel', adm, express.json(), async (req, res) => {
                 catch (e) { console.error('[AdminCancel] NT revoke failed:', e.message); }
             }
 
-            // 3. Update Supabase
-            const { data: upd, error: updErr } = await supabase.from(LICENSE_TABLE).update({ status: 'cancelled', updated_at: nowISO() }).eq('email', email).select();
+            // 3. Update Supabase — license_keys constraint only allows: active, pending_jotform, pending_authorize, inactive
+            const { data: upd, error: updErr } = await supabase.from(LICENSE_TABLE).update({ status: 'inactive', updated_at: nowISO() }).eq('email', email).select();
             console.log('[AdminCancel] lifetime update result:', upd, updErr?.message);
             if (updErr) return res.status(500).json({ error: 'DB update failed: ' + updErr.message });
             result.db_updated = true;
