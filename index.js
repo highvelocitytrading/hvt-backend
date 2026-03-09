@@ -956,7 +956,7 @@ app.get('/trading-room', (req, res) => {
       <div class="gs-num">1</div>
       <div class="gs-head-text">
         <div class="gs-title">Activate Your Software</div>
-        <div class="gs-subtitle">Enter your NinjaTrader email to unlock your indicators</div>
+        <div class="gs-subtitle">Verify your purchase and enter your NinjaTrader email to activate</div>
       </div>
       <div class="gs-check">&#10003;</div>
     </div>
@@ -970,7 +970,9 @@ app.get('/trading-room', (req, res) => {
           <a href="https://lp.ninjatrader.com/platform?im_ref=XLAQAKxrwxyZWIqQPWQSz2P0Uku26HTRR1lDXQ0&sharedid=&irpid=7019303&irgwc=1&afsrc=1" target="_blank" rel="noopener noreferrer" class="gs-nt-signup">Create Free Account &rarr;</a>
         </div>
       </div>
-      <label class="gs-label" for="ntemail">Your NinjaTrader Account Email</label>
+      <label class="gs-label" for="nt-purchase-email">Purchase Email</label>
+      <input class="gs-input" type="email" id="nt-purchase-email" placeholder="email you used to purchase HVT" />
+      <label class="gs-label" for="ntemail">NinjaTrader Account Email</label>
       <input class="gs-input" type="email" id="ntemail" placeholder="email you use to log into NinjaTrader" />
       <button class="gs-btn gs-btn-blue" id="btn-nt" onclick="activateNT()">Activate Software</button>
       <div class="gs-msg" id="msg-nt"></div>
@@ -1058,17 +1060,19 @@ app.get('/trading-room', (req, res) => {
 <script>
 // ── STEP 1: NinjaTrader activation ────────────────────────────────────────────
 async function activateNT() {
+  const purchaseEmail = document.getElementById('nt-purchase-email').value.trim();
   const ntEmail = document.getElementById('ntemail').value.trim();
   const msg     = document.getElementById('msg-nt');
   const btn     = document.getElementById('btn-nt');
   msg.className = 'gs-msg';
+  if (!purchaseEmail) { msg.className='gs-msg er show'; msg.textContent='Please enter your purchase email.'; return; }
   if (!ntEmail) { msg.className='gs-msg er show'; msg.textContent='Please enter your NinjaTrader account email.'; return; }
   btn.disabled = true; btn.textContent = 'Activating...';
   try {
     const r = await fetch('/trading-room/activate-nt', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ninjatrader_email: ntEmail })
+      body: JSON.stringify({ email: purchaseEmail, ninjatrader_email: ntEmail })
     });
     const d = await r.json();
     if (r.ok) {
