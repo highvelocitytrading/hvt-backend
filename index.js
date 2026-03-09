@@ -896,60 +896,237 @@ app.get('/downloads/template', frm, async (req, res) => {
 
 // ─── TRADING ROOM ─────────────────────────────────────────────────────────────
 app.get('/trading-room', (req, res) => {
-    res.send(shell('Activate Member Access', `
-    <div class="card">
-      <div class="ct"></div>
-      <div class="cb">
-        <div style="text-align:center;margin-bottom:24px;">
-          <div style="display:inline-block;background:rgba(34,84,245,0.1);border:1px solid rgba(34,84,245,0.2);border-radius:20px;padding:6px 18px;margin-bottom:16px;">
-            <span style="color:#2254F5;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;">Member Access Activation</span>
+    res.send(shell('Get Started', `
+<style>
+.gs-wrap{width:100%;max-width:560px;display:flex;flex-direction:column;gap:16px;position:relative;z-index:1;}
+.gs-step{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;transition:border-color .2s;}
+.gs-step.done{border-color:rgba(74,222,128,0.35);}
+.gs-head{display:flex;align-items:center;gap:16px;padding:22px 24px;}
+.gs-num{width:36px;height:36px;border-radius:50%;background:rgba(34,84,245,0.15);border:1px solid rgba(34,84,245,0.3);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#2254F5;flex-shrink:0;transition:all .3s;}
+.gs-step.done .gs-num{background:rgba(74,222,128,0.15);border-color:rgba(74,222,128,0.4);color:#4ade80;}
+.gs-head-text{flex:1;}
+.gs-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:3px;}
+.gs-subtitle{font-size:13px;color:#64748b;line-height:1.5;}
+.gs-check{width:22px;height:22px;border-radius:50%;background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.3);display:none;align-items:center;justify-content:center;color:#4ade80;font-size:13px;flex-shrink:0;}
+.gs-step.done .gs-check{display:flex;}
+.gs-body{padding:0 24px 24px;}
+.gs-divider{height:1px;background:rgba(255,255,255,0.06);margin-bottom:20px;}
+.gs-btn{width:100%;padding:13px;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:0.3px;}
+.gs-btn-blue{background:#2254F5;color:#fff;box-shadow:0 4px 16px rgba(34,84,245,0.3);}
+.gs-btn-blue:hover{background:#1d47d4;transform:translateY(-1px);}
+.gs-btn-blue:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.gs-btn-discord{background:#5865F2;color:#fff;box-shadow:0 4px 16px rgba(88,101,242,0.3);display:flex;align-items:center;justify-content:center;gap:12px;}
+.gs-btn-discord:hover{background:#4752c4;transform:translateY(-1px);}
+.gs-input{width:100%;padding:13px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:15px;outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:12px;font-family:'DM Sans',sans-serif;}
+.gs-input:focus{border-color:#2254F5;box-shadow:0 0 0 3px rgba(34,84,245,0.2);}
+.gs-input::placeholder{color:#334155;}
+.gs-label{display:block;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#475569;margin-bottom:8px;}
+.gs-msg{margin-top:12px;padding:12px 16px;border-radius:10px;font-size:13px;text-align:center;display:none;line-height:1.5;}
+.gs-msg.show{display:block;}
+.gs-msg.ok{background:rgba(74,222,128,0.08);color:#4ade80;border:1px solid rgba(74,222,128,0.2);}
+.gs-msg.er{background:rgba(248,113,113,0.08);color:#f87171;border:1px solid rgba(248,113,113,0.2);}
+.gs-dl-row{display:flex;flex-direction:column;gap:10px;}
+.gs-dl-btn{display:flex;align-items:center;gap:12px;padding:14px 18px;background:rgba(34,84,245,0.06);border:1px solid rgba(34,84,245,0.18);border-radius:12px;color:#fff;text-decoration:none;font-size:14px;font-weight:600;transition:all .2s;}
+.gs-dl-btn:hover{background:rgba(34,84,245,0.12);border-color:rgba(34,84,245,0.35);transform:translateX(3px);}
+.gs-dl-icon{width:36px;height:36px;border-radius:9px;background:rgba(34,84,245,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gs-dl-text{flex:1;}
+.gs-dl-name{font-size:14px;font-weight:700;color:#fff;}
+.gs-dl-desc{font-size:12px;color:#64748b;margin-top:1px;}
+.gs-tip{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 16px;margin-top:12px;}
+.gs-tip p{color:#475569;font-size:12px;margin:0;line-height:1.7;}
+.gs-nt-signup{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:10px 18px;background:#D9452A;color:#fff;border-radius:9px;font-size:13px;font-weight:800;letter-spacing:1px;text-decoration:none;box-shadow:0 4px 14px rgba(217,69,42,0.35);transition:all .2s;}
+.gs-nt-signup:hover{background:#c43d25;transform:translateY(-1px);}
+.gs-discord-logo{width:28px;height:28px;object-fit:contain;display:block;flex-shrink:0;}
+</style>
+
+<div class="gs-wrap">
+
+  <!-- HEADER -->
+  <div style="text-align:center;margin-bottom:8px;">
+    <div style="display:inline-block;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.2);border-radius:999px;padding:6px 20px;margin-bottom:14px;">
+      <span style="color:#2254F5;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:700;">Get Started</span>
+    </div>
+    <h1 style="font-size:28px;font-weight:800;color:#fff;margin:0 0 8px;letter-spacing:-0.5px;">3 Steps to Full Access</h1>
+    <p style="color:#64748b;font-size:14px;margin:0;">Complete each step independently. Takes less than 5 minutes total.</p>
+  </div>
+
+  <!-- STEP 1 — NINJATRADER -->
+  <div class="gs-step" id="step1">
+    <div class="gs-head">
+      <div class="gs-num">1</div>
+      <div class="gs-head-text">
+        <div class="gs-title">Activate Your Software</div>
+        <div class="gs-subtitle">Enter your NinjaTrader email to unlock your indicators</div>
+      </div>
+      <div class="gs-check">&#10003;</div>
+    </div>
+    <div class="gs-body">
+      <div class="gs-divider"></div>
+      <div style="background:rgba(34,84,245,0.05);border:1px solid rgba(34,84,245,0.12);border-radius:12px;padding:14px 16px;margin-bottom:18px;display:flex;align-items:flex-start;gap:12px;">
+        <div style="flex-shrink:0;margin-top:2px;">${ninjaLogoSVG()}</div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#2254F5;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">NinjaTrader Required</div>
+          <div style="font-size:13px;color:#94a3b8;line-height:1.6;">You need a free NinjaTrader account before activating. Don't have one?</div>
+          <a href="https://lp.ninjatrader.com/platform?im_ref=XLAQAKxrwxyZWIqQPWQSz2P0Uku26HTRR1lDXQ0&sharedid=&irpid=7019303&irgwc=1&afsrc=1" target="_blank" rel="noopener noreferrer" class="gs-nt-signup">Create Free Account &rarr;</a>
+        </div>
+      </div>
+      <label class="gs-label" for="ntemail">Your NinjaTrader Account Email</label>
+      <input class="gs-input" type="email" id="ntemail" placeholder="email you use to log into NinjaTrader" />
+      <button class="gs-btn gs-btn-blue" id="btn-nt" onclick="activateNT()">Activate Software</button>
+      <div class="gs-msg" id="msg-nt"></div>
+    </div>
+  </div>
+
+  <!-- STEP 2 — DOWNLOADS -->
+  <div class="gs-step" id="step2">
+    <div class="gs-head">
+      <div class="gs-num">2</div>
+      <div class="gs-head-text">
+        <div class="gs-title">Download & Install Software</div>
+        <div class="gs-subtitle">Install the HVT indicator package and chart template</div>
+      </div>
+      <div class="gs-check">&#10003;</div>
+    </div>
+    <div class="gs-body">
+      <div class="gs-divider"></div>
+      <div class="gs-dl-row">
+        <a href="/downloads/installer" class="gs-dl-btn" id="dl-software" onclick="markStep2()">
+          <div class="gs-dl-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
           </div>
-          <div class="ttl" style="margin-bottom:8px;">Activate Your Member Access</div>
-          <div class="sub" style="margin-bottom:0;">Takes less than 2 minutes. Please enter the information exactly.</div>
-        </div>
-        <div class="div"></div>
-        <div class="ntBadge">
-          <div class="ntIcon">${ninjaLogoSVG()}</div>
-          <div style="flex:1;">
-            <div class="ntTitle">NinjaTrader Activation</div>
-            <div class="ntDesc">Enter the email tied to your <strong style="color:#fff;">NinjaTrader account</strong>. <strong style="color:#94a3b8;">You must have a NinjaTrader account created first</strong> before submitting this.</div>
-            <div class="nt-signup-wrap"><a href="https://lp.ninjatrader.com/platform?im_ref=XLAQAKxrwxyZWIqQPWQSz2P0Uku26HTRR1lDXQ0&sharedid=&irpid=7019303&irgwc=1&afsrc=1" target="_blank" rel="noopener noreferrer" class="nt-signup-btn">Sign up</a></div>
+          <div class="gs-dl-text">
+            <div class="gs-dl-name">HVT Indicator Package</div>
+            <div class="gs-dl-desc">NinjaTrader 8 indicator suite — install this first</div>
           </div>
-        </div>
-        <label for="ntemail">NinjaTrader Account Email</label>
-        <input type="email" id="ntemail" placeholder="email used for NinjaTrader" />
-        <div style="background:rgba(34,84,245,0.05);border:1px solid rgba(34,84,245,0.15);border-radius:12px;padding:18px 20px;margin-bottom:24px;">
-          <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#2254F5;margin-bottom:8px;font-weight:700;">Install Software</div>
-          <div style="color:#94a3b8;font-size:13px;line-height:1.5;">Download and install both the HVT software and the template package before activating Discord access.</div>
-          <div style="margin-top:14px;text-align:center;"><a href="/downloads/installer" id="install-software-link" class="tr-install-btn">Install Software</a></div>
-          <div style="margin-top:12px;text-align:center;"><a href="/downloads/template" id="install-template-link" class="tr-install-btn">Download Template</a></div>
-        </div>
-        <div style="background:rgba(34,84,245,0.05);border:1px solid rgba(34,84,245,0.15);border-radius:12px;padding:18px 20px;margin-bottom:24px;">
-          <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;margin-bottom:14px;font-weight:700;">Discord Trading Room</div>
-          <div style="display:flex;gap:12px;margin-bottom:12px;">
-            <div style="width:24px;height:24px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;margin-top:1px;">1</div>
-            <div style="flex:1;color:#94a3b8;font-size:13px;line-height:1.5;">Join the HVT Discord server, then enter your details below and click Activate.</div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <a href="/downloads/template" class="gs-dl-btn" id="dl-template" onclick="markStep2()">
+          <div class="gs-dl-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
           </div>
-          <div style="text-align:center;margin-bottom:16px;"><a href="${DISCORD_INVITE_URL}" target="_blank" rel="noopener noreferrer" class="discord-join-btn"><img src="/discordlogo.png" alt=""/><span>Join Discord</span></a></div>
-          <div style="display:flex;gap:12px;">
-            <div style="width:24px;height:24px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;margin-top:1px;">2</div>
-            <div style="color:#94a3b8;font-size:13px;line-height:1.5;">Once you have joined, enter your <strong style="color:#fff;">purchase email</strong> and <strong style="color:#fff;">Discord username</strong> below and click Activate.</div>
+          <div class="gs-dl-text">
+            <div class="gs-dl-name">NQ Chart Template</div>
+            <div class="gs-dl-desc">Pre-built chart layout — import after installing indicators</div>
           </div>
-        </div>
-        <label for="email">Purchase Email</label>
-        <input type="email" id="email" placeholder="your@email.com" />
-        <label for="discord">Discord Username</label>
-        <input type="text" id="discord" placeholder="e.g. johntrader22" />
-        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:12px 16px;margin-bottom:20px;">
-          <p style="color:#475569;font-size:12px;margin:0;line-height:1.7;">&#128161; <strong style="color:#94a3b8;">Where to find your username:</strong> Open Discord &rarr; click your profile picture at the <strong style="color:#94a3b8;">bottom-left</strong> &rarr; your username is the text below your display name (lowercase, may have numbers). <strong style="color:#94a3b8;">Not your display name &mdash; the actual username.</strong></p>
-        </div>
-        <button class="btn" id="btn" onclick="go()">Activate Member Access</button>
-        <div class="msg" id="msg"></div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="gs-tip" style="margin-top:14px;">
+        <p>&#128161; <strong style="color:#94a3b8;">Install order matters:</strong> Install the indicator package first, then import the chart template. Both require NinjaTrader 8 to be installed.</p>
       </div>
     </div>
-    <script>
-      async function go(){const email=document.getElementById('email').value.trim();const disc=document.getElementById('discord').value.trim();const ntEmail=document.getElementById('ntemail').value.trim();const msg=document.getElementById('msg');const btn=document.getElementById('btn');msg.className='msg';if(!ntEmail){msg.className='msg er show';msg.textContent='Please enter your NinjaTrader account email.';return}if(!email){msg.className='msg er show';msg.textContent='Please enter your purchase email.';return}if(!disc){msg.className='msg er show';msg.textContent='Please enter your Discord username.';return}btn.disabled=true;btn.textContent='Activating...';try{const r=await fetch('/trading-room/activate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,discord_username:disc,ninjatrader_email:ntEmail})});const d=await r.json();if(r.ok){msg.className='msg ok show';msg.textContent='\u2713 Done! Check Discord \u2014 your role has been assigned. NinjaTrader indicators will activate automatically.';btn.textContent='Access Granted \u2713'}else{msg.className='msg er show';msg.textContent=d.error||'Something went wrong.';btn.disabled=false;btn.textContent='Activate Member Access'}}catch{msg.className='msg er show';msg.textContent='Network error. Please try again.';btn.disabled=false;btn.textContent='Activate Member Access'}}
-    </script>`, { pill: 'GET STARTED' }));
+  </div>
+
+  <!-- STEP 3 — DISCORD -->
+  <div class="gs-step" id="step3">
+    <div class="gs-head">
+      <div class="gs-num">3</div>
+      <div class="gs-head-text">
+        <div class="gs-title">Join the Discord Trading Room</div>
+        <div class="gs-subtitle">Get your member role and access the live trading room</div>
+      </div>
+      <div class="gs-check">&#10003;</div>
+    </div>
+    <div class="gs-body">
+      <div class="gs-divider"></div>
+
+      <!-- Join Discord first -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:12px;font-weight:700;color:#64748b;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">Step A — Join the Server</div>
+        <a href="${DISCORD_INVITE_URL}" target="_blank" rel="noopener noreferrer" class="gs-btn gs-btn-discord" style="text-decoration:none;display:flex;" onclick="markDiscordJoined()">
+          <img src="/discordlogo.png" alt="Discord" class="gs-discord-logo" />
+          <span style="font-size:15px;font-weight:700;">Join HVT Discord Server</span>
+        </a>
+      </div>
+
+      <!-- Then activate role -->
+      <div style="font-size:12px;font-weight:700;color:#64748b;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">Step B — Activate Your Role</div>
+      <label class="gs-label" for="email">Your Purchase Email</label>
+      <input class="gs-input" type="email" id="email" placeholder="email you used to purchase" />
+      <label class="gs-label" for="discord">Your Discord Username</label>
+      <input class="gs-input" type="text" id="discord" placeholder="e.g. johntrader22" />
+      <div class="gs-tip" style="margin-bottom:14px;">
+        <p>&#128161; <strong style="color:#94a3b8;">Finding your username:</strong> In Discord, click your avatar at the bottom-left. Your username is below your display name — lowercase, may include numbers. <strong style="color:#94a3b8;">Not your display name — the actual username.</strong></p>
+      </div>
+      <button class="gs-btn gs-btn-blue" id="btn-discord" onclick="activateDiscord()">Assign My Discord Role</button>
+      <div class="gs-msg" id="msg-discord"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── STEP 1: NinjaTrader activation ────────────────────────────────────────────
+async function activateNT() {
+  const ntEmail = document.getElementById('ntemail').value.trim();
+  const msg     = document.getElementById('msg-nt');
+  const btn     = document.getElementById('btn-nt');
+  msg.className = 'gs-msg';
+  if (!ntEmail) { msg.className='gs-msg er show'; msg.textContent='Please enter your NinjaTrader account email.'; return; }
+  btn.disabled = true; btn.textContent = 'Activating...';
+  try {
+    const r = await fetch('/trading-room/activate-nt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ninjatrader_email: ntEmail })
+    });
+    const d = await r.json();
+    if (r.ok) {
+      msg.className = 'gs-msg ok show';
+      msg.textContent = '\\u2713 Software activated! Open NinjaTrader &mdash; your HVT software is now live.';
+      btn.textContent = 'Software Activated \\u2713';
+      document.getElementById('step1').classList.add('done');
+    } else {
+      msg.className = 'gs-msg er show';
+      msg.textContent = d.error || 'Something went wrong. Please try again.';
+      btn.disabled = false; btn.textContent = 'Activate Software';
+    }
+  } catch { msg.className='gs-msg er show'; msg.textContent='Network error. Please try again.'; btn.disabled=false; btn.textContent='Activate Software'; }
+}
+
+// ── STEP 2: Mark downloads done ───────────────────────────────────────────────
+function markStep2() {
+  setTimeout(function(){ document.getElementById('step2').classList.add('done'); }, 1500);
+}
+
+// ── STEP 3: Discord role activation ──────────────────────────────────────────
+function markDiscordJoined() {
+  // Small delay to let them open Discord, then visually indicate they should come back
+}
+
+async function activateDiscord() {
+  const email   = document.getElementById('email').value.trim();
+  const disc    = document.getElementById('discord').value.trim();
+  const msg     = document.getElementById('msg-discord');
+  const btn     = document.getElementById('btn-discord');
+  msg.className = 'gs-msg';
+  if (!email) { msg.className='gs-msg er show'; msg.textContent='Please enter your purchase email.'; return; }
+  if (!disc)  { msg.className='gs-msg er show'; msg.textContent='Please enter your Discord username.'; return; }
+  btn.disabled = true; btn.textContent = 'Activating...';
+  try {
+    const r = await fetch('/trading-room/activate-discord', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, discord_username: disc })
+    });
+    const d = await r.json();
+    if (r.ok) {
+      msg.className = 'gs-msg ok show';
+      msg.textContent = '\\u2713 Done! Your Discord role has been assigned. Check the HVT server — you now have full access.';
+      btn.textContent = 'Role Assigned \\u2713';
+      document.getElementById('step3').classList.add('done');
+    } else {
+      msg.className = 'gs-msg er show';
+      msg.textContent = d.error || 'Something went wrong. Please try again.';
+      btn.disabled = false; btn.textContent = 'Assign My Discord Role';
+    }
+  } catch { msg.className='gs-msg er show'; msg.textContent='Network error. Please try again.'; btn.disabled=false; btn.textContent='Assign My Discord Role'; }
+}
+
+// Enter key support
+document.getElementById('ntemail').addEventListener('keydown', e => { if(e.key==='Enter') activateNT(); });
+document.getElementById('discord').addEventListener('keydown', e => { if(e.key==='Enter') activateDiscord(); });
+</script>`, { pill: 'GET STARTED', title: '3 Steps to Full Access', sub: 'Complete each step below to unlock everything.' }));
 });
 
 app.post('/trading-room/activate', frm, express.json(), async (req, res) => {
@@ -999,6 +1176,92 @@ app.post('/trading-room/activate', frm, express.json(), async (req, res) => {
         console.log(`✅ Role assigned: @${discUser} (${uid}) → ${email} | NT: ${ntEmail}`);
         res.json({ ok: true });
     } catch (e) { console.error('[TRActivate]', e.message); res.status(500).json({ error: 'Server error. Please try again or call 786-461-4235.' }); }
+});
+
+// ─── STEP 1: NinjaTrader ONLY activation (new split route) ───────────────────
+app.post('/trading-room/activate-nt', frm, express.json(), async (req, res) => {
+    try {
+        const ntEmail = (req.body.ninjatrader_email || '').toLowerCase().trim();
+        const email   = (req.body.email || '').toLowerCase().trim();
+        if (!ntEmail) return res.status(400).json({ error: 'NinjaTrader email is required.' });
+
+        // We need their purchase email to look up their membership
+        // If not provided, try to find by NT email stored from a previous activation
+        let mem = null, lic = null;
+        if (email) {
+            const [{ data: m }, { data: l }] = await Promise.all([
+                supabase.from(MEMBERSHIP_TABLE).select('status,expires_at,nt_license_id,email').eq('email', email).maybeSingle(),
+                supabase.from(LICENSE_TABLE).select('status,nt_license_id,email').eq('email', email).maybeSingle()
+            ]);
+            mem = m; lic = l;
+        } else {
+            // Try lookup by NT email previously stored
+            const [{ data: m }, { data: l }] = await Promise.all([
+                supabase.from(MEMBERSHIP_TABLE).select('status,expires_at,nt_license_id,email').eq('nt_email', ntEmail).maybeSingle(),
+                supabase.from(LICENSE_TABLE).select('status,nt_license_id,email').eq('nt_email', ntEmail).maybeSingle()
+            ]);
+            mem = m; lic = l;
+        }
+
+        const isMonthly  = mem?.status === 'active' && new Date(mem.expires_at) > new Date();
+        const isLifetime = lic?.status === 'active';
+        if (!isMonthly && !isLifetime) return res.status(403).json({ error: 'No active membership found. Please also enter your purchase email, or contact support at 786-461-4235.' });
+
+        const ntType       = isLifetime ? 'lifetime' : 'monthly';
+        const existingNtId = isLifetime ? lic?.nt_license_id : mem?.nt_license_id;
+        const memberEmail  = isLifetime ? lic.email : mem.email;
+
+        if (existingNtId) {
+            // Already has an NT license — just confirm success
+            console.log(`[NT-only] Already has NT license: ${memberEmail}`);
+            return res.json({ ok: true });
+        }
+
+        const ntId = await ntCreateLicense(ntEmail, ntType);
+        if (!ntId) return res.status(500).json({ error: 'Failed to create NinjaTrader license. Please try again or contact support.' });
+
+        if (isLifetime) await supabase.from(LICENSE_TABLE).update({ nt_license_id: ntId, nt_email: ntEmail, updated_at: nowISO() }).eq('email', memberEmail);
+        else            await supabase.from(MEMBERSHIP_TABLE).update({ nt_license_id: ntId, nt_email: ntEmail, updated_at: nowISO() }).eq('email', memberEmail);
+
+        console.log(`✅ NT-only activated: ${memberEmail} | NT email: ${ntEmail} | id: ${ntId}`);
+        res.json({ ok: true });
+    } catch (e) { console.error('[NT-only activate]', e.message); res.status(500).json({ error: 'Server error. Please try again or call 786-461-4235.' }); }
+});
+
+// ─── STEP 3: Discord ONLY activation (new split route) ───────────────────────
+app.post('/trading-room/activate-discord', frm, express.json(), async (req, res) => {
+    try {
+        const email    = (req.body.email || '').toLowerCase().trim();
+        const discUser = (req.body.discord_username || '').trim();
+        if (!email)    return res.status(400).json({ error: 'Purchase email is required.' });
+        if (!discUser) return res.status(400).json({ error: 'Discord username is required.' });
+
+        const [{ data: mem }, { data: lic }, { data: dm }] = await Promise.all([
+            supabase.from(MEMBERSHIP_TABLE).select('status,expires_at').eq('email', email).maybeSingle(),
+            supabase.from(LICENSE_TABLE).select('status').eq('email', email).maybeSingle(),
+            supabase.from(DISCORD_TABLE).select('status,expires_at').eq('email', email).maybeSingle()
+        ]);
+        const isMonthly  = mem?.status === 'active' && new Date(mem.expires_at) > new Date();
+        const isLifetime = lic?.status === 'active';
+        const isDiscord  = dm?.status  === 'active' && new Date(dm.expires_at) > new Date();
+
+        if (!isMonthly && !isLifetime && !isDiscord)
+            return res.status(403).json({ error: 'No active membership found for this email. Please check your email or contact support at 786-461-4235.' });
+
+        const found = await findUser(discUser);
+        if (!found) return res.status(404).json({ error: `Discord user "${discUser}" not found in the HVT server. Make sure you have joined first, then try again.` });
+
+        const uid = found.user.id;
+        const rid = isLifetime ? DISCORD_LIFETIME_ROLE_ID : (isDiscord ? (DISCORD_ROOM_ROLE_ID || DISCORD_MONTHLY_ROLE_ID) : DISCORD_MONTHLY_ROLE_ID);
+        await addRole(uid, rid);
+
+        if (isMonthly) await supabase.from(MEMBERSHIP_TABLE).update({ discord_user_id: uid, discord_username: discUser, updated_at: nowISO() }).eq('email', email);
+        if (isDiscord) await supabase.from(DISCORD_TABLE).update({ discord_user_id: uid, discord_username: discUser, updated_at: nowISO() }).eq('email', email);
+        if (isLifetime) await supabase.from(LICENSE_TABLE).update({ discord_user_id: uid, discord_username: discUser, updated_at: nowISO() }).eq('email', email).select();
+
+        console.log(`✅ Discord-only: @${discUser} (${uid}) → ${email}`);
+        res.json({ ok: true });
+    } catch (e) { console.error('[Discord-only activate]', e.message); res.status(500).json({ error: 'Server error. Please try again or call 786-461-4235.' }); }
 });
 
 // ─── COURSE / MEMBER ACCESS ───────────────────────────────────────────────────
@@ -1654,10 +1917,6 @@ app.get('/billing/confirm-session', async (req, res, next) => {
 // ─── COURSE PLAYER (cookie-gated) ─────────────────────────────────────────────
 app.get('/course', requireSession, (req, res) => {
     const s = req._session;
-    // If user lands on /course directly (bookmark, back, fresh load) — send to /member first
-    const ref = req.headers.referer || '';
-    const fromApp = ref.includes('/member') || ref.includes('/course') || ref.includes('/trading-journal') || ref.includes('/billing') || ref.includes('/trading-room');
-    if (!fromApp) return res.redirect(302, '/member');
     const LOGO_URL = 'https://fnrisudnpwdxohwgfvjj.supabase.co/storage/v1/object/public/uploads/hvt-logo.png';
     res.send(`<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8">
@@ -2693,11 +2952,7 @@ app.get('/logout', async (req, res) => {
 });
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
-app.get('/', async (req, res) => {
-    const s = await getSessionAsync(req);
-    if (s) return res.redirect(302, '/member');
-    res.redirect(302, '/login');
-});
+app.get('/', (req, res) => res.redirect(302, '/login'));
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ ok: false, error: 'not_found' }));
