@@ -1596,6 +1596,63 @@ app.get('/trading-journal', requireSession, (req, res) => {
         <a href="/member" style="color:#2254F5;font-size:13px;text-decoration:none;font-weight:500;">&larr; Back to Portal</a>
       </div>
 
+      <!-- NinjaTrader Setup Banner -->
+      <div id="nt-setup-banner" style="margin-bottom:18px;background:rgba(34,84,245,0.06);border:1px solid rgba(34,84,245,0.18);border-radius:12px;overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;cursor:pointer;" onclick="toggleSetup()">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:#2254F5;flex-shrink:0;box-shadow:0 0 6px rgba(34,84,245,0.6);"></div>
+            <span style="font-size:13px;font-weight:700;color:#e2e8f0;">Connect NinjaTrader to Your Journal</span>
+            <span style="font-size:11px;color:#64748b;font-weight:500;">— click to expand</span>
+          </div>
+          <svg id="setup-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0;"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div id="setup-body" style="display:none;padding:0 20px 20px;">
+          <div style="height:1px;background:rgba(255,255,255,0.06);margin-bottom:18px;"></div>
+          <p style="font-size:13px;color:#94a3b8;margin:0 0 18px;line-height:1.7;">Your journal pulls live trade data directly from NinjaTrader. Set it up once and it syncs automatically every time you trade — nothing else needed after that.</p>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+
+            <div style="display:flex;gap:13px;align-items:flex-start;">
+              <div style="min-width:26px;height:26px;border-radius:50%;background:rgba(34,84,245,0.15);border:1px solid rgba(34,84,245,0.35);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#2254F5;flex-shrink:0;margin-top:1px;">1</div>
+              <div>
+                <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:5px;">Download the Indicator</div>
+                <div style="font-size:12px;color:#64748b;line-height:1.7;margin-bottom:10px;">Get the HVTJournalSync file from your member downloads.</div>
+                <a href="/download-indicator" style="display:inline-block;background:rgba(34,84,245,0.12);border:1px solid rgba(34,84,245,0.3);color:#60a5fa;text-decoration:none;padding:7px 14px;border-radius:7px;font-size:11px;font-weight:700;letter-spacing:0.5px;">DOWNLOAD &rarr;</a>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:13px;align-items:flex-start;">
+              <div style="min-width:26px;height:26px;border-radius:50%;background:rgba(34,84,245,0.15);border:1px solid rgba(34,84,245,0.35);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#2254F5;flex-shrink:0;margin-top:1px;">2</div>
+              <div>
+                <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:5px;">Import into NinjaTrader</div>
+                <div style="font-size:12px;color:#64748b;line-height:1.7;">In NinjaTrader go to <span style="color:#94a3b8;font-weight:600;">Tools &rarr; Import &rarr; NinjaScript</span> and select the downloaded file.</div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:13px;align-items:flex-start;">
+              <div style="min-width:26px;height:26px;border-radius:50%;background:rgba(34,84,245,0.15);border:1px solid rgba(34,84,245,0.35);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#2254F5;flex-shrink:0;margin-top:1px;">3</div>
+              <div>
+                <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:5px;">Add to a Chart &amp; Enter Email</div>
+                <div style="font-size:12px;color:#64748b;line-height:1.7;">Right-click any chart &rarr; <span style="color:#94a3b8;font-weight:600;">Indicators</span> &rarr; find <span style="color:#94a3b8;font-weight:600;">HVTJournalSync</span> &rarr; add it. In properties enter the <span style="color:#94a3b8;font-weight:600;">same email you used on the Get Started page</span>. Hit OK — you're connected.</div>
+              </div>
+            </div>
+
+          </div>
+          <div style="margin-top:16px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:11px 16px;display:flex;align-items:center;gap:10px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <span style="font-size:12px;color:#64748b;">NinjaTrader saves your settings permanently — you only need to do this once. Trades sync automatically every time you open NT after that.</span>
+          </div>
+        </div>
+      </div>
+      <script>
+        function toggleSetup(){
+          var b=document.getElementById('setup-body');
+          var c=document.getElementById('setup-chevron');
+          var open=b.style.display==='block';
+          b.style.display=open?'none':'block';
+          c.style.transform=open?'':'rotate(180deg)';
+        }
+      </script>
+
       <!-- Period filter -->
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
         <span style="font-size:12px;color:#64748b;font-weight:600;">Period:</span>
