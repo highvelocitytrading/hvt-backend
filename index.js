@@ -1597,14 +1597,14 @@ app.get('/trading-journal', requireSession, (req, res) => {
       </div>
 
       <!-- NinjaTrader Setup Banner -->
-      <div id="nt-setup-banner" style="margin-bottom:18px;background:rgba(34,84,245,0.06);border:1px solid rgba(34,84,245,0.18);border-radius:12px;overflow:hidden;">
+      <div id="nt-setup-banner" style="margin-bottom:18px;background:#0f1829;border:1px solid #2254F5;border-radius:12px;overflow:hidden;">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;cursor:pointer;" onclick="toggleSetup()">
           <div style="display:flex;align-items:center;gap:10px;">
-            <div style="width:8px;height:8px;border-radius:50%;background:#2254F5;flex-shrink:0;box-shadow:0 0 6px rgba(34,84,245,0.6);"></div>
-            <span style="font-size:13px;font-weight:700;color:#e2e8f0;">Connect NinjaTrader to Your Journal</span>
-            <span style="font-size:11px;color:#64748b;font-weight:500;">— click to expand</span>
+            <div style="width:8px;height:8px;border-radius:50%;background:#2254F5;flex-shrink:0;box-shadow:0 0 8px rgba(34,84,245,0.8);"></div>
+            <span style="font-size:13px;font-weight:700;color:#fff;">Connect NinjaTrader to Your Journal</span>
+            <span style="font-size:11px;color:#60a5fa;font-weight:500;">— click to set up</span>
           </div>
-          <svg id="setup-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0;"><path d="M6 9l6 6 6-6"/></svg>
+          <svg id="setup-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0;"><path d="M6 9l6 6 6-6"/></svg>
         </div>
         <div id="setup-body" style="display:none;padding:0 20px 20px;">
           <div style="height:1px;background:rgba(255,255,255,0.06);margin-bottom:18px;"></div>
