@@ -613,6 +613,7 @@ function shell(title, body, hero) {
     const heroSub = (hero && hero.sub) ? hero.sub : 'Access your live trading room, course, and billing — all in one place.';
     return `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="icon" type="image/png" href="/hvt-logo.cropped.png">
 <title>${title} – High Velocity Trading</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Bebas+Neue&family=Montserrat:wght@800&display=swap" rel="stylesheet">
 <style>
