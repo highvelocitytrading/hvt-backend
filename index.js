@@ -24,6 +24,12 @@ app.use(express.static(path.join(__dirname, 'public'), {
     index: false   // don't serve index.html from public/
 }));
 
+// ─── LOGO DIRECT ROUTE (belt-and-suspenders) ─────────────────────────────────
+app.get('/hvt-logo.cropped.png', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'hvt-logo.cropped.png'));
+});
+
+
 // ─── SECURITY HEADERS ────────────────────────────────────────────────────────
 app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options',  'nosniff');
@@ -676,7 +682,7 @@ input::placeholder{color:#334155;}
 <div class="topnav-wrap">
   <nav class="topnav">
     <div class="topnav-left">
-      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:44px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/highvelocitytrading/hvt-backend/main/public/hvt-logo.cropped.png';" /></a>
+      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:44px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" /></a>
     </div>
     <div class="topnav-right" style="display:flex;align-items:center;gap:12px;">
       ${hero && hero.hideNav ? '' : '<a href="/member" class="topnav-link" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Portal</a><a href="/billing/confirm-session" class="topnav-out" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Billing</a><a href="/logout" class="topnav-out" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Log out</a>'}
@@ -1496,7 +1502,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 <div class="topnav-wrap">
   <nav class="topnav">
     <div class="topnav-left">
-      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:44px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/highvelocitytrading/hvt-backend/main/public/hvt-logo.cropped.png';" /></a>
+      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:44px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" /></a>
     </div>
     <div class="topnav-right">
       <a href="/billing/confirm-session" class="topnav-out">Billing</a>
@@ -2029,7 +2035,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 <div class="topbar">
   <div class="topbar-left">
     <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topbar-logo">
-      <img src="${LOGO_URL}" alt="High Velocity Trading" style="height:44px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/highvelocitytrading/hvt-backend/main/public/hvt-logo.cropped.png';" />
+      <img src="${LOGO_URL}" alt="High Velocity Trading" style="height:44px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" />
     </a>
     <div class="topbar-divider"></div>
     <a class="back-btn" href="/member">
