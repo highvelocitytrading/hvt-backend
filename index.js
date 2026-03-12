@@ -614,6 +614,20 @@ function shell(title, body, hero) {
     return `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIj48cmVjdCB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHJ4PSI2IiBmaWxsPSIjMGYxNzJhIi8+PHBhdGggZD0iTTQgNkwxNiAyNkwyOCA2IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PC9zdmc+">
+<link rel="shortcut icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIj48cmVjdCB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHJ4PSI2IiBmaWxsPSIjMGYxNzJhIi8+PHBhdGggZD0iTTQgNkwxNiAyNkwyOCA2IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PC9zdmc+">
+<script>
+(function(){
+  var c=document.createElement('canvas');c.width=32;c.height=32;
+  var x=c.getContext('2d');
+  x.fillStyle='#0f172a';
+  var r=new Path2D('M 0 6 Q 0 0 6 0 L 26 0 Q 32 0 32 6 L 32 26 Q 32 32 26 32 L 6 32 Q 0 32 0 26 Z');
+  x.fill(r);
+  x.strokeStyle='white';x.lineWidth=3.5;x.lineCap='round';x.lineJoin='round';
+  x.beginPath();x.moveTo(4,6);x.lineTo(16,26);x.lineTo(28,6);x.stroke();
+  var l=document.createElement('link');l.rel='icon';l.href=c.toDataURL();
+  document.head.appendChild(l);
+})();
+</script>
 <title>${title} – High Velocity Trading</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Bebas+Neue&family=Montserrat:wght@800&display=swap" rel="stylesheet">
 <style>
