@@ -1600,15 +1600,17 @@ app.get('/trading-journal', requireSession, (req, res) => {
         <a href="/member" style="color:#2254F5;font-size:13px;text-decoration:none;font-weight:500;">&larr; Back to Portal</a>
       </div>
 
-      <div style="margin-bottom:20px;border-radius:10px;border:2px solid #2254F5;background:#111827;overflow:hidden;">
-        <div style="padding:16px 20px;border-bottom:1px solid rgba(34,84,245,0.3);">
+      <div id="nt-setup">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none;" onclick="var b=document.getElementById('ntb');var o=b.style.display==='block';b.style.display=o?'none':'block';document.getElementById('ntarr').textContent=o?'▼':'▲';">
           <div style="display:flex;align-items:center;gap:12px;">
             <div style="width:9px;height:9px;border-radius:50%;background:#2254F5;box-shadow:0 0 10px #2254F5;flex-shrink:0;"></div>
-            <span style="font-size:14px;font-weight:800;color:#ffffff;letter-spacing:0.5px;">HOW TO CONNECT NINJATRADER</span>
+            <span style="font-size:14px;font-weight:800;color:#ffffff;">HOW TO CONNECT NINJATRADER</span>
+            <span style="font-size:12px;color:#60a5fa;">— tap to expand</span>
           </div>
+          <span id="ntarr" style="color:#60a5fa;font-size:14px;font-weight:700;">▼</span>
         </div>
-        <div style="padding:20px;background:#0f172a;">
-          <p style="font-size:13px;color:#94a3b8;margin:0 0 18px;line-height:1.8;">Your journal syncs live trade data directly from NinjaTrader. Set it up once — it runs automatically every session.</p>
+        <div id="ntb" style="display:none;padding:20px;border-top:1px solid rgba(34,84,245,0.3);background:#0f172a;">
+          <p style="font-size:13px;color:#94a3b8;margin:0 0 18px;line-height:1.8;">Your journal syncs live trade data directly from NinjaTrader. Set it up once and it runs automatically every session.</p>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px;">
             <div style="background:#1e293b;border-radius:8px;padding:16px;">
               <div style="width:26px;height:26px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;margin-bottom:10px;">1</div>
@@ -1624,11 +1626,11 @@ app.get('/trading-journal', requireSession, (req, res) => {
             <div style="background:#1e293b;border-radius:8px;padding:16px;">
               <div style="width:26px;height:26px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;margin-bottom:10px;">3</div>
               <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:5px;">Add to Chart &amp; Enter Email</div>
-              <div style="font-size:12px;color:#64748b;line-height:1.6;">Right-click any chart &rarr; <span style="color:#e2e8f0;font-weight:600;">Indicators</span> &rarr; add <span style="color:#e2e8f0;font-weight:600;">HVTJournalSync</span>. Enter your Get Started email. Hit OK — you're live.</div>
+              <div style="font-size:12px;color:#64748b;line-height:1.6;">Right-click any chart &rarr; <span style="color:#e2e8f0;font-weight:600;">Indicators</span> &rarr; add <span style="color:#e2e8f0;font-weight:600;">HVTJournalSync</span>. Enter your Get Started email in properties. Hit OK — live.</div>
             </div>
           </div>
-          <div style="background:#052e16;border:1px solid #166534;border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:10px;">
-            <span style="color:#4ade80;font-size:16px;">&#10003;</span>
+          <div style="background:#052e16;border:1px solid #166534;border-radius:8px;padding:11px 16px;display:flex;align-items:center;gap:10px;">
+            <span style="color:#4ade80;">&#10003;</span>
             <span style="font-size:12px;color:#86efac;">One-time setup. NinjaTrader saves your settings permanently and syncs every session automatically.</span>
           </div>
         </div>
@@ -1746,8 +1748,9 @@ app.get('/trading-journal', requireSession, (req, res) => {
     </div>
 
     <style>
+      body{justify-content:flex-start !important;padding-top:90px !important;}
       .journal-wrap .card{max-width:none;}
-      .journal-wrap{align-self:stretch;width:100%;}
+      #nt-setup{border-radius:10px;border:2px solid #2254F5;background:#111827;margin-bottom:20px;overflow:hidden;}
       .journal-tab{padding:8px 18px;border-radius:999px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;}
       .journal-tab:hover{background:rgba(255,255,255,0.08);color:#e2e8f0;}
       .journal-tab.active{background:rgba(34,84,245,0.15);border-color:rgba(34,84,245,0.35);color:#60a5fa;}
