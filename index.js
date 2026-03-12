@@ -80,6 +80,7 @@ const DISCORD_INVITE_URL       = process.env.DISCORD_INVITE_URL       || 'https:
 const MEMBERSHIP_TABLE = process.env.SUPABASE_TABLE || 'membershipstab';
 const LICENSE_TABLE    = 'license_keys';
 const DISCORD_TABLE    = 'discord_members';
+const JOURNAL_TABLE    = 'journal_tables';
 
 // ─── NINJATRADER ECOSYSTEM API ────────────────────────────────────────────────
 const NT_PRODUCT_ID = process.env.NT_PRODUCT_ID || '1196';
@@ -1704,7 +1705,6 @@ app.get('/trading-journal', requireSession, (req, res) => {
         <div id="cal-tooltip-trades" style="color:#64748b;font-size:11px;margin-top:2px;"></div>
       </div>
 
-      <p style="text-align:center;color:#334155;font-size:12px;margin-top:16px;">Daily PnL from closed trades. NinjaTrader connection coming soon.</p>
     </div>
 
     <style>
@@ -1848,11 +1848,169 @@ app.get('/trading-journal', requireSession, (req, res) => {
         document.getElementById('cal-prev-yr').onclick = function(){ cur.setFullYear(cur.getFullYear()-1); render(); };
         document.getElementById('cal-next-yr').onclick = function(){ cur.setFullYear(cur.getFullYear()+1); render(); };
         document.getElementById('cal-today').onclick = function(){ cur = new Date(); render(); };
-        document.getElementById('cal-info').onclick = function(){ alert('Daily PnL shows realized profit/loss for each day. Green = profit, red = loss. Data from NinjaTrader when connected.'); };
+        document.getElementById('cal-info').onclick = function(){ alert('Daily PnL: green = profit day, red = loss day. Synced live from NinjaTrader via HVTJournalSync indicator.'); };
         render();
+
+        var liveData = { pnl:{}, trades:{}, recent:[], open:[] };
+
+        function applyPeriodFilter(p) {
+          var now = new Date();
+          var filtered = liveData.recent.filter(function(t){
+            var d = new Date(t.exit_time);
+            if (p==='day')   return d.toDateString()===now.toDateString();
+            if (p==='week')  { var w=new Date(now); w.setDate(now.getDate()-now.getDay()); w.setHours(0,0,0,0); return d>=w; }
+            if (p==='month') return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+            return true;
+          });
+          var wins=filtered.filter(function(t){return t.net_pnl>0;});
+          var losses=filtered.filter(function(t){return t.net_pnl<=0;});
+          var netPnl=filtered.reduce(function(s,t){return s+(t.net_pnl||0);},0);
+          var winPct=filtered.length?Math.round(wins.length/filtered.length*100):null;
+          var avgWin=wins.length?wins.reduce(function(s,t){return s+(t.net_pnl||0);},0)/wins.length:null;
+          var avgLoss=losses.length?losses.reduce(function(s,t){return s+(t.net_pnl||0);},0)/losses.length:null;
+          var grossW=wins.reduce(function(s,t){return s+(t.net_pnl||0);},0);
+          var grossL=Math.abs(losses.reduce(function(s,t){return s+(t.net_pnl||0);},0));
+          var pf=grossL>0?grossW/grossL:(grossW>0?999:null);
+          var dayKeys=Object.keys(liveData.pnl).sort(); var ds=0;
+          for(var i=dayKeys.length-1;i>=0;i--){if(liveData.pnl[dayKeys[i]]>0)ds++;else break;}
+          var ts=0,sd=null;
+          for(var j=liveData.recent.length-1;j>=0;j--){var w=liveData.recent[j].net_pnl>0;if(sd===null)sd=w;if(w===sd)ts++;else break;}
+          function setEl(id,txt,col){var e=document.getElementById(id);if(e){e.textContent=txt;if(col)e.style.color=col;}}
+          setEl('stat-pnl',(netPnl>=0?'+':'')+'$'+Math.abs(netPnl).toFixed(2),netPnl>0?'#4ade80':netPnl<0?'#f87171':'#94a3b8');
+          setEl('stat-avgwl',avgWin!==null?'+$'+avgWin.toFixed(0)+' / -$'+Math.abs(avgLoss||0).toFixed(0):'—',avgWin!==null?'#e2e8f0':'#94a3b8');
+          setEl('stat-daystreak',ds+' day'+(ds!==1?'s':''),ds>0?'#4ade80':'#94a3b8');
+          setEl('stat-wins',winPct!==null?winPct+'%':'—',winPct!==null?(winPct>=50?'#4ade80':'#f87171'):'#94a3b8');
+          setEl('stat-pf',pf!==null?pf.toFixed(2):'—',pf!==null?(pf>=1?'#4ade80':'#f87171'):'#94a3b8');
+          setEl('stat-tradestreak',ts+' trade'+(ts!==1?'s':''),ts>0&&sd===true?'#4ade80':ts>0&&sd===false?'#f87171':'#94a3b8');
+          var tb=document.querySelector('#trades-recent table tbody');
+          if(tb){
+            if(!filtered.length){tb.innerHTML='<tr><td colspan="3" style="text-align:center;color:#64748b;padding:28px 16px;">No trades recorded yet</td></tr>';}
+            else{tb.innerHTML=filtered.slice().reverse().map(function(t){
+              var c=t.net_pnl>0?'#4ade80':t.net_pnl<0?'#f87171':'#94a3b8';
+              var d=new Date(t.exit_time);
+              return '<tr><td>'+(t.instrument||'—')+'</td><td>'+(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear()+'</td>'
+                +'<td style="color:'+c+';font-weight:600;">'+(t.net_pnl>=0?'+':'')+' $'+Math.abs(t.net_pnl||0).toFixed(2)+'</td></tr>';
+            }).join('');}
+          }
+          var ob=document.querySelector('#trades-open table tbody');
+          if(ob){
+            if(!liveData.open||!liveData.open.length){ob.innerHTML='<tr><td colspan="3" style="text-align:center;color:#64748b;padding:24px;">No open positions</td></tr>';}
+            else{ob.innerHTML=liveData.open.map(function(p){
+              var c=p.unrealized_pnl>=0?'#4ade80':'#f87171';
+              return '<tr><td>'+(p.instrument||'—')+'</td>'
+                +'<td style="color:'+(p.direction==='Long'?'#60a5fa':'#f6ad55')+';">'+(p.direction||'—')+'</td>'
+                +'<td style="color:'+c+';font-weight:600;">'+(p.unrealized_pnl>=0?'+':'')+' $'+Math.abs(p.unrealized_pnl||0).toFixed(2)+'</td></tr>';
+            }).join('');}
+          }
+          samplePnL=liveData.pnl; sampleTrades=liveData.trades; render();
+        }
+
+        function loadJournalData(){
+          fetch('/api/journal/data',{credentials:'include'})
+            .then(function(r){return r.ok?r.json():Promise.reject(r.status);})
+            .then(function(d){liveData=d;applyPeriodFilter(period);})
+            .catch(function(e){console.warn('[HVTJournal]',e);});
+        }
+
+        document.querySelectorAll('.journal-tab').forEach(function(btn){
+          btn.addEventListener('click',function(){setTimeout(function(){applyPeriodFilter(period);},0);});
+        });
+
+        loadJournalData();
+        setInterval(loadJournalData, 10000);
       })();
     </script>`, hero));
 });
+
+// ─── JOURNAL API ──────────────────────────────────────────────────────────────
+const JOURNAL_RATE = rateLimit({ max: 120 });
+
+async function verifyJournalEmail(email) {
+    if (!email) return null;
+    const e = email.toLowerCase().trim();
+    const [{ data: m }, { data: l }, { data: d },
+           { data: mNT }, { data: lNT }] = await Promise.all([
+        supabase.from(MEMBERSHIP_TABLE).select('email,status,expires_at').eq('email', e).maybeSingle(),
+        supabase.from(LICENSE_TABLE).select('email,status').eq('email', e).maybeSingle(),
+        supabase.from(DISCORD_TABLE).select('email,status,expires_at').eq('email', e).maybeSingle(),
+        supabase.from(MEMBERSHIP_TABLE).select('email,status,expires_at').eq('nt_email', e).maybeSingle(),
+        supabase.from(LICENSE_TABLE).select('email,status').eq('nt_email', e).maybeSingle()
+    ]);
+    const isMonthly  = (m?.status === 'active' && new Date(m.expires_at) > new Date())
+                    || (mNT?.status === 'active' && new Date(mNT.expires_at) > new Date());
+    const isLifetime = l?.status === 'active' || lNT?.status === 'active';
+    const isDiscord  = d?.status === 'active' && new Date(d.expires_at) > new Date();
+    if (!isMonthly && !isLifetime && !isDiscord) return null;
+    return (m || mNT || l || lNT || d)?.email || e;
+}
+
+app.post('/api/journal/trade', JOURNAL_RATE, express.json(), async (req, res) => {
+    try {
+        const { email, trade } = req.body || {};
+        const canonical = await verifyJournalEmail(email);
+        if (!canonical) return res.status(401).json({ error: 'No active membership found for this email.' });
+        if (!trade || !trade.trade_id) return res.status(400).json({ error: 'Missing trade data.' });
+        const row = {
+            email: canonical, account_name: trade.account_name || null,
+            instrument: trade.instrument || null, direction: trade.direction || null,
+            quantity: trade.quantity || 0, entry_price: trade.entry_price || 0,
+            exit_price: trade.exit_price || 0, entry_time: trade.entry_time || null,
+            exit_time: trade.exit_time || null, pnl: trade.pnl || 0,
+            commission: trade.commission || 0, net_pnl: trade.net_pnl || 0,
+            trade_id: trade.trade_id, is_open: false, unrealized_pnl: 0, updated_at: nowISO()
+        };
+        const { error } = await supabase.from(JOURNAL_TABLE).upsert(row, { onConflict: 'trade_id' });
+        if (error) { console.error('[Journal/trade]', error.message); return res.status(500).json({ error: 'DB error.' }); }
+        res.json({ ok: true });
+    } catch (e) { console.error('[Journal/trade]', e.message); res.status(500).json({ error: 'Server error.' }); }
+});
+
+app.post('/api/journal/positions', JOURNAL_RATE, express.json(), async (req, res) => {
+    try {
+        const { email, open_positions } = req.body || {};
+        const canonical = await verifyJournalEmail(email);
+        if (!canonical) return res.status(401).json({ error: 'No active membership found for this email.' });
+        await supabase.from(JOURNAL_TABLE).update({ is_open: false, updated_at: nowISO() }).eq('email', canonical).eq('is_open', true);
+        if (open_positions && open_positions.length > 0) {
+            const rows = open_positions.map(p => ({
+                email: canonical, account_name: p.account_name || null,
+                instrument: p.instrument || null, direction: p.direction || null,
+                quantity: p.quantity || 0, entry_price: p.avg_price || 0,
+                exit_price: 0, entry_time: p.updated_at || nowISO(), exit_time: null,
+                pnl: 0, commission: 0, net_pnl: 0,
+                trade_id: `open_${canonical}_${p.instrument}_${Date.now()}`,
+                is_open: true, unrealized_pnl: p.unrealized_pnl || 0, updated_at: nowISO()
+            }));
+            await supabase.from(JOURNAL_TABLE).insert(rows);
+        }
+        res.json({ ok: true });
+    } catch (e) { console.error('[Journal/positions]', e.message); res.status(500).json({ error: 'Server error.' }); }
+});
+
+app.get('/api/journal/data', requireSession, async (req, res) => {
+    try {
+        const email = req._session.email.toLowerCase().trim();
+        const { data: rows, error } = await supabase.from(JOURNAL_TABLE)
+            .select('instrument,direction,quantity,entry_price,exit_price,entry_time,exit_time,pnl,commission,net_pnl,is_open,unrealized_pnl')
+            .eq('email', email).order('exit_time', { ascending: false }).limit(2000);
+        if (error) return res.status(500).json({ error: 'DB error.' });
+        const closed = (rows || []).filter(t => !t.is_open);
+        const open   = (rows || []).filter(t =>  t.is_open);
+        const pnlMap = {}, tradesMap = {};
+        closed.forEach(t => {
+            if (!t.exit_time) return;
+            const d = new Date(t.exit_time);
+            const k = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+            pnlMap[k]    = Math.round(((pnlMap[k] || 0) + (t.net_pnl || 0)) * 100) / 100;
+            tradesMap[k] = (tradesMap[k] || 0) + 1;
+        });
+        res.json({
+            pnl: pnlMap, trades: tradesMap, recent: closed,
+            open: open.map(p => ({ instrument: p.instrument, direction: p.direction, quantity: p.quantity, unrealized_pnl: p.unrealized_pnl }))
+        });
+    } catch (e) { console.error('[Journal/data]', e.message); res.status(500).json({ error: 'Server error.' }); }
+});
+
 
 // ─── BILLING SHORTCUT VIA SESSION ─────────────────────────────────────────────
 app.get('/billing/confirm-session', async (req, res, next) => {
