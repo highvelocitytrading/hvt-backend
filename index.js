@@ -80,7 +80,7 @@ const DISCORD_INVITE_URL       = process.env.DISCORD_INVITE_URL       || 'https:
 const MEMBERSHIP_TABLE = process.env.SUPABASE_TABLE || 'membershipstab';
 const LICENSE_TABLE    = 'license_keys';
 const DISCORD_TABLE    = 'discord_members';
-const JOURNAL_TABLE    = 'journal_tables';
+const JOURNAL_TABLE    = 'journal_trades';
 
 // ─── NINJATRADER ECOSYSTEM API ────────────────────────────────────────────────
 const NT_PRODUCT_ID = process.env.NT_PRODUCT_ID || '1196';
