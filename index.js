@@ -1596,62 +1596,49 @@ app.get('/trading-journal', requireSession, (req, res) => {
         <a href="/member" style="color:#2254F5;font-size:13px;text-decoration:none;font-weight:500;">&larr; Back to Portal</a>
       </div>
 
-      <!-- NinjaTrader Setup Banner -->
-      <div id="nt-setup-banner" style="margin-bottom:18px;background:#0f1829;border:1px solid #2254F5;border-radius:12px;overflow:hidden;">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;cursor:pointer;" onclick="toggleSetup()">
+      <!-- NT Setup Banner -->
+      <div style="margin-bottom:18px;border-radius:12px;overflow:hidden;border:1px solid #1e3a8a;background:#0d1f3c;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;cursor:pointer;user-select:none;" onclick="var b=document.getElementById('ntb');var c=document.getElementById('ntc');var o=b.style.display==='block';b.style.display=o?'none':'block';c.style.transform=o?'':'rotate(180deg)';">
           <div style="display:flex;align-items:center;gap:10px;">
-            <div style="width:8px;height:8px;border-radius:50%;background:#2254F5;flex-shrink:0;box-shadow:0 0 8px rgba(34,84,245,0.8);"></div>
-            <span style="font-size:13px;font-weight:700;color:#fff;">Connect NinjaTrader to Your Journal</span>
-            <span style="font-size:11px;color:#60a5fa;font-weight:500;">— click to set up</span>
+            <div style="width:8px;height:8px;border-radius:50%;background:#2254F5;box-shadow:0 0 8px #2254F5;flex-shrink:0;"></div>
+            <span style="font-size:13px;font-weight:700;color:#fff;letter-spacing:0.2px;">Connect NinjaTrader to Your Journal</span>
+            <span style="font-size:11px;color:#60a5fa;">— tap to set up</span>
           </div>
-          <svg id="setup-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0;"><path d="M6 9l6 6 6-6"/></svg>
+          <svg id="ntc" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .25s;flex-shrink:0;"><path d="M6 9l6 6 6-6"/></svg>
         </div>
-        <div id="setup-body" style="display:none;padding:0 20px 20px;">
-          <div style="height:1px;background:rgba(255,255,255,0.06);margin-bottom:18px;"></div>
-          <p style="font-size:13px;color:#94a3b8;margin:0 0 18px;line-height:1.7;">Your journal pulls live trade data directly from NinjaTrader. Set it up once and it syncs automatically every time you trade — nothing else needed after that.</p>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
-
-            <div style="display:flex;gap:13px;align-items:flex-start;">
-              <div style="min-width:26px;height:26px;border-radius:50%;background:rgba(34,84,245,0.15);border:1px solid rgba(34,84,245,0.35);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#2254F5;flex-shrink:0;margin-top:1px;">1</div>
+        <div id="ntb" style="display:none;padding:0 20px 20px;">
+          <div style="height:1px;background:rgba(255,255,255,0.08);margin-bottom:18px;"></div>
+          <p style="font-size:13px;color:#94a3b8;margin:0 0 20px;line-height:1.8;">Your journal pulls live trade data straight from NinjaTrader. Set it up once and it syncs automatically every time you trade — nothing else to do after that.</p>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+            <div style="display:flex;gap:12px;">
+              <div style="min-width:26px;height:26px;border-radius:50%;background:rgba(34,84,245,0.2);border:1px solid #2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#60a5fa;flex-shrink:0;margin-top:2px;">1</div>
               <div>
                 <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:5px;">Download the Indicator</div>
-                <div style="font-size:12px;color:#64748b;line-height:1.7;margin-bottom:10px;">Get the HVTJournalSync file from your member downloads.</div>
-                <a href="/download-indicator" style="display:inline-block;background:rgba(34,84,245,0.12);border:1px solid rgba(34,84,245,0.3);color:#60a5fa;text-decoration:none;padding:7px 14px;border-radius:7px;font-size:11px;font-weight:700;letter-spacing:0.5px;">DOWNLOAD &rarr;</a>
+                <div style="font-size:12px;color:#64748b;line-height:1.7;margin-bottom:10px;">Get the HVTJournalSync indicator file from your member downloads.</div>
+                <a href="/download-indicator" style="display:inline-block;background:rgba(34,84,245,0.15);border:1px solid #2254F5;color:#60a5fa;text-decoration:none;padding:7px 16px;border-radius:7px;font-size:11px;font-weight:700;letter-spacing:0.5px;">DOWNLOAD &rarr;</a>
               </div>
             </div>
-
-            <div style="display:flex;gap:13px;align-items:flex-start;">
-              <div style="min-width:26px;height:26px;border-radius:50%;background:rgba(34,84,245,0.15);border:1px solid rgba(34,84,245,0.35);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#2254F5;flex-shrink:0;margin-top:1px;">2</div>
+            <div style="display:flex;gap:12px;">
+              <div style="min-width:26px;height:26px;border-radius:50%;background:rgba(34,84,245,0.2);border:1px solid #2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#60a5fa;flex-shrink:0;margin-top:2px;">2</div>
               <div>
                 <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:5px;">Import into NinjaTrader</div>
-                <div style="font-size:12px;color:#64748b;line-height:1.7;">In NinjaTrader go to <span style="color:#94a3b8;font-weight:600;">Tools &rarr; Import &rarr; NinjaScript</span> and select the downloaded file.</div>
+                <div style="font-size:12px;color:#64748b;line-height:1.7;">Open NinjaTrader &rarr; <span style="color:#cbd5e1;font-weight:600;">Tools &rarr; Import &rarr; NinjaScript</span> &rarr; select the downloaded file.</div>
               </div>
             </div>
-
-            <div style="display:flex;gap:13px;align-items:flex-start;">
-              <div style="min-width:26px;height:26px;border-radius:50%;background:rgba(34,84,245,0.15);border:1px solid rgba(34,84,245,0.35);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#2254F5;flex-shrink:0;margin-top:1px;">3</div>
+            <div style="display:flex;gap:12px;">
+              <div style="min-width:26px;height:26px;border-radius:50%;background:rgba(34,84,245,0.2);border:1px solid #2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#60a5fa;flex-shrink:0;margin-top:2px;">3</div>
               <div>
-                <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:5px;">Add to a Chart &amp; Enter Email</div>
-                <div style="font-size:12px;color:#64748b;line-height:1.7;">Right-click any chart &rarr; <span style="color:#94a3b8;font-weight:600;">Indicators</span> &rarr; find <span style="color:#94a3b8;font-weight:600;">HVTJournalSync</span> &rarr; add it. In properties enter the <span style="color:#94a3b8;font-weight:600;">same email you used on the Get Started page</span>. Hit OK — you're connected.</div>
+                <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:5px;">Add to Chart &amp; Enter Email</div>
+                <div style="font-size:12px;color:#64748b;line-height:1.7;">Right-click any chart &rarr; <span style="color:#cbd5e1;font-weight:600;">Indicators</span> &rarr; add <span style="color:#cbd5e1;font-weight:600;">HVTJournalSync</span>. In properties enter the <span style="color:#cbd5e1;font-weight:600;">email from your Get Started page</span>. Hit OK — you're live.</div>
               </div>
             </div>
-
           </div>
-          <div style="margin-top:16px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:11px 16px;display:flex;align-items:center;gap:10px;">
+          <div style="margin-top:16px;background:rgba(74,222,128,0.05);border:1px solid rgba(74,222,128,0.2);border-radius:8px;padding:11px 16px;display:flex;align-items:center;gap:10px;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            <span style="font-size:12px;color:#64748b;">NinjaTrader saves your settings permanently — you only need to do this once. Trades sync automatically every time you open NT after that.</span>
+            <span style="font-size:12px;color:#94a3b8;">NinjaTrader saves your settings permanently — one-time setup only. Trades sync automatically every session after that.</span>
           </div>
         </div>
       </div>
-      <script>
-        function toggleSetup(){
-          var b=document.getElementById('setup-body');
-          var c=document.getElementById('setup-chevron');
-          var open=b.style.display==='block';
-          b.style.display=open?'none':'block';
-          c.style.transform=open?'':'rotate(180deg)';
-        }
-      </script>
 
       <!-- Period filter -->
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
@@ -1905,76 +1892,52 @@ app.get('/trading-journal', requireSession, (req, res) => {
         document.getElementById('cal-prev-yr').onclick = function(){ cur.setFullYear(cur.getFullYear()-1); render(); };
         document.getElementById('cal-next-yr').onclick = function(){ cur.setFullYear(cur.getFullYear()+1); render(); };
         document.getElementById('cal-today').onclick = function(){ cur = new Date(); render(); };
-        document.getElementById('cal-info').onclick = function(){ alert('Daily PnL: green = profit day, red = loss day. Synced live from NinjaTrader via HVTJournalSync indicator.'); };
+        document.getElementById('cal-info').onclick = function(){ alert('Daily PnL: green = profit day, red = loss day. Live from NinjaTrader via HVTJournalSync.'); };
         render();
-
-        var liveData = { pnl:{}, trades:{}, recent:[], open:[] };
-
-        function applyPeriodFilter(p) {
-          var now = new Date();
-          var filtered = liveData.recent.filter(function(t){
-            var d = new Date(t.exit_time);
-            if (p==='day')   return d.toDateString()===now.toDateString();
-            if (p==='week')  { var w=new Date(now); w.setDate(now.getDate()-now.getDay()); w.setHours(0,0,0,0); return d>=w; }
-            if (p==='month') return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+        var liveData={pnl:{},trades:{},recent:[],open:[]};
+        function applyPeriodFilter(p){
+          var now=new Date();
+          var f=liveData.recent.filter(function(t){
+            var d=new Date(t.exit_time);
+            if(p==='day') return d.toDateString()===now.toDateString();
+            if(p==='week'){var w=new Date(now);w.setDate(now.getDate()-now.getDay());w.setHours(0,0,0,0);return d>=w;}
+            if(p==='month') return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
             return true;
           });
-          var wins=filtered.filter(function(t){return t.net_pnl>0;});
-          var losses=filtered.filter(function(t){return t.net_pnl<=0;});
-          var netPnl=filtered.reduce(function(s,t){return s+(t.net_pnl||0);},0);
-          var winPct=filtered.length?Math.round(wins.length/filtered.length*100):null;
-          var avgWin=wins.length?wins.reduce(function(s,t){return s+(t.net_pnl||0);},0)/wins.length:null;
-          var avgLoss=losses.length?losses.reduce(function(s,t){return s+(t.net_pnl||0);},0)/losses.length:null;
-          var grossW=wins.reduce(function(s,t){return s+(t.net_pnl||0);},0);
-          var grossL=Math.abs(losses.reduce(function(s,t){return s+(t.net_pnl||0);},0));
-          var pf=grossL>0?grossW/grossL:(grossW>0?999:null);
-          var dayKeys=Object.keys(liveData.pnl).sort(); var ds=0;
-          for(var i=dayKeys.length-1;i>=0;i--){if(liveData.pnl[dayKeys[i]]>0)ds++;else break;}
+          var wins=f.filter(function(t){return t.net_pnl>0;});
+          var losses=f.filter(function(t){return t.net_pnl<=0;});
+          var net=f.reduce(function(s,t){return s+(t.net_pnl||0);},0);
+          var wp=f.length?Math.round(wins.length/f.length*100):null;
+          var aw=wins.length?wins.reduce(function(s,t){return s+(t.net_pnl||0);},0)/wins.length:null;
+          var al=losses.length?losses.reduce(function(s,t){return s+(t.net_pnl||0);},0)/losses.length:null;
+          var gw=wins.reduce(function(s,t){return s+(t.net_pnl||0);},0);
+          var gl=Math.abs(losses.reduce(function(s,t){return s+(t.net_pnl||0);},0));
+          var pf=gl>0?gw/gl:(gw>0?999:null);
+          var dk=Object.keys(liveData.pnl).sort();var ds=0;
+          for(var i=dk.length-1;i>=0;i--){if(liveData.pnl[dk[i]]>0)ds++;else break;}
           var ts=0,sd=null;
           for(var j=liveData.recent.length-1;j>=0;j--){var w=liveData.recent[j].net_pnl>0;if(sd===null)sd=w;if(w===sd)ts++;else break;}
-          function setEl(id,txt,col){var e=document.getElementById(id);if(e){e.textContent=txt;if(col)e.style.color=col;}}
-          setEl('stat-pnl',(netPnl>=0?'+':'')+'$'+Math.abs(netPnl).toFixed(2),netPnl>0?'#4ade80':netPnl<0?'#f87171':'#94a3b8');
-          setEl('stat-avgwl',avgWin!==null?'+$'+avgWin.toFixed(0)+' / -$'+Math.abs(avgLoss||0).toFixed(0):'—',avgWin!==null?'#e2e8f0':'#94a3b8');
-          setEl('stat-daystreak',ds+' day'+(ds!==1?'s':''),ds>0?'#4ade80':'#94a3b8');
-          setEl('stat-wins',winPct!==null?winPct+'%':'—',winPct!==null?(winPct>=50?'#4ade80':'#f87171'):'#94a3b8');
-          setEl('stat-pf',pf!==null?pf.toFixed(2):'—',pf!==null?(pf>=1?'#4ade80':'#f87171'):'#94a3b8');
-          setEl('stat-tradestreak',ts+' trade'+(ts!==1?'s':''),ts>0&&sd===true?'#4ade80':ts>0&&sd===false?'#f87171':'#94a3b8');
+          function s(id,txt,col){var e=document.getElementById(id);if(e){e.textContent=txt;if(col)e.style.color=col;}}
+          s('stat-pnl',(net>=0?'+':'')+'$'+Math.abs(net).toFixed(2),net>0?'#4ade80':net<0?'#f87171':'#94a3b8');
+          s('stat-avgwl',aw!==null?'+$'+aw.toFixed(0)+' / -$'+Math.abs(al||0).toFixed(0):'—',aw!==null?'#e2e8f0':'#94a3b8');
+          s('stat-daystreak',ds+' day'+(ds!==1?'s':''),ds>0?'#4ade80':'#94a3b8');
+          s('stat-wins',wp!==null?wp+'%':'—',wp!==null?(wp>=50?'#4ade80':'#f87171'):'#94a3b8');
+          s('stat-pf',pf!==null?pf.toFixed(2):'—',pf!==null?(pf>=1?'#4ade80':'#f87171'):'#94a3b8');
+          s('stat-tradestreak',ts+' trade'+(ts!==1?'s':''),ts>0&&sd===true?'#4ade80':ts>0&&sd===false?'#f87171':'#94a3b8');
           var tb=document.querySelector('#trades-recent table tbody');
-          if(tb){
-            if(!filtered.length){tb.innerHTML='<tr><td colspan="3" style="text-align:center;color:#64748b;padding:28px 16px;">No trades recorded yet</td></tr>';}
-            else{tb.innerHTML=filtered.slice().reverse().map(function(t){
-              var c=t.net_pnl>0?'#4ade80':t.net_pnl<0?'#f87171':'#94a3b8';
-              var d=new Date(t.exit_time);
-              return '<tr><td>'+(t.instrument||'—')+'</td><td>'+(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear()+'</td>'
-                +'<td style="color:'+c+';font-weight:600;">'+(t.net_pnl>=0?'+':'')+' $'+Math.abs(t.net_pnl||0).toFixed(2)+'</td></tr>';
-            }).join('');}
-          }
+          if(tb){if(!f.length){tb.innerHTML='<tr><td colspan="3" style="text-align:center;color:#64748b;padding:28px 16px;">No trades recorded yet</td></tr>';}
+          else{tb.innerHTML=f.slice().reverse().map(function(t){var c=t.net_pnl>0?'#4ade80':t.net_pnl<0?'#f87171':'#94a3b8';var d=new Date(t.exit_time);
+            return '<tr><td>'+(t.instrument||'—')+'</td><td>'+(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear()+'</td><td style="color:'+c+';font-weight:600;">'+(t.net_pnl>=0?'+':'')+' $'+Math.abs(t.net_pnl||0).toFixed(2)+'</td></tr>';}).join('');}}
           var ob=document.querySelector('#trades-open table tbody');
-          if(ob){
-            if(!liveData.open||!liveData.open.length){ob.innerHTML='<tr><td colspan="3" style="text-align:center;color:#64748b;padding:24px;">No open positions</td></tr>';}
-            else{ob.innerHTML=liveData.open.map(function(p){
-              var c=p.unrealized_pnl>=0?'#4ade80':'#f87171';
-              return '<tr><td>'+(p.instrument||'—')+'</td>'
-                +'<td style="color:'+(p.direction==='Long'?'#60a5fa':'#f6ad55')+';">'+(p.direction||'—')+'</td>'
-                +'<td style="color:'+c+';font-weight:600;">'+(p.unrealized_pnl>=0?'+':'')+' $'+Math.abs(p.unrealized_pnl||0).toFixed(2)+'</td></tr>';
-            }).join('');}
-          }
-          samplePnL=liveData.pnl; sampleTrades=liveData.trades; render();
+          if(ob){if(!liveData.open||!liveData.open.length){ob.innerHTML='<tr><td colspan="3" style="text-align:center;color:#64748b;padding:24px;">No open positions</td></tr>';}
+          else{ob.innerHTML=liveData.open.map(function(p){var c=p.unrealized_pnl>=0?'#4ade80':'#f87171';
+            return '<tr><td>'+(p.instrument||'—')+'</td><td style="color:'+(p.direction==='Long'?'#60a5fa':'#f6ad55')+';">'+(p.direction||'—')+'</td><td style="color:'+c+';font-weight:600;">'+(p.unrealized_pnl>=0?'+':'')+' $'+Math.abs(p.unrealized_pnl||0).toFixed(2)+'</td></tr>';}).join('');}}
+          samplePnL=liveData.pnl;sampleTrades=liveData.trades;render();
         }
-
-        function loadJournalData(){
-          fetch('/api/journal/data',{credentials:'include'})
-            .then(function(r){return r.ok?r.json():Promise.reject(r.status);})
-            .then(function(d){liveData=d;applyPeriodFilter(period);})
-            .catch(function(e){console.warn('[HVTJournal]',e);});
-        }
-
-        document.querySelectorAll('.journal-tab').forEach(function(btn){
-          btn.addEventListener('click',function(){setTimeout(function(){applyPeriodFilter(period);},0);});
-        });
-
+        function loadJournalData(){fetch('/api/journal/data',{credentials:'include'}).then(function(r){return r.ok?r.json():Promise.reject(r.status);}).then(function(d){liveData=d;applyPeriodFilter(period);}).catch(function(e){console.warn('[HVTJournal]',e);});}
+        document.querySelectorAll('.journal-tab').forEach(function(btn){btn.addEventListener('click',function(){setTimeout(function(){applyPeriodFilter(period);},0);});});
         loadJournalData();
-        setInterval(loadJournalData, 10000);
+        setInterval(loadJournalData,10000);
       })();
     </script>`, hero));
 });
@@ -1985,20 +1948,18 @@ const JOURNAL_RATE = rateLimit({ max: 120 });
 async function verifyJournalEmail(email) {
     if (!email) return null;
     const e = email.toLowerCase().trim();
-    const [{ data: m }, { data: l }, { data: d },
-           { data: mNT }, { data: lNT }] = await Promise.all([
+    const [{ data: m }, { data: l }, { data: d }, { data: mNT }, { data: lNT }] = await Promise.all([
         supabase.from(MEMBERSHIP_TABLE).select('email,status,expires_at').eq('email', e).maybeSingle(),
         supabase.from(LICENSE_TABLE).select('email,status').eq('email', e).maybeSingle(),
         supabase.from(DISCORD_TABLE).select('email,status,expires_at').eq('email', e).maybeSingle(),
         supabase.from(MEMBERSHIP_TABLE).select('email,status,expires_at').eq('nt_email', e).maybeSingle(),
         supabase.from(LICENSE_TABLE).select('email,status').eq('nt_email', e).maybeSingle()
     ]);
-    const isMonthly  = (m?.status === 'active' && new Date(m.expires_at) > new Date())
-                    || (mNT?.status === 'active' && new Date(mNT.expires_at) > new Date());
-    const isLifetime = l?.status === 'active' || lNT?.status === 'active';
-    const isDiscord  = d?.status === 'active' && new Date(d.expires_at) > new Date();
-    if (!isMonthly && !isLifetime && !isDiscord) return null;
-    return (m || mNT || l || lNT || d)?.email || e;
+    const isMonthly  = (m?.status==='active'&&new Date(m.expires_at)>new Date())||(mNT?.status==='active'&&new Date(mNT.expires_at)>new Date());
+    const isLifetime = l?.status==='active'||lNT?.status==='active';
+    const isDiscord  = d?.status==='active'&&new Date(d.expires_at)>new Date();
+    if (!isMonthly&&!isLifetime&&!isDiscord) return null;
+    return (m||mNT||l||lNT||d)?.email||e;
 }
 
 app.post('/api/journal/trade', JOURNAL_RATE, express.json(), async (req, res) => {
@@ -2006,17 +1967,14 @@ app.post('/api/journal/trade', JOURNAL_RATE, express.json(), async (req, res) =>
         const { email, trade } = req.body || {};
         const canonical = await verifyJournalEmail(email);
         if (!canonical) return res.status(401).json({ error: 'No active membership found for this email.' });
-        if (!trade || !trade.trade_id) return res.status(400).json({ error: 'Missing trade data.' });
-        const row = {
-            email: canonical, account_name: trade.account_name || null,
-            instrument: trade.instrument || null, direction: trade.direction || null,
-            quantity: trade.quantity || 0, entry_price: trade.entry_price || 0,
-            exit_price: trade.exit_price || 0, entry_time: trade.entry_time || null,
-            exit_time: trade.exit_time || null, pnl: trade.pnl || 0,
-            commission: trade.commission || 0, net_pnl: trade.net_pnl || 0,
+        if (!trade||!trade.trade_id) return res.status(400).json({ error: 'Missing trade data.' });
+        const { error } = await supabase.from(JOURNAL_TABLE).upsert({
+            email: canonical, account_name: trade.account_name||null, instrument: trade.instrument||null,
+            direction: trade.direction||null, quantity: trade.quantity||0, entry_price: trade.entry_price||0,
+            exit_price: trade.exit_price||0, entry_time: trade.entry_time||null, exit_time: trade.exit_time||null,
+            pnl: trade.pnl||0, commission: trade.commission||0, net_pnl: trade.net_pnl||0,
             trade_id: trade.trade_id, is_open: false, unrealized_pnl: 0, updated_at: nowISO()
-        };
-        const { error } = await supabase.from(JOURNAL_TABLE).upsert(row, { onConflict: 'trade_id' });
+        }, { onConflict: 'trade_id' });
         if (error) { console.error('[Journal/trade]', error.message); return res.status(500).json({ error: 'DB error.' }); }
         res.json({ ok: true });
     } catch (e) { console.error('[Journal/trade]', e.message); res.status(500).json({ error: 'Server error.' }); }
@@ -2028,17 +1986,15 @@ app.post('/api/journal/positions', JOURNAL_RATE, express.json(), async (req, res
         const canonical = await verifyJournalEmail(email);
         if (!canonical) return res.status(401).json({ error: 'No active membership found for this email.' });
         await supabase.from(JOURNAL_TABLE).update({ is_open: false, updated_at: nowISO() }).eq('email', canonical).eq('is_open', true);
-        if (open_positions && open_positions.length > 0) {
-            const rows = open_positions.map(p => ({
-                email: canonical, account_name: p.account_name || null,
-                instrument: p.instrument || null, direction: p.direction || null,
-                quantity: p.quantity || 0, entry_price: p.avg_price || 0,
-                exit_price: 0, entry_time: p.updated_at || nowISO(), exit_time: null,
+        if (open_positions&&open_positions.length>0) {
+            await supabase.from(JOURNAL_TABLE).insert(open_positions.map(p => ({
+                email: canonical, account_name: p.account_name||null, instrument: p.instrument||null,
+                direction: p.direction||null, quantity: p.quantity||0, entry_price: p.avg_price||0,
+                exit_price: 0, entry_time: p.updated_at||nowISO(), exit_time: null,
                 pnl: 0, commission: 0, net_pnl: 0,
                 trade_id: `open_${canonical}_${p.instrument}_${Date.now()}`,
-                is_open: true, unrealized_pnl: p.unrealized_pnl || 0, updated_at: nowISO()
-            }));
-            await supabase.from(JOURNAL_TABLE).insert(rows);
+                is_open: true, unrealized_pnl: p.unrealized_pnl||0, updated_at: nowISO()
+            })));
         }
         res.json({ ok: true });
     } catch (e) { console.error('[Journal/positions]', e.message); res.status(500).json({ error: 'Server error.' }); }
@@ -2051,20 +2007,17 @@ app.get('/api/journal/data', requireSession, async (req, res) => {
             .select('instrument,direction,quantity,entry_price,exit_price,entry_time,exit_time,pnl,commission,net_pnl,is_open,unrealized_pnl')
             .eq('email', email).order('exit_time', { ascending: false }).limit(2000);
         if (error) return res.status(500).json({ error: 'DB error.' });
-        const closed = (rows || []).filter(t => !t.is_open);
-        const open   = (rows || []).filter(t =>  t.is_open);
-        const pnlMap = {}, tradesMap = {};
+        const closed = (rows||[]).filter(t=>!t.is_open);
+        const open   = (rows||[]).filter(t=> t.is_open);
+        const pnlMap={}, tradesMap={};
         closed.forEach(t => {
             if (!t.exit_time) return;
-            const d = new Date(t.exit_time);
-            const k = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
-            pnlMap[k]    = Math.round(((pnlMap[k] || 0) + (t.net_pnl || 0)) * 100) / 100;
-            tradesMap[k] = (tradesMap[k] || 0) + 1;
+            const d=new Date(t.exit_time), k=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+            pnlMap[k]   =Math.round(((pnlMap[k]||0)+(t.net_pnl||0))*100)/100;
+            tradesMap[k]=(tradesMap[k]||0)+1;
         });
-        res.json({
-            pnl: pnlMap, trades: tradesMap, recent: closed,
-            open: open.map(p => ({ instrument: p.instrument, direction: p.direction, quantity: p.quantity, unrealized_pnl: p.unrealized_pnl }))
-        });
+        res.json({ pnl: pnlMap, trades: tradesMap, recent: closed,
+            open: open.map(p=>({ instrument:p.instrument, direction:p.direction, quantity:p.quantity, unrealized_pnl:p.unrealized_pnl })) });
     } catch (e) { console.error('[Journal/data]', e.message); res.status(500).json({ error: 'Server error.' }); }
 });
 
