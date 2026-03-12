@@ -24,7 +24,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
     index: false   // don't serve index.html from public/
 }));
 
-// ─── LOGO DIRECT ROUTE (belt-and-suspenders) ─────────────────────────────────
+// ─── LOGO DIRECT ROUTE ───────────────────────────────────────────────────────
 app.get('/hvt-logo.cropped.png', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'hvt-logo.cropped.png'));
 });
@@ -2416,8 +2416,9 @@ app.post('/admin/cancel', adm, express.json(), async (req, res) => {
 
         if (type === 'lifetime') {
             // 1. Fetch record
-            const { data: l, error: fetchErr } = await supabase.from(LICENSE_TABLE).select('nt_license_id,status,email').eq('email', email).maybeSingle();
-            console.log('[AdminCancel] lifetime fetch:', l, fetchErr?.message);
+            const { data: lRows, error: fetchErr } = await supabase.from(LICENSE_TABLE).select('nt_license_id,status,email').eq('email', email).order('updated_at', { ascending: false }).limit(1);
+            console.log('[AdminCancel] lifetime fetch:', lRows, fetchErr?.message);
+            const l = lRows?.[0] || null;
             if (!l) return res.status(404).json({ error: 'No lifetime license found for: ' + email });
 
             // 2. Revoke NT license
@@ -2540,7 +2541,22 @@ app.post('/admin/god-add', adm, express.json(), async (req, res) => {
             row.transaction_id = `admin_grant_${Date.now()}_${email}`;
             row.license_key    = `HVT-ADMIN-${crypto.randomBytes(8).toString('hex').toUpperCase()}`;
         }
-        const { error: dbErr } = await supabase.from(table).upsert(row, { onConflict: isLifetime ? 'transaction_id' : 'email' });
+        // For lifetime: first check if record already exists for this email, update it; otherwise insert
+        let dbErr = null;
+        if (isLifetime) {
+            const { data: existing } = await supabase.from(table).select('id,transaction_id').eq('email', email).order('updated_at', { ascending: false }).limit(1);
+            if (existing?.[0]) {
+                // Update existing record instead of creating a duplicate
+                const { error: updErr } = await supabase.from(table).update({ ...row, transaction_id: existing[0].transaction_id }).eq('id', existing[0].id);
+                dbErr = updErr;
+            } else {
+                const { error: insErr } = await supabase.from(table).insert(row);
+                dbErr = insErr;
+            }
+        } else {
+            const { error: upsErr } = await supabase.from(table).upsert(row, { onConflict: 'email' });
+            dbErr = upsErr;
+        }
         if (!dbErr) result.supabase = true;
         else console.error('[GodMode] DB error:', dbErr.message);
 
