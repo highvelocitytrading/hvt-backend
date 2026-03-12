@@ -24,12 +24,11 @@ app.use(express.static(path.join(__dirname, 'public'), {
     index: false   // don't serve index.html from public/
 }));
 
-// ─── LOGO DIRECT ROUTE ───────────────────────────────────────────────────────
+
+// ─── LOGO EXPLICIT ROUTE (backup if static middleware misses it) ──────────────
 app.get('/hvt-logo.cropped.png', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'hvt-logo.cropped.png'));
 });
-
-
 // ─── SECURITY HEADERS ────────────────────────────────────────────────────────
 app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options',  'nosniff');
@@ -628,7 +627,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;displa
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10;}
 .topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:64px;width:100%;background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.08);position:relative;}
 .topnav-logo{display:flex;align-items:center;gap:0;text-decoration:none;}
-.topnav-logo img{height:44px;width:auto;object-fit:contain;display:block;background:transparent;}
+.topnav-logo img{height:39px;width:auto;object-fit:contain;display:block;background:transparent;}
 .topnav-left{display:flex;align-items:center;gap:12px;}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.65);font-size:14px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s;}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85);}
@@ -642,7 +641,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;displa
   .topnav-left a.topnav-link{display:none;}
   .topnav-right a.topnav-link,.topnav-right a.topnav-out{display:none;}
   .topnav-right a.topnav-cta{display:inline-block;}
-  .topnav-logo img{height:36px;}
+  .topnav-logo img{height:31px;}
 }
 .card{width:100%;max-width:460px;background:rgba(255,255,255,0.03);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(34,84,245,0.2);border-radius:20px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.6);position:relative;z-index:1;}
 .ct{height:3px;background:linear-gradient(90deg,#2254F5,#2254F5,#2254F5);}
@@ -682,7 +681,7 @@ input::placeholder{color:#334155;}
 <div class="topnav-wrap">
   <nav class="topnav">
     <div class="topnav-left">
-      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:44px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" /></a>
+      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:39px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" /></a>
     </div>
     <div class="topnav-right" style="display:flex;align-items:center;gap:12px;">
       ${hero && hero.hideNav ? '' : '<a href="/member" class="topnav-link" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Portal</a><a href="/billing/confirm-session" class="topnav-out" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Billing</a><a href="/logout" class="topnav-out" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Log out</a>'}
@@ -1148,14 +1147,17 @@ app.post('/trading-room/activate', frm, express.json(), async (req, res) => {
         if (!email)    return res.status(400).json({ error: 'Email is required' });
         if (!discUser) return res.status(400).json({ error: 'Discord username is required' });
 
-        const [{ data: mem }, { data: lic }, { data: dm }] = await Promise.all([
-            supabase.from(MEMBERSHIP_TABLE).select('status,expires_at,nt_license_id').eq('email', email).maybeSingle(),
-            supabase.from(LICENSE_TABLE).select('status,nt_license_id').eq('email', email).maybeSingle(),
-            supabase.from(DISCORD_TABLE).select('status,expires_at').eq('email', email).maybeSingle()
+        const [{ data: mem }, { data: licRows }, { data: dm }] = await Promise.all([
+            supabase.from(MEMBERSHIP_TABLE).select('status,expires_at,nt_license_id').eq('email', email).order('updated_at', { ascending: false }).limit(1),
+            supabase.from(LICENSE_TABLE).select('status,nt_license_id').eq('email', email).order('updated_at', { ascending: false }).limit(1),
+            supabase.from(DISCORD_TABLE).select('status,expires_at').eq('email', email).order('updated_at', { ascending: false }).limit(1)
         ]);
-        const isMonthly  = mem?.status === 'active' && new Date(mem.expires_at) > new Date();
+        const mem0 = mem?.[0] ?? null;
+        const lic  = licRows?.[0] ?? null;
+        const dm0  = dm?.[0] ?? null;
+        const isMonthly  = mem0?.status === 'active' && new Date(mem0.expires_at) > new Date();
         const isLifetime = lic?.status === 'active';
-        const isDiscord  = dm?.status  === 'active' && new Date(dm.expires_at)  > new Date();
+        const isDiscord  = dm0?.status  === 'active' && new Date(dm0.expires_at)  > new Date();
 
         if (!isMonthly && !isLifetime && !isDiscord)
             return res.status(403).json({ error: 'No active membership found for this email. Please check your email or contact support at 786-461-4235.' });
@@ -1172,7 +1174,7 @@ app.post('/trading-room/activate', frm, express.json(), async (req, res) => {
 
         // Create NT license using the NinjaTrader email they provided
         const ntType = isLifetime ? 'lifetime' : 'monthly';
-        const existingNtId = isLifetime ? lic?.nt_license_id : mem?.nt_license_id;
+        const existingNtId = isLifetime ? lic?.nt_license_id : mem0?.nt_license_id;
         if (!existingNtId) {
             try {
                 const ntId = await ntCreateLicense(ntEmail, ntType);
@@ -1246,14 +1248,17 @@ app.post('/trading-room/activate-discord', frm, express.json(), async (req, res)
         if (!email)    return res.status(400).json({ error: 'Purchase email is required.' });
         if (!discUser) return res.status(400).json({ error: 'Discord username is required.' });
 
-        const [{ data: mem }, { data: lic }, { data: dm }] = await Promise.all([
-            supabase.from(MEMBERSHIP_TABLE).select('status,expires_at').eq('email', email).maybeSingle(),
-            supabase.from(LICENSE_TABLE).select('status').eq('email', email).maybeSingle(),
-            supabase.from(DISCORD_TABLE).select('status,expires_at').eq('email', email).maybeSingle()
+        const [{ data: memRows2 }, { data: licRows2 }, { data: dmRows2 }] = await Promise.all([
+            supabase.from(MEMBERSHIP_TABLE).select('status,expires_at').eq('email', email).order('updated_at', { ascending: false }).limit(1),
+            supabase.from(LICENSE_TABLE).select('status').eq('email', email).order('updated_at', { ascending: false }).limit(1),
+            supabase.from(DISCORD_TABLE).select('status,expires_at').eq('email', email).order('updated_at', { ascending: false }).limit(1)
         ]);
-        const isMonthly  = mem?.status === 'active' && new Date(mem.expires_at) > new Date();
-        const isLifetime = lic?.status === 'active';
-        const isDiscord  = dm?.status  === 'active' && new Date(dm.expires_at) > new Date();
+        const mem2 = memRows2?.[0] ?? null;
+        const lic2 = licRows2?.[0] ?? null;
+        const dm2  = dmRows2?.[0] ?? null;
+        const isMonthly  = mem2?.status === 'active' && new Date(mem2.expires_at) > new Date();
+        const isLifetime = lic2?.status === 'active';
+        const isDiscord  = dm2?.status  === 'active' && new Date(dm2.expires_at) > new Date();
 
         if (!isMonthly && !isLifetime && !isDiscord)
             return res.status(403).json({ error: 'No active membership found for this email. Please check your email or contact support at 786-461-4235.' });
@@ -1267,7 +1272,7 @@ app.post('/trading-room/activate-discord', frm, express.json(), async (req, res)
 
         if (isMonthly) await supabase.from(MEMBERSHIP_TABLE).update({ discord_user_id: uid, discord_username: discUser, updated_at: nowISO() }).eq('email', email);
         if (isDiscord) await supabase.from(DISCORD_TABLE).update({ discord_user_id: uid, discord_username: discUser, updated_at: nowISO() }).eq('email', email);
-        if (isLifetime) await supabase.from(LICENSE_TABLE).update({ discord_user_id: uid, discord_username: discUser, updated_at: nowISO() }).eq('email', email).select();
+        if (isLifetime) await supabase.from(LICENSE_TABLE).update({ discord_user_id: uid, discord_username: discUser, updated_at: nowISO() }).eq('email', email);
 
         console.log(`✅ Discord-only: @${discUser} (${uid}) → ${email}`);
         res.json({ ok: true });
@@ -1451,7 +1456,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
 .topnav{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;width:100%;background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.08);position:relative}
 .topnav-logo{display:flex;align-items:center;text-decoration:none}
-.topnav-logo img{height:44px;width:auto;object-fit:contain;display:block;background:transparent;}
+.topnav-logo img{height:39px;width:auto;object-fit:contain;display:block;background:transparent;}
 .topnav-left{display:flex;align-items:center;gap:12px}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.65);font-size:14px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85)}
@@ -1465,7 +1470,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
   .topnav-left a.topnav-link{display:none;}
   .topnav-right a.topnav-out{display:none;}
   .topnav-right a.topnav-cta{display:inline-block;}
-  .topnav-logo img{height:36px;}
+  .topnav-logo img{height:31px;}
 }
 .portal-wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:100px 24px 64px}
 .hero-section{text-align:center;margin-bottom:32px}
@@ -1502,7 +1507,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 <div class="topnav-wrap">
   <nav class="topnav">
     <div class="topnav-left">
-      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:44px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" /></a>
+      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:39px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" /></a>
     </div>
     <div class="topnav-right">
       <a href="/billing/confirm-session" class="topnav-out">Billing</a>
@@ -1942,7 +1947,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:60px;border-bottom:1px solid rgba(255,255,255,0.07);background:rgba(6,8,16,0.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);flex-shrink:0;z-index:200;position:relative}
 .topbar-left{display:flex;align-items:center;gap:0;min-width:0;flex-shrink:0}
 .topbar-logo{display:flex;align-items:center;text-decoration:none;flex-shrink:0}
-.topbar-logo img{height:44px;width:auto;object-fit:contain;display:block;flex-shrink:0}
+.topbar-logo img{height:39px;width:auto;object-fit:contain;display:block;flex-shrink:0}
 .topbar-divider{width:1px;height:24px;background:rgba(255,255,255,0.1);margin:0 16px;flex-shrink:0}
 .back-btn{display:flex;align-items:center;gap:6px;color:#475569;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;white-space:nowrap;transition:color .15s;flex-shrink:0}
 .back-btn:hover{color:#94a3b8}
@@ -2015,7 +2020,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 /* ── MOBILE ── */
 @media(max-width:768px){
   .topbar{padding:0 12px;height:56px}
-  .topbar-logo img{height:36px;}
+  .topbar-logo img{height:31px;}
   .topbar-divider{margin:0 10px}
   .course-label{display:none}
   .mob-menu{display:flex}
@@ -2035,7 +2040,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 <div class="topbar">
   <div class="topbar-left">
     <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topbar-logo">
-      <img src="${LOGO_URL}" alt="High Velocity Trading" style="height:44px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" />
+      <img src="${LOGO_URL}" alt="High Velocity Trading" style="height:39px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" />
     </a>
     <div class="topbar-divider"></div>
     <a class="back-btn" href="/member">
@@ -2245,7 +2250,7 @@ app.get('/billing/confirm', async (req, res) => {
     try {
         const { data } = await supabase.from(MEMBERSHIP_TABLE).select('email,full_name,status,expires_at,billing_token_expires').eq('billing_token', token).maybeSingle();
         if (!data) return res.send(resultPage('error', 'Invalid Link', 'This link is invalid or has expired.'));
-        if (new Date(data.billing_token_expires) < new Date()) return res.send(resultPage('error', 'Link Expired', 'This link has expired. <a href="/billing" style="color:#2254F5;">Request a new one</a>.'));
+        if (!data.billing_token_expires || new Date(data.billing_token_expires) < new Date()) return res.send(resultPage('error', 'Link Expired', 'This link has expired. <a href="/billing" style="color:#2254F5;">Request a new one</a>.'));
         const { status, email, full_name: name = 'Member', expires_at } = data;
         const exAt    = expires_at ? new Date(expires_at) : null;
         const sc      = status === 'active' ? '#4ade80' : '#f87171';
@@ -2418,7 +2423,7 @@ app.post('/admin/cancel', adm, express.json(), async (req, res) => {
             // 1. Fetch record
             const { data: lRows, error: fetchErr } = await supabase.from(LICENSE_TABLE).select('nt_license_id,status,email').eq('email', email).order('updated_at', { ascending: false }).limit(1);
             console.log('[AdminCancel] lifetime fetch:', lRows, fetchErr?.message);
-            const l = lRows?.[0] || null;
+            const l = (lRows && lRows.length > 0) ? lRows[0] : null;
             if (!l) return res.status(404).json({ error: 'No lifetime license found for: ' + email });
 
             // 2. Revoke NT license
@@ -2435,8 +2440,9 @@ app.post('/admin/cancel', adm, express.json(), async (req, res) => {
 
         } else if (type === 'discord') {
             // 1. Fetch record
-            const { data: dm, error: fetchErr } = await supabase.from(DISCORD_TABLE).select('discord_user_id,authnet_subscription_id,status').eq('email', email).maybeSingle();
-            console.log('[AdminCancel] discord fetch:', dm, fetchErr?.message);
+            const { data: dmRows, error: fetchErr } = await supabase.from(DISCORD_TABLE).select('discord_user_id,authnet_subscription_id,status').eq('email', email).order('updated_at', { ascending: false }).limit(1);
+            console.log('[AdminCancel] discord fetch:', dmRows, fetchErr?.message);
+            const dm = (dmRows && dmRows.length > 0) ? dmRows[0] : null;
             if (!dm) return res.status(404).json({ error: 'No Discord membership found for: ' + email });
 
             // 2. Cancel Authnet sub
@@ -2461,8 +2467,9 @@ app.post('/admin/cancel', adm, express.json(), async (req, res) => {
         } else {
             // monthly
             // 1. Fetch record
-            const { data: m, error: fetchErr } = await supabase.from(MEMBERSHIP_TABLE).select('authnet_subscription_id,discord_user_id,nt_license_id,status,email').eq('email', email).maybeSingle();
-            console.log('[AdminCancel] monthly fetch:', m, fetchErr?.message);
+            const { data: mRows, error: fetchErr } = await supabase.from(MEMBERSHIP_TABLE).select('authnet_subscription_id,discord_user_id,nt_license_id,status,email').eq('email', email).order('updated_at', { ascending: false }).limit(1);
+            console.log('[AdminCancel] monthly fetch:', mRows, fetchErr?.message);
+            const m = (mRows && mRows.length > 0) ? mRows[0] : null;
             if (!m) return res.status(404).json({ error: 'No monthly membership found for: ' + email });
 
             // 2. Cancel Authnet sub
@@ -2541,13 +2548,14 @@ app.post('/admin/god-add', adm, express.json(), async (req, res) => {
             row.transaction_id = `admin_grant_${Date.now()}_${email}`;
             row.license_key    = `HVT-ADMIN-${crypto.randomBytes(8).toString('hex').toUpperCase()}`;
         }
-        // For lifetime: first check if record already exists for this email, update it; otherwise insert
+        // For lifetime: prevent duplicate rows — check existing email, update or insert
         let dbErr = null;
         if (isLifetime) {
-            const { data: existing } = await supabase.from(table).select('id,transaction_id').eq('email', email).order('updated_at', { ascending: false }).limit(1);
-            if (existing?.[0]) {
-                // Update existing record instead of creating a duplicate
-                const { error: updErr } = await supabase.from(table).update({ ...row, transaction_id: existing[0].transaction_id }).eq('id', existing[0].id);
+            const { data: existingRows } = await supabase.from(table).select('id').eq('email', email).order('updated_at', { ascending: false }).limit(1);
+            const existing = existingRows && existingRows.length > 0 ? existingRows[0] : null;
+            if (existing) {
+                // Update existing record, preserve original transaction_id & license_key
+                const { error: updErr } = await supabase.from(table).update({ full_name: row.full_name, status: row.status, plan_name: row.plan_name, source: row.source, updated_at: row.updated_at }).eq('id', existing.id);
                 dbErr = updErr;
             } else {
                 const { error: insErr } = await supabase.from(table).insert(row);
