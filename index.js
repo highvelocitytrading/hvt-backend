@@ -1430,7 +1430,7 @@ app.get('/course/confirm', async (req, res) => {
         const { data: lData } = await supabase.from(LICENSE_TABLE).select('email,full_name,status,course_token_expires').eq('course_token', token).maybeSingle();
         const rec = mData || lData;
         if (!rec) return res.send(resultPage('error', 'Invalid Link', 'This link is invalid or has expired.'));
-        if (!rec.course_token_expires || new Date(rec.course_token_expires) < new Date()) return res.send(resultPage('error', 'Link Expired', 'This link has expired. <a href="/course" style="color:#2254F5;">Request a new one</a>.'));
+        if (!rec.course_token_expires || new Date(rec.course_token_expires) < new Date()) return res.send(resultPage('error', 'Link Expired', 'This link has expired. <a href="/login" style="color:#2254F5;">Request a new one</a>.'));
         const isMonthly  = mData?.status === 'active' && new Date(mData.expires_at) > new Date();
         const isLifetime = lData?.status === 'active';
         if (!isMonthly && !isLifetime) return res.send(resultPage('error', 'Access Revoked', 'Your membership is no longer active.'));
@@ -1560,15 +1560,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
         <div class="arrow">Open Journal <span class="arr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
       </div>
     </a>
-    <a class="pcard" href="/billing/confirm-session">
-      <div class="bar"></div>
-      <div class="inner">
-        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z"/></svg></div>
-        <h3>Billing</h3>
-        <p>View your subscription status, renewal date, and manage your membership.</p>
-        <div class="arrow">View Billing <span class="arr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
-      </div>
-    </a>
+
   </div>
   </div>
   <div class="help">Need help? Call <a href="tel:7864614235">786-461-4235</a> or email <a href="mailto:alerts@highvelocitytrading.com">alerts@highvelocitytrading.com</a></div>
@@ -1931,6 +1923,16 @@ app.get('/billing/confirm-session', async (req, res, next) => {
 
 // ─── COURSE PLAYER (cookie-gated) ─────────────────────────────────────────────
 app.get('/course', requireSession, (req, res) => {
+    // Always enter through the portal — /course is accessed via the portal card
+    // If someone hits /course directly (bookmark, stale link), send to portal first
+    if (!req.headers.referer || !req.headers.referer.includes('/member')) {
+        // Allow direct access from member portal card only
+        // For all other entry points (direct URL, email links, bookmarks) → portal
+        const ref = req.headers.referer || '';
+        if (!ref.includes('/member') && !ref.includes('/course')) {
+            return res.redirect(302, '/member');
+        }
+    }
     const s = req._session;
     const LOGO_URL = '/hvt-logo.cropped.png';
     res.send(`<!DOCTYPE html><html lang="en"><head>
