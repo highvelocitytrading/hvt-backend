@@ -1600,39 +1600,38 @@ app.get('/trading-journal', requireSession, (req, res) => {
         <a href="/member" style="color:#2254F5;font-size:13px;text-decoration:none;font-weight:500;">&larr; Back to Portal</a>
       </div>
 
-      <!-- NT Setup Banner -->
-      <div style="margin-bottom:20px;border-radius:10px;overflow:hidden;border:2px solid #2254F5;background:#111827;">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:15px 20px;cursor:pointer;user-select:none;background:#111827;" onclick="var b=document.getElementById('ntb');var o=b.style.display==='block';b.style.display=o?'none':'block';document.getElementById('ntarr').textContent=o?'▼':'▲';">
+      <div style="margin-bottom:20px;border-radius:10px;border:2px solid #2254F5;background:#111827;overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none;" onclick="var b=document.getElementById('ntb');var o=b.style.display==='block';b.style.display=o?'none':'block';document.getElementById('ntarr').textContent=o?'▼':'▲';">
           <div style="display:flex;align-items:center;gap:12px;">
             <div style="width:9px;height:9px;border-radius:50%;background:#2254F5;box-shadow:0 0 10px #2254F5;flex-shrink:0;"></div>
-            <span style="font-size:14px;font-weight:800;color:#ffffff;letter-spacing:0.3px;">HOW TO CONNECT NINJATRADER</span>
-            <span style="font-size:12px;color:#60a5fa;font-weight:500;">tap to expand</span>
+            <span style="font-size:14px;font-weight:800;color:#ffffff;">HOW TO CONNECT NINJATRADER</span>
+            <span style="font-size:12px;color:#60a5fa;">— tap to expand</span>
           </div>
           <span id="ntarr" style="color:#60a5fa;font-size:14px;font-weight:700;">▼</span>
         </div>
-        <div id="ntb" style="display:none;padding:20px;background:#0f172a;border-top:1px solid #1e3a8a;">
-          <p style="font-size:13px;color:#94a3b8;margin:0 0 20px;line-height:1.8;">Your journal syncs live trade data directly from NinjaTrader. Set it up once and it runs automatically every session — no extra steps after that.</p>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;">
+        <div id="ntb" style="display:none;padding:20px;border-top:1px solid rgba(34,84,245,0.3);background:#0f172a;">
+          <p style="font-size:13px;color:#94a3b8;margin:0 0 18px;line-height:1.8;">Your journal syncs live trade data directly from NinjaTrader. Set it up once and it runs automatically every session.</p>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px;">
             <div style="background:#1e293b;border-radius:8px;padding:16px;">
-              <div style="width:28px;height:28px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;margin-bottom:12px;">1</div>
-              <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;">Download the Indicator</div>
-              <div style="font-size:12px;color:#64748b;line-height:1.7;margin-bottom:12px;">Get the HVTJournalSync file from your member downloads.</div>
-              <a href="/download-indicator" style="display:inline-block;background:#2254F5;color:#fff;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:0.5px;">DOWNLOAD &rarr;</a>
+              <div style="width:26px;height:26px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;margin-bottom:10px;">1</div>
+              <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:5px;">Download the Indicator</div>
+              <div style="font-size:12px;color:#64748b;line-height:1.6;margin-bottom:12px;">Get the HVTJournalSync file from your member downloads.</div>
+              <a href="/download-indicator" style="display:inline-block;background:#2254F5;color:#fff;text-decoration:none;padding:7px 14px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:0.5px;">DOWNLOAD &rarr;</a>
             </div>
             <div style="background:#1e293b;border-radius:8px;padding:16px;">
-              <div style="width:28px;height:28px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;margin-bottom:12px;">2</div>
-              <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;">Import into NinjaTrader</div>
-              <div style="font-size:12px;color:#64748b;line-height:1.7;">Open NinjaTrader &rarr; <span style="color:#e2e8f0;font-weight:600;">Tools &rarr; Import &rarr; NinjaScript</span> and select the downloaded file.</div>
+              <div style="width:26px;height:26px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;margin-bottom:10px;">2</div>
+              <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:5px;">Import into NinjaTrader</div>
+              <div style="font-size:12px;color:#64748b;line-height:1.6;">Open NinjaTrader &rarr; <span style="color:#e2e8f0;font-weight:600;">Tools &rarr; Import &rarr; NinjaScript</span> &rarr; select the downloaded file.</div>
             </div>
             <div style="background:#1e293b;border-radius:8px;padding:16px;">
-              <div style="width:28px;height:28px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;margin-bottom:12px;">3</div>
-              <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;">Add to Chart &amp; Enter Email</div>
-              <div style="font-size:12px;color:#64748b;line-height:1.7;">Right-click any chart &rarr; <span style="color:#e2e8f0;font-weight:600;">Indicators</span> &rarr; add <span style="color:#e2e8f0;font-weight:600;">HVTJournalSync</span>. Enter your Get Started email in properties. Hit OK — you're live.</div>
+              <div style="width:26px;height:26px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;margin-bottom:10px;">3</div>
+              <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:5px;">Add to Chart &amp; Enter Email</div>
+              <div style="font-size:12px;color:#64748b;line-height:1.6;">Right-click any chart &rarr; <span style="color:#e2e8f0;font-weight:600;">Indicators</span> &rarr; add <span style="color:#e2e8f0;font-weight:600;">HVTJournalSync</span>. Enter your Get Started email in properties. Hit OK — you're live.</div>
             </div>
           </div>
-          <div style="background:#052e16;border:1px solid #166534;border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:10px;">
-            <span style="font-size:16px;">✓</span>
-            <span style="font-size:12px;color:#86efac;">One-time setup only. NinjaTrader saves your settings permanently and syncs automatically every session after that.</span>
+          <div style="background:#052e16;border:1px solid #166534;border-radius:8px;padding:11px 16px;display:flex;align-items:center;gap:10px;">
+            <span style="color:#4ade80;font-size:15px;">✓</span>
+            <span style="font-size:12px;color:#86efac;">One-time setup. NinjaTrader saves your settings permanently and syncs every session automatically after that.</span>
           </div>
         </div>
       </div>
@@ -1750,6 +1749,8 @@ app.get('/trading-journal', requireSession, (req, res) => {
 
     <style>
       .journal-wrap .card{max-width:none;}
+      body{justify-content:flex-start !important;align-items:flex-start !important;padding-top:110px;}
+      .journal-wrap{align-self:stretch;}
       .journal-tab{padding:8px 18px;border-radius:999px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;}
       .journal-tab:hover{background:rgba(255,255,255,0.08);color:#e2e8f0;}
       .journal-tab.active{background:rgba(34,84,245,0.15);border-color:rgba(34,84,245,0.35);color:#60a5fa;}
