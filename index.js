@@ -1601,45 +1601,38 @@ app.get('/trading-journal', requireSession, (req, res) => {
       </div>
 
       <!-- NT Setup Banner -->
-      <div style="margin-bottom:18px;border-radius:12px;overflow:hidden;border:1px solid #1e3a8a;background:#0d1f3c;">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;cursor:pointer;user-select:none;" onclick="var b=document.getElementById('ntb');var c=document.getElementById('ntc');var o=b.style.display==='block';b.style.display=o?'none':'block';c.style.transform=o?'':'rotate(180deg)';">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div style="width:8px;height:8px;border-radius:50%;background:#2254F5;box-shadow:0 0 8px #2254F5;flex-shrink:0;"></div>
-            <span style="font-size:13px;font-weight:700;color:#fff;letter-spacing:0.2px;">Connect NinjaTrader to Your Journal</span>
-            <span style="font-size:11px;color:#60a5fa;">— tap to set up</span>
+      <div style="margin-bottom:20px;border-radius:10px;overflow:hidden;border:2px solid #2254F5;background:#111827;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:15px 20px;cursor:pointer;user-select:none;background:#111827;" onclick="var b=document.getElementById('ntb');var o=b.style.display==='block';b.style.display=o?'none':'block';document.getElementById('ntarr').textContent=o?'▼':'▲';">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:9px;height:9px;border-radius:50%;background:#2254F5;box-shadow:0 0 10px #2254F5;flex-shrink:0;"></div>
+            <span style="font-size:14px;font-weight:800;color:#ffffff;letter-spacing:0.3px;">HOW TO CONNECT NINJATRADER</span>
+            <span style="font-size:12px;color:#60a5fa;font-weight:500;">tap to expand</span>
           </div>
-          <svg id="ntc" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .25s;flex-shrink:0;"><path d="M6 9l6 6 6-6"/></svg>
+          <span id="ntarr" style="color:#60a5fa;font-size:14px;font-weight:700;">▼</span>
         </div>
-        <div id="ntb" style="display:none;padding:0 20px 20px;">
-          <div style="height:1px;background:rgba(255,255,255,0.08);margin-bottom:18px;"></div>
-          <p style="font-size:13px;color:#94a3b8;margin:0 0 20px;line-height:1.8;">Your journal pulls live trade data straight from NinjaTrader. Set it up once and it syncs automatically every time you trade — nothing else to do after that.</p>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
-            <div style="display:flex;gap:12px;">
-              <div style="min-width:26px;height:26px;border-radius:50%;background:rgba(34,84,245,0.2);border:1px solid #2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#60a5fa;flex-shrink:0;margin-top:2px;">1</div>
-              <div>
-                <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:5px;">Download the Indicator</div>
-                <div style="font-size:12px;color:#64748b;line-height:1.7;margin-bottom:10px;">Get the HVTJournalSync indicator file from your member downloads.</div>
-                <a href="/download-indicator" style="display:inline-block;background:rgba(34,84,245,0.15);border:1px solid #2254F5;color:#60a5fa;text-decoration:none;padding:7px 16px;border-radius:7px;font-size:11px;font-weight:700;letter-spacing:0.5px;">DOWNLOAD &rarr;</a>
-              </div>
+        <div id="ntb" style="display:none;padding:20px;background:#0f172a;border-top:1px solid #1e3a8a;">
+          <p style="font-size:13px;color:#94a3b8;margin:0 0 20px;line-height:1.8;">Your journal syncs live trade data directly from NinjaTrader. Set it up once and it runs automatically every session — no extra steps after that.</p>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;">
+            <div style="background:#1e293b;border-radius:8px;padding:16px;">
+              <div style="width:28px;height:28px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;margin-bottom:12px;">1</div>
+              <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;">Download the Indicator</div>
+              <div style="font-size:12px;color:#64748b;line-height:1.7;margin-bottom:12px;">Get the HVTJournalSync file from your member downloads.</div>
+              <a href="/download-indicator" style="display:inline-block;background:#2254F5;color:#fff;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:0.5px;">DOWNLOAD &rarr;</a>
             </div>
-            <div style="display:flex;gap:12px;">
-              <div style="min-width:26px;height:26px;border-radius:50%;background:rgba(34,84,245,0.2);border:1px solid #2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#60a5fa;flex-shrink:0;margin-top:2px;">2</div>
-              <div>
-                <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:5px;">Import into NinjaTrader</div>
-                <div style="font-size:12px;color:#64748b;line-height:1.7;">Open NinjaTrader &rarr; <span style="color:#cbd5e1;font-weight:600;">Tools &rarr; Import &rarr; NinjaScript</span> &rarr; select the downloaded file.</div>
-              </div>
+            <div style="background:#1e293b;border-radius:8px;padding:16px;">
+              <div style="width:28px;height:28px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;margin-bottom:12px;">2</div>
+              <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;">Import into NinjaTrader</div>
+              <div style="font-size:12px;color:#64748b;line-height:1.7;">Open NinjaTrader &rarr; <span style="color:#e2e8f0;font-weight:600;">Tools &rarr; Import &rarr; NinjaScript</span> and select the downloaded file.</div>
             </div>
-            <div style="display:flex;gap:12px;">
-              <div style="min-width:26px;height:26px;border-radius:50%;background:rgba(34,84,245,0.2);border:1px solid #2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#60a5fa;flex-shrink:0;margin-top:2px;">3</div>
-              <div>
-                <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:5px;">Add to Chart &amp; Enter Email</div>
-                <div style="font-size:12px;color:#64748b;line-height:1.7;">Right-click any chart &rarr; <span style="color:#cbd5e1;font-weight:600;">Indicators</span> &rarr; add <span style="color:#cbd5e1;font-weight:600;">HVTJournalSync</span>. In properties enter the <span style="color:#cbd5e1;font-weight:600;">email from your Get Started page</span>. Hit OK — you're live.</div>
-              </div>
+            <div style="background:#1e293b;border-radius:8px;padding:16px;">
+              <div style="width:28px;height:28px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;margin-bottom:12px;">3</div>
+              <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;">Add to Chart &amp; Enter Email</div>
+              <div style="font-size:12px;color:#64748b;line-height:1.7;">Right-click any chart &rarr; <span style="color:#e2e8f0;font-weight:600;">Indicators</span> &rarr; add <span style="color:#e2e8f0;font-weight:600;">HVTJournalSync</span>. Enter your Get Started email in properties. Hit OK — you're live.</div>
             </div>
           </div>
-          <div style="margin-top:16px;background:rgba(74,222,128,0.05);border:1px solid rgba(74,222,128,0.2);border-radius:8px;padding:11px 16px;display:flex;align-items:center;gap:10px;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            <span style="font-size:12px;color:#94a3b8;">NinjaTrader saves your settings permanently — one-time setup only. Trades sync automatically every session after that.</span>
+          <div style="background:#052e16;border:1px solid #166534;border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:10px;">
+            <span style="font-size:16px;">✓</span>
+            <span style="font-size:12px;color:#86efac;">One-time setup only. NinjaTrader saves your settings permanently and syncs automatically every session after that.</span>
           </div>
         </div>
       </div>
@@ -1908,8 +1901,7 @@ app.get('/trading-journal', requireSession, (req, res) => {
             if(p==='month') return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
             return true;
           });
-          var wins=f.filter(function(t){return t.net_pnl>0;});
-          var losses=f.filter(function(t){return t.net_pnl<=0;});
+          var wins=f.filter(function(t){return t.net_pnl>0;}),losses=f.filter(function(t){return t.net_pnl<=0;});
           var net=f.reduce(function(s,t){return s+(t.net_pnl||0);},0);
           var wp=f.length?Math.round(wins.length/f.length*100):null;
           var aw=wins.length?wins.reduce(function(s,t){return s+(t.net_pnl||0);},0)/wins.length:null;
@@ -1920,7 +1912,7 @@ app.get('/trading-journal', requireSession, (req, res) => {
           var dk=Object.keys(liveData.pnl).sort();var ds=0;
           for(var i=dk.length-1;i>=0;i--){if(liveData.pnl[dk[i]]>0)ds++;else break;}
           var ts=0,sd=null;
-          for(var j=liveData.recent.length-1;j>=0;j--){var w=liveData.recent[j].net_pnl>0;if(sd===null)sd=w;if(w===sd)ts++;else break;}
+          for(var j=liveData.recent.length-1;j>=0;j--){var ww=liveData.recent[j].net_pnl>0;if(sd===null)sd=ww;if(ww===sd)ts++;else break;}
           function s(id,txt,col){var e=document.getElementById(id);if(e){e.textContent=txt;if(col)e.style.color=col;}}
           s('stat-pnl',(net>=0?'+':'')+'$'+Math.abs(net).toFixed(2),net>0?'#4ade80':net<0?'#f87171':'#94a3b8');
           s('stat-avgwl',aw!==null?'+$'+aw.toFixed(0)+' / -$'+Math.abs(al||0).toFixed(0):'—',aw!==null?'#e2e8f0':'#94a3b8');
@@ -1929,7 +1921,7 @@ app.get('/trading-journal', requireSession, (req, res) => {
           s('stat-pf',pf!==null?pf.toFixed(2):'—',pf!==null?(pf>=1?'#4ade80':'#f87171'):'#94a3b8');
           s('stat-tradestreak',ts+' trade'+(ts!==1?'s':''),ts>0&&sd===true?'#4ade80':ts>0&&sd===false?'#f87171':'#94a3b8');
           var tb=document.querySelector('#trades-recent table tbody');
-          if(tb){if(!f.length){tb.innerHTML='<tr><td colspan="3" style="text-align:center;color:#64748b;padding:28px 16px;">No trades recorded yet</td></tr>';}
+          if(tb){if(!f.length){tb.innerHTML='<tr><td colspan="3" style="text-align:center;color:#64748b;padding:28px;">No trades recorded yet</td></tr>';}
           else{tb.innerHTML=f.slice().reverse().map(function(t){var c=t.net_pnl>0?'#4ade80':t.net_pnl<0?'#f87171':'#94a3b8';var d=new Date(t.exit_time);
             return '<tr><td>'+(t.instrument||'—')+'</td><td>'+(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear()+'</td><td style="color:'+c+';font-weight:600;">'+(t.net_pnl>=0?'+':'')+' $'+Math.abs(t.net_pnl||0).toFixed(2)+'</td></tr>';}).join('');}}
           var ob=document.querySelector('#trades-open table tbody');
@@ -2011,17 +2003,16 @@ app.get('/api/journal/data', requireSession, async (req, res) => {
             .select('instrument,direction,quantity,entry_price,exit_price,entry_time,exit_time,pnl,commission,net_pnl,is_open,unrealized_pnl')
             .eq('email', email).order('exit_time', { ascending: false }).limit(2000);
         if (error) return res.status(500).json({ error: 'DB error.' });
-        const closed = (rows||[]).filter(t=>!t.is_open);
-        const open   = (rows||[]).filter(t=> t.is_open);
+        const closed=(rows||[]).filter(t=>!t.is_open), open=(rows||[]).filter(t=>t.is_open);
         const pnlMap={}, tradesMap={};
         closed.forEach(t => {
             if (!t.exit_time) return;
             const d=new Date(t.exit_time), k=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
-            pnlMap[k]   =Math.round(((pnlMap[k]||0)+(t.net_pnl||0))*100)/100;
+            pnlMap[k]=Math.round(((pnlMap[k]||0)+(t.net_pnl||0))*100)/100;
             tradesMap[k]=(tradesMap[k]||0)+1;
         });
-        res.json({ pnl: pnlMap, trades: tradesMap, recent: closed,
-            open: open.map(p=>({ instrument:p.instrument, direction:p.direction, quantity:p.quantity, unrealized_pnl:p.unrealized_pnl })) });
+        res.json({ pnl:pnlMap, trades:tradesMap, recent:closed,
+            open:open.map(p=>({instrument:p.instrument,direction:p.direction,quantity:p.quantity,unrealized_pnl:p.unrealized_pnl})) });
     } catch (e) { console.error('[Journal/data]', e.message); res.status(500).json({ error: 'Server error.' }); }
 });
 
