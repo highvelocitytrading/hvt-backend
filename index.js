@@ -644,7 +644,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;margin
 .hvt-bg::before{content:'';position:absolute;top:0;left:0;width:65%;height:65%;background:radial-gradient(ellipse at 15% 30%,#00001C 0%,transparent 65%);pointer-events:none;}
 .hero{text-align:center;margin-bottom:16px;position:relative;z-index:1;}
 .hero-pill{display:inline-block;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.25);border-radius:999px;color:#2254F5;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-family:'DM Sans',sans-serif;padding:6px 18px;}
-.hero-pill,.hero h1,.hero-sub{display:none;}
+.hero-pill{display:inline-block;}.hero h1{display:block;font-size:32px;font-weight:800;color:#fff;letter-spacing:-0.5px;margin:14px 0 8px;line-height:1.1;font-family:'DM Sans',sans-serif;}.hero-sub{display:block;color:#64748b;font-size:14px;line-height:1.6;max-width:440px;margin:0 auto;}
 .hero-div{height:1px;background:linear-gradient(90deg,transparent,rgba(34,84,245,0.3),transparent);margin:16px auto 0;max-width:200px;}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10;}
 .topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:64px;width:100%;background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.08);position:relative;}
@@ -2086,7 +2086,7 @@ app.get('/billing/confirm-session', async (req, res, next) => {
             <div style="display:flex;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:#64748b;font-size:13px;">Next Billing</span><span style="color:#94a3b8;font-size:13px;">${nextLabel}</span></div>
             <div style="display:flex;justify-content:space-between;padding:14px 18px;"><span style="color:#64748b;font-size:13px;">Days Remaining</span>${daysDisplay}</div>
           </div>${cancelHtml}
-        </div></div>`));
+        </div></div>`, {pill:'BILLING', title:'Your Membership', sub:'Manage your plan and billing details below.'}));
 });
 
 // ─── COURSE PLAYER (cookie-gated) ─────────────────────────────────────────────
