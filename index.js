@@ -84,6 +84,7 @@ const MEMBERSHIP_TABLE = process.env.SUPABASE_TABLE || 'membershipstab';
 const LICENSE_TABLE    = 'license_keys';
 const DISCORD_TABLE    = 'discord_members';
 const JOURNAL_TABLE    = 'journal_trades';
+const PROP_FIRM_TABLE  = 'prop_firm_activations';
 
 // ─── NINJATRADER ECOSYSTEM API ────────────────────────────────────────────────
 const NT_PRODUCT_ID = process.env.NT_PRODUCT_ID || '1196';
@@ -1516,6 +1517,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
     </div>
     <div class="topnav-right">
       <a href="/billing/confirm-session" class="topnav-out">Billing</a>
+      <a href="/prop-activation" class="topnav-out">Activate Prop Account</a>
       <a href="/logout" class="topnav-out">Log out</a>
       <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>
     </div>
@@ -3112,6 +3114,426 @@ app.get('/logout', async (req, res) => {
     }
     res.setHeader('Set-Cookie', `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
     res.redirect(302, 'https://highvelocitytrading.com');
+});
+
+
+// ─── PROP FIRM ACTIVATION PAGE ───────────────────────────────────────────────
+app.get('/prop-activation', requireSession, (req, res) => {
+    const s = req._session;
+    res.send(shell('Activate Prop Account', `
+<div style="max-width:700px;width:100%;margin:0 auto;padding:0 20px 60px;box-sizing:border-box;">
+  <a href="/member" style="color:#2254F5;font-size:13px;text-decoration:none;font-weight:500;">&larr; Back to Portal</a>
+
+  <!-- MAIN CARD -->
+  <div style="margin-top:28px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:36px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;">
+      <div style="width:44px;height:44px;border-radius:10px;background:rgba(34,84,245,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="1.7"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+      </div>
+      <div>
+        <h2 style="font-size:20px;font-weight:700;color:#fff;margin:0;">Prop Firm Activation</h2>
+        <p style="color:#64748b;font-size:13px;margin:3px 0 0;">Authorize your email to use HVT indicators on any prop firm platform</p>
+      </div>
+    </div>
+
+    <!-- HOW IT WORKS -->
+    <p style="color:#94a3b8;font-size:11px;font-weight:700;margin:0 0 12px;text-transform:uppercase;letter-spacing:1.2px;">How it works</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:28px;">
+      <div style="background:#0d1117;border:1px solid rgba(34,84,245,0.25);border-radius:10px;padding:16px;">
+        <div style="width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;margin-bottom:10px;">1</div>
+        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">Activate Below</div>
+        <div style="font-size:12px;color:#64748b;line-height:1.5;">Enter your HVT email and prop firm, then click Activate</div>
+      </div>
+      <div style="background:#0d1117;border:1px solid rgba(34,84,245,0.25);border-radius:10px;padding:16px;">
+        <div style="width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;margin-bottom:10px;">2</div>
+        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">Open NinjaTrader</div>
+        <div style="font-size:12px;color:#64748b;line-height:1.5;">Go to <strong style="color:#e2e8f0;">Help &rarr; 3rd Party Licensing</strong> in NinjaTrader</div>
+      </div>
+      <div style="background:#0d1117;border:1px solid rgba(34,84,245,0.25);border-radius:10px;padding:16px;">
+        <div style="width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;margin-bottom:10px;">3</div>
+        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">Enter Your Email</div>
+        <div style="font-size:12px;color:#64748b;line-height:1.5;">Enter <strong style="color:#e2e8f0;">High Velocity Trading</strong> as vendor and your HVT email as the license key</div>
+      </div>
+    </div>
+
+    <div style="height:1px;background:rgba(255,255,255,0.07);margin:0 0 24px;"></div>
+
+    <!-- MESSAGE BOX -->
+    <div id="prop-msg" style="display:none;padding:14px 16px;border-radius:8px;font-size:14px;font-weight:500;margin-bottom:20px;line-height:1.5;"></div>
+
+    <!-- FORM -->
+    <div style="margin-bottom:16px;">
+      <label style="display:block;color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Your HVT Purchase Email</label>
+      <input id="prop-email" type="email" placeholder="email@example.com" value="${s.email || ''}"
+        style="width:100%;box-sizing:border-box;background:#0d1117;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:12px 14px;color:#fff;font-size:14px;outline:none;transition:border-color .2s;"
+        onfocus="this.style.borderColor='#2254F5'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'"/>
+    </div>
+
+    <div style="margin-bottom:24px;">
+      <label style="display:block;color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Prop Firm</label>
+      <select id="prop-firm-name"
+        style="width:100%;box-sizing:border-box;background:#0d1117;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:12px 14px;color:#fff;font-size:14px;outline:none;appearance:none;-webkit-appearance:none;transition:border-color .2s;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 14px center;"
+        onfocus="this.style.borderColor='#2254F5'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'">
+        <option value="">Select your prop firm...</option>
+        <option>Apex Trader Funding</option>
+        <option>TopstepTrader</option>
+        <option>MyFundedFutures</option>
+        <option>Bulenox</option>
+        <option>Take Profit Trader</option>
+        <option>Leeloo Trading</option>
+        <option>Earn2Trade</option>
+        <option>The Trading Pit</option>
+        <option>TradeDay</option>
+        <option>Other</option>
+      </select>
+    </div>
+
+    <button id="prop-submit" onclick="submitPropActivation()"
+      style="width:100%;background:#2254F5;color:#fff;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:0.3px;transition:background .2s;"
+      onmouseover="this.style.background='#1a42d4'" onmouseout="this.style.background='#2254F5'">
+      Activate Now
+    </button>
+  </div>
+
+  <!-- YOUR ACTIVATIONS -->
+  <div style="margin-top:28px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:28px;">
+    <h3 style="font-size:15px;font-weight:700;color:#fff;margin:0 0 18px;">Your Activations</h3>
+    <div id="activations-list"><div style="color:#64748b;font-size:14px;">Loading...</div></div>
+  </div>
+</div>
+
+<script>
+function showMsg(msg, ok) {
+  var el = document.getElementById('prop-msg');
+  el.style.display = 'block';
+  el.style.background = ok ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)';
+  el.style.border = '1px solid ' + (ok ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)');
+  el.style.color = ok ? '#4ade80' : '#f87171';
+  el.innerHTML = msg;
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function submitPropActivation() {
+  var email    = document.getElementById('prop-email').value.trim();
+  var firmName = document.getElementById('prop-firm-name').value.trim();
+  var btn      = document.getElementById('prop-submit');
+
+  if (!email)    return showMsg('Please enter your HVT purchase email.', false);
+  if (!firmName) return showMsg('Please select your prop firm.', false);
+
+  btn.disabled = true;
+  btn.textContent = 'Activating...';
+
+  try {
+    var r = await fetch('/api/prop-activation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, firmName: firmName })
+    });
+    var d = await r.json();
+    if (d.ok) {
+      showMsg(
+        '<strong>Activation complete!</strong><br>' +
+        'Your email is now authorized. In NinjaTrader go to <strong>Help &rarr; 3rd Party Licensing</strong>, ' +
+        'enter <strong>High Velocity Trading</strong> as the vendor and <strong>' + email + '</strong> as the license key.',
+        true
+      );
+      loadActivations();
+    } else {
+      showMsg(d.error || 'Activation failed. Please contact support.', false);
+    }
+  } catch(e) {
+    showMsg('Network error. Please try again.', false);
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Activate Now';
+}
+
+async function loadActivations() {
+  try {
+    var r = await fetch('/api/prop-activations/mine');
+    var d = await r.json();
+    var el = document.getElementById('activations-list');
+    if (!d.ok || !d.activations || !d.activations.length) {
+      el.innerHTML = '<div style="color:#64748b;font-size:14px;">No activations yet.</div>';
+      return;
+    }
+    el.innerHTML = d.activations.map(function(a) {
+      var statusColor = a.status === 'active' ? '#4ade80' : '#f87171';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.05);">'
+        + '<div>'
+        + '<div style="font-size:14px;font-weight:600;color:#fff;">' + a.firm_name + '</div>'
+        + '<div style="font-size:12px;color:#64748b;margin-top:3px;">' + a.email + '</div>'
+        + '</div>'
+        + '<div style="text-align:right;flex-shrink:0;margin-left:16px;">'
+        + '<div style="font-size:11px;color:' + statusColor + ';font-weight:700;text-transform:uppercase;letter-spacing:1px;">' + a.status + '</div>'
+        + '<div style="font-size:11px;color:#475569;margin-top:3px;">' + new Date(a.created_at).toLocaleDateString() + '</div>'
+        + '</div>'
+        + '</div>';
+    }).join('') + '<div style="height:1px;"></div>';
+  } catch(e) {
+    document.getElementById('activations-list').innerHTML = '<div style="color:#64748b;font-size:14px;">Could not load activations.</div>';
+  }
+}
+
+loadActivations();
+</script>
+`, { pill: 'PROP FIRM', title: 'Activate Prop Account', sub: 'Authorize your HVT email to run indicators on any prop firm platform — no machine ID needed.' }));
+});
+
+// ─── PROP ACTIVATION API ─────────────────────────────────────────────────────
+app.post('/api/prop-activation', requireSession, frm, express.json(), async (req, res) => {
+    const s                   = req._session;
+    const { email, firmName } = req.body || {};
+
+    if (!email || !firmName)
+        return res.status(400).json({ ok: false, error: 'Email and prop firm are required.' });
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanFirm  = firmName.trim();
+
+    // ── Verify email is an active HVT member (check both tables) ──
+    const [{ data: m1 }, { data: m2 }] = await Promise.all([
+        supabase.from(MEMBERSHIP_TABLE).select('email, status').eq('email', cleanEmail).maybeSingle(),
+        supabase.from(LICENSE_TABLE).select('email, status').eq('email', cleanEmail).maybeSingle()
+    ]);
+
+    const member = m1 || m2;
+    if (!member)
+        return res.status(403).json({ ok: false, error: 'Email not found in HVT membership. Please use the email you purchased with.' });
+
+    if (member.status !== 'active')
+        return res.status(403).json({ ok: false, error: 'Your HVT membership is not currently active. Please contact support.' });
+
+    // ── Check if this email already has an active prop activation ──
+    const { data: existing } = await supabase
+        .from(PROP_FIRM_TABLE)
+        .select('id, firm_name, status')
+        .eq('email', cleanEmail)
+        .eq('status', 'active')
+        .maybeSingle();
+
+    if (existing) {
+        // Already activated — just return success so they can get the NT instructions
+        return res.json({ ok: true, alreadyActive: true });
+    }
+
+    // ── Create NT Ecosystem license for this email ──
+    if (!ntToken) await ntLogin();
+    if (!ntToken) return res.status(500).json({ ok: false, error: 'Could not connect to NinjaTrader. Please try again in a moment.' });
+
+    let ntLicenseId = null;
+    try {
+        const expiry = new Date();
+        expiry.setFullYear(expiry.getFullYear() + 99); // effectively permanent
+        const r = await fetchFn(`https://ecosystemapi.ninjatrader.com/v1/products/${NT_PRODUCT_ID}/licenses`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${ntToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                license: {
+                    email:               cleanEmail,
+                    licenseType:         'Lifetime',
+                    expirationDateUTC:   expiry.toISOString()
+                }
+            })
+        });
+        const d = await r.json();
+        console.log(`[PropActivation] NT API response for ${cleanEmail}:`, JSON.stringify(d));
+
+        if (d?.errorText && d.errorText !== '') {
+            // NT may return "already licensed" — treat as success
+            if (d.errorText.toLowerCase().includes('already')) {
+                console.log(`[PropActivation] Already licensed in NT for ${cleanEmail} — proceeding`);
+            } else {
+                console.error(`[PropActivation] NT error for ${cleanEmail}:`, d.errorText);
+                return res.status(500).json({ ok: false, error: 'NinjaTrader licensing failed. Please contact support.' });
+            }
+        }
+
+        if (d?.result) ntLicenseId = String(d.result);
+
+    } catch (e) {
+        console.error('[PropActivation] NT API error:', e.message);
+        return res.status(500).json({ ok: false, error: 'Could not reach NinjaTrader. Please try again.' });
+    }
+
+    // ── Save to Supabase ──
+    const { error: dbErr } = await supabase.from(PROP_FIRM_TABLE).insert({
+        email:         cleanEmail,
+        member_name:   s.name || '',
+        firm_name:     cleanFirm,
+        nt_license_id: ntLicenseId,
+        status:        'active',
+        created_at:    nowISO(),
+        updated_at:    nowISO()
+    });
+
+    if (dbErr) {
+        console.error('[PropActivation] Supabase insert error:', dbErr.message);
+        // NT license was created — log it but don't fail the user
+        console.error('[PropActivation] NT license created but DB log failed. NT ID:', ntLicenseId);
+    }
+
+    console.log(`[PropActivation] ✅ ${cleanEmail} | ${cleanFirm} | nt_id=${ntLicenseId}`);
+    res.json({ ok: true });
+});
+
+// ─── MY PROP ACTIVATIONS ─────────────────────────────────────────────────────
+app.get('/api/prop-activations/mine', requireSession, async (req, res) => {
+    const s = req._session;
+    const { data, error } = await supabase
+        .from(PROP_FIRM_TABLE)
+        .select('email, firm_name, status, created_at')
+        .eq('email', s.email.toLowerCase())
+        .order('created_at', { ascending: false });
+
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+    res.json({ ok: true, activations: data || [] });
+});
+
+// ─── ADMIN: VIEW ALL PROP ACTIVATIONS ────────────────────────────────────────
+app.get('/admin/prop-activations', adm, async (req, res) => {
+    const secret = req.query.secret || req.headers['x-admin-secret'];
+    if (secret !== ADMIN_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+
+    const { data, error } = await supabase
+        .from(PROP_FIRM_TABLE)
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+
+    const total    = (data || []).length;
+    const active   = (data || []).filter(r => r.status === 'active').length;
+    const revoked  = total - active;
+
+    const firmCounts = {};
+    (data || []).forEach(r => { firmCounts[r.firm_name] = (firmCounts[r.firm_name] || 0) + 1; });
+    const topFirms = Object.entries(firmCounts).sort((a,b) => b[1]-a[1]).slice(0,5)
+        .map(([name, count]) => `<span style="display:inline-block;background:#111827;border:1px solid #1e293b;border-radius:6px;padding:4px 10px;font-size:12px;color:#94a3b8;margin:2px;">${name} <strong style="color:#fff;">${count}</strong></span>`).join(' ');
+
+    const rows = (data || []).map(r => `
+        <tr>
+          <td style="padding:11px 14px;color:#e2e8f0;font-size:13px;">${r.email}</td>
+          <td style="padding:11px 14px;color:#94a3b8;font-size:13px;">${r.member_name || '—'}</td>
+          <td style="padding:11px 14px;color:#60a5fa;font-size:13px;font-weight:600;">${r.firm_name}</td>
+          <td style="padding:11px 14px;">
+            <span style="padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+              background:${r.status==='active'?'rgba(34,197,94,0.1)':'rgba(239,68,68,0.1)'};
+              color:${r.status==='active'?'#4ade80':'#f87171'};">${r.status}</span>
+          </td>
+          <td style="padding:11px 14px;color:#475569;font-size:12px;">${new Date(r.created_at).toLocaleString()}</td>
+          <td style="padding:11px 14px;">
+            ${r.status === 'active'
+              ? `<button onclick="revokeRow('${r.id}',this)" style="background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600;transition:background .15s;">Revoke</button>`
+              : '<span style="color:#334155;font-size:12px;">—</span>'}
+          </td>
+        </tr>`).join('');
+
+    res.send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<title>HVT — Prop Activations</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#000;color:#fff;padding:36px 28px;min-height:100vh}
+h1{font-size:22px;font-weight:700;letter-spacing:-.3px;margin-bottom:4px}
+.sub{color:#64748b;font-size:14px;margin-bottom:28px}
+.stats{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.stat{background:#0d1117;border:1px solid #1e293b;border-radius:10px;padding:16px 22px;min-width:120px}
+.stat-val{font-size:26px;font-weight:700;color:#fff}
+.stat-lbl{font-size:12px;color:#64748b;margin-top:2px;text-transform:uppercase;letter-spacing:.8px}
+.firms{margin-bottom:24px}
+.firms-lbl{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.search-wrap{margin-bottom:16px}
+.search-wrap input{background:#0d1117;border:1px solid #1e293b;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;width:320px;outline:none}
+.search-wrap input:focus{border-color:#2254F5}
+table{width:100%;border-collapse:collapse;background:#0d1117;border-radius:12px;overflow:hidden;border:1px solid #1e293b}
+th{padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;background:#111827;border-bottom:1px solid #1e293b}
+tr{border-bottom:1px solid #0f172a}
+tr:hover td{background:rgba(255,255,255,0.015)}
+tr:last-child{border-bottom:none}
+</style>
+</head><body>
+<h1>Prop Firm Activations</h1>
+<div class="sub">All accounts authorized through the Prop Firm Activation system</div>
+<div class="stats">
+  <div class="stat"><div class="stat-val">${total}</div><div class="stat-lbl">Total</div></div>
+  <div class="stat"><div class="stat-val" style="color:#4ade80">${active}</div><div class="stat-lbl">Active</div></div>
+  <div class="stat"><div class="stat-val" style="color:#f87171">${revoked}</div><div class="stat-lbl">Revoked</div></div>
+</div>
+${topFirms ? `<div class="firms"><div class="firms-lbl">By Prop Firm</div>${topFirms}</div>` : ''}
+<div class="search-wrap"><input type="text" id="srch" placeholder="Search email or firm..." oninput="filterRows(this.value)"/></div>
+<table id="tbl">
+  <thead><tr>
+    <th>Email</th><th>Name</th><th>Prop Firm</th><th>Status</th><th>Date</th><th>Action</th>
+  </tr></thead>
+  <tbody id="tbody">${rows}</tbody>
+</table>
+<script>
+function filterRows(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('#tbody tr').forEach(function(tr) {
+    tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+async function revokeRow(id, btn) {
+  if (!confirm('Revoke this activation? The user will lose indicator access.')) return;
+  btn.disabled = true; btn.textContent = 'Revoking...';
+  try {
+    var r = await fetch('/admin/prop-activations/' + id + '/revoke', {
+      method: 'POST',
+      headers: { 'x-admin-secret': '${ADMIN_SECRET}' }
+    });
+    var d = await r.json();
+    if (d.ok) {
+      var td = btn.closest('tr').querySelectorAll('td')[3];
+      td.innerHTML = '<span style="padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:rgba(239,68,68,0.1);color:#f87171;">REVOKED</span>';
+      btn.style.display = 'none';
+    } else {
+      alert(d.error || 'Revoke failed. Try again.');
+      btn.disabled = false; btn.textContent = 'Revoke';
+    }
+  } catch(e) {
+    alert('Network error. Try again.');
+    btn.disabled = false; btn.textContent = 'Revoke';
+  }
+}
+</script>
+</body></html>`);
+});
+
+// ─── ADMIN: REVOKE A PROP ACTIVATION ─────────────────────────────────────────
+app.post('/admin/prop-activations/:id/revoke', adm, express.json(), async (req, res) => {
+    const secret = req.query.secret || req.headers['x-admin-secret'];
+    if (secret !== ADMIN_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+
+    const { id } = req.params;
+
+    const { data: record, error: fetchErr } = await supabase
+        .from(PROP_FIRM_TABLE)
+        .select('nt_license_id, status')
+        .eq('id', id)
+        .maybeSingle();
+
+    if (fetchErr || !record)
+        return res.status(404).json({ ok: false, error: 'Activation not found.' });
+
+    if (record.status === 'revoked')
+        return res.json({ ok: true, message: 'Already revoked.' });
+
+    // Revoke from NT Ecosystem
+    if (record.nt_license_id) await ntRevokeLicense(record.nt_license_id);
+
+    const { error } = await supabase
+        .from(PROP_FIRM_TABLE)
+        .update({ status: 'revoked', updated_at: nowISO() })
+        .eq('id', id);
+
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+
+    console.log(`[PropRevoke] ✅ Revoked activation id=${id}`);
+    res.json({ ok: true });
 });
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
