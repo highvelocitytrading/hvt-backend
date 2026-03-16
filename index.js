@@ -639,7 +639,7 @@ function shell(title, body, hero) {
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Bebas+Neue&family=Montserrat:wght@800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;margin:0;padding:110px 20px 24px;color:#fff;position:relative;overflow-x:hidden;}
+body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;margin:0;padding:110px 20px 24px;color:#fff;position:relative;overflow-x:hidden;display:flex;flex-direction:column;align-items:center;}
 .hvt-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:#000000;}
 .hvt-bg::before{content:'';position:absolute;top:0;left:0;width:65%;height:65%;background:radial-gradient(ellipse at 15% 30%,#00001C 0%,transparent 65%);pointer-events:none;}
 .hero{text-align:center;margin-bottom:16px;position:relative;z-index:1;}
