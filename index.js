@@ -633,7 +633,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;displa
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10;}
 .topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:64px;width:100%;background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.08);position:relative;}
 .topnav-logo{display:flex;align-items:center;gap:0;text-decoration:none;}
-.topnav-logo img{height:39px;width:auto;object-fit:contain;display:block;background:transparent;}
+.topnav-logo img{height:29px;width:auto;object-fit:contain;display:block;background:transparent;}
 .topnav-left{display:flex;align-items:center;gap:12px;}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.65);font-size:14px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s;}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85);}
@@ -647,7 +647,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;displa
   .topnav-left a.topnav-link{display:none;}
   .topnav-right a.topnav-link,.topnav-right a.topnav-out{display:none;}
   .topnav-right a.topnav-cta{display:inline-block;}
-  .topnav-logo img{height:31px;}
+  .topnav-logo img{height:21px;}
 }
 .card{width:100%;max-width:460px;background:rgba(255,255,255,0.03);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(34,84,245,0.2);border-radius:20px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.6);position:relative;z-index:1;}
 .ct{height:3px;background:linear-gradient(90deg,#2254F5,#2254F5,#2254F5);}
@@ -687,7 +687,7 @@ input::placeholder{color:#334155;}
 <div class="topnav-wrap">
   <nav class="topnav">
     <div class="topnav-left">
-      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:39px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" /></a>
+      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:29px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" /></a>
     </div>
     <div class="topnav-right" style="display:flex;align-items:center;gap:12px;">
       ${hero && hero.hideNav ? '' : '<a href="/member" class="topnav-link" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Portal</a><a href="/prop-activation" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#2254F5,#3b6ff5);color:#fff;font-size:13px;font-weight:700;text-decoration:none;padding:7px 14px;border-radius:6px;border:1px solid rgba(34,84,245,0.5);letter-spacing:0.3px;box-shadow:0 0 12px rgba(34,84,245,0.45);">&#9670; Prop Firm</a><a href="/billing/confirm-session" class="topnav-out" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Billing</a><a href="/logout" class="topnav-out" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Log out</a>'}
@@ -1462,7 +1462,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
 .topnav{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;width:100%;background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.08);position:relative}
 .topnav-logo{display:flex;align-items:center;text-decoration:none}
-.topnav-logo img{height:39px;width:auto;object-fit:contain;display:block;background:transparent;}
+.topnav-logo img{height:29px;width:auto;object-fit:contain;display:block;background:transparent;}
 .topnav-left{display:flex;align-items:center;gap:12px}
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.65);font-size:14px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85)}
@@ -1476,7 +1476,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
   .topnav-left a.topnav-link{display:none;}
   .topnav-right a.topnav-out{display:none;}
   .topnav-right a.topnav-cta{display:inline-block;}
-  .topnav-logo img{height:31px;}
+  .topnav-logo img{height:21px;}
 }
 .portal-wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:100px 24px 64px}
 .hero-section{text-align:center;margin-bottom:32px}
@@ -1513,7 +1513,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 <div class="topnav-wrap">
   <nav class="topnav">
     <div class="topnav-left">
-      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:39px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" /></a>
+      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:29px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" /></a>
     </div>
     <div class="topnav-right">
       <a href="/prop-activation" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#2254F5,#3b6ff5);color:#fff;font-size:13px;font-weight:700;text-decoration:none;padding:7px 14px;border-radius:6px;border:1px solid rgba(34,84,245,0.5);letter-spacing:0.3px;box-shadow:0 0 12px rgba(34,84,245,0.45);">&#9670; Prop Firm</a>
@@ -2078,7 +2078,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:60px;border-bottom:1px solid rgba(255,255,255,0.07);background:rgba(6,8,16,0.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);flex-shrink:0;z-index:200;position:relative}
 .topbar-left{display:flex;align-items:center;gap:0;min-width:0;flex-shrink:0}
 .topbar-logo{display:flex;align-items:center;text-decoration:none;flex-shrink:0}
-.topbar-logo img{height:39px;width:auto;object-fit:contain;display:block;flex-shrink:0}
+.topbar-logo img{height:29px;width:auto;object-fit:contain;display:block;flex-shrink:0}
 .topbar-divider{width:1px;height:24px;background:rgba(255,255,255,0.1);margin:0 16px;flex-shrink:0}
 .back-btn{display:flex;align-items:center;gap:6px;color:#475569;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;white-space:nowrap;transition:color .15s;flex-shrink:0}
 .back-btn:hover{color:#94a3b8}
@@ -2151,7 +2151,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 /* ── MOBILE ── */
 @media(max-width:768px){
   .topbar{padding:0 12px;height:56px}
-  .topbar-logo img{height:31px;}
+  .topbar-logo img{height:21px;}
   .topbar-divider{margin:0 10px}
   .course-label{display:none}
   .mob-menu{display:flex}
@@ -2161,7 +2161,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
   .video-meta h2{font-size:14px}
 }
 @media(max-width:400px){
-  .topbar-logo img{height:28px;}
+  .topbar-logo img{height:18px;}
   .topbar-divider{margin:0 8px}
   .user-pill{display:none}
 }
@@ -2171,7 +2171,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 <div class="topbar">
   <div class="topbar-left">
     <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topbar-logo">
-      <img src="${LOGO_URL}" alt="High Velocity Trading" style="height:39px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" />
+      <img src="${LOGO_URL}" alt="High Velocity Trading" style="height:29px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" />
     </a>
     <div class="topbar-divider"></div>
     <a class="back-btn" href="/member">
@@ -3133,7 +3133,7 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#ff
 .bg::before{content:'';position:absolute;top:0;left:0;width:65%;height:65%;background:radial-gradient(ellipse at 15% 30%,#00001C 0%,transparent 65%)}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
 .topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:64px;width:100%;background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.08)}
-.topnav-logo img{height:39px;width:auto;object-fit:contain;display:block}
+.topnav-logo img{height:29px;width:auto;object-fit:contain;display:block}
 .topnav-right{display:flex;align-items:center;gap:14px}
 .nav-link{color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;transition:color .2s}
 .nav-link:hover{color:#fff}
@@ -3178,7 +3178,7 @@ select option{background:#0d1117}
 <div class="bg" aria-hidden="true"></div>
 <div class="topnav-wrap">
   <nav class="topnav">
-    <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:39px;" onerror="this.onerror=null;this.style.display='none'"/></a>
+    <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:29px;" onerror="this.onerror=null;this.style.display='none'"/></a>
     <div class="topnav-right">
       <a href="/member" class="nav-link">Portal</a>
       <a href="/billing/confirm-session" class="nav-link">Billing</a>
