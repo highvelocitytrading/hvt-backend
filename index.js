@@ -62,6 +62,20 @@ const frm = rateLimit({ max: 10 });
 const adm = rateLimit({ max: 30 });
 
 // ─── ENV ─────────────────────────────────────────────────────────────────────
+const requiredEnv = [
+    'SUPABASE_URL',
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'APP_URL',
+    'RESEND_API_KEY',
+    'ADMIN_SECRET'
+];
+const missing = requiredEnv.filter(k => !process.env[k] || String(process.env[k]).trim() === '');
+if (missing.length) {
+    console.error('[FATAL] Missing required env. Set these in Railway (or .env):');
+    missing.forEach(k => console.error('  -', k));
+    process.exit(1);
+}
+
 const SUPABASE_URL              = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const AUTHORIZE_SIGNATURE_KEY   = process.env.AUTHORIZE_SIGNATURE_KEY || null;
@@ -226,9 +240,8 @@ async function ntRevokeLicense(ntLicenseId) {
 }
 
 // ─── SUPABASE ────────────────────────────────────────────────────────────────
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) { console.error('[FATAL] Missing Supabase env'); process.exit(1); }
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-console.log(`[INIT] ${MEMBERSHIP_TABLE} | ${LICENSE_TABLE} | ${DISCORD_TABLE}`);
+console.log(`[INIT] Supabase connected: ${MEMBERSHIP_TABLE} | ${LICENSE_TABLE} | ${DISCORD_TABLE}`);
 
 // ─── SHARED HELPERS ───────────────────────────────────────────────────────────
 function pickFirst(...v) { for (const x of v) { if (typeof x === 'string' && x.trim()) return x.trim(); if (typeof x === 'number') return String(x); } return null; }
@@ -280,6 +293,10 @@ async function getGuildAll() {
 
 // ─── EMAIL ───────────────────────────────────────────────────────────────────
 async function sendEmail(to, subject, html) {
+    if (!RESEND_API_KEY) {
+        console.warn('[Email] RESEND_API_KEY not set – skipping send', { to, subject });
+        return { skipped: true };
+    }
     const r = await fetchFn('https://api.resend.com/emails', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${RESEND_API_KEY}` },
@@ -622,13 +639,12 @@ function shell(title, body, hero) {
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Bebas+Neue&family=Montserrat:wght@800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:110px 20px 24px;color:#fff;position:relative;overflow-x:hidden;}
+body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;margin:0;padding:110px 20px 24px;color:#fff;position:relative;overflow-x:hidden;}
 .hvt-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:#000000;}
 .hvt-bg::before{content:'';position:absolute;top:0;left:0;width:65%;height:65%;background:radial-gradient(ellipse at 15% 30%,#00001C 0%,transparent 65%);pointer-events:none;}
 .hero{text-align:center;margin-bottom:16px;position:relative;z-index:1;}
 .hero-pill{display:inline-block;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.25);border-radius:999px;color:#2254F5;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-family:'DM Sans',sans-serif;padding:6px 18px;}
-.hero h1{font-family:'DM Sans',sans-serif;font-weight:700;font-size:42px;color:#ffffff;line-height:1.15;letter-spacing:-0.5px;margin:16px 0 12px;}
-.hero-sub{font-family:'DM Sans',sans-serif;font-weight:400;font-size:15px;color:#94a3b8;line-height:1.6;max-width:960px;margin:0 auto 0;}
+.hero-pill,.hero h1,.hero-sub{display:none;}
 .hero-div{height:1px;background:linear-gradient(90deg,transparent,rgba(34,84,245,0.3),transparent);margin:16px auto 0;max-width:200px;}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10;}
 .topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:64px;width:100%;background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.08);position:relative;}
@@ -638,10 +654,13 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;displa
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.65);font-size:14px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s;}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85);}
 .topnav-right{display:flex;align-items:center;gap:12px;flex-shrink:0;}
-.topnav-right a.topnav-link,.topnav-right a.topnav-out{color:rgba(255,255,255,0.65);font-size:14px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s;}
-.topnav-right a.topnav-link:hover,.topnav-right a.topnav-out:hover{color:rgba(255,255,255,0.85);}
+.topnav-right a.topnav-link,.topnav-right a.topnav-out{color:rgba(255,255,255,0.82);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;text-decoration:none;letter-spacing:0.02em;padding:8px 0;transition:color .2s;}
+.topnav-right a.topnav-link:hover,.topnav-right a.topnav-out:hover{color:#fff;}
 .topnav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);letter-spacing:0.2px;transition:background .2s,color .2s,border-color .2s;}
 .topnav-cta:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18);}
+.prop-firm-btn{display:inline-block;background:#2254F5;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.02em;text-decoration:none;padding:8px 16px;border-radius:6px;border:none;transition:background .2s ease,color .2s ease;}
+.prop-firm-btn:hover{background:#2d5cf7;color:#fff;}
+.prop-firm-btn:active{opacity:0.92;}
 @media(max-width:600px){
   .topnav{padding:0 12px;}
   .topnav-left a.topnav-link{display:none;}
@@ -690,8 +709,7 @@ input::placeholder{color:#334155;}
       <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:29px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" /></a>
     </div>
     <div class="topnav-right" style="display:flex;align-items:center;gap:12px;">
-      ${hero && hero.hideNav ? '' : '<a href="/member" class="topnav-link" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Portal</a><a href="/prop-activation" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#2254F5,#3b6ff5);color:#fff;font-size:13px;font-weight:700;text-decoration:none;padding:7px 14px;border-radius:6px;border:1px solid rgba(34,84,245,0.5);letter-spacing:0.3px;box-shadow:0 0 12px rgba(34,84,245,0.45);">&#9670; Prop Firm</a><a href="/billing/confirm-session" class="topnav-out" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Billing</a><a href="/logout" class="topnav-out" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Log out</a>'}
-      <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>
+      ${hero && hero.hideNav ? '' : '<a href="/member" class="topnav-link">Portal</a><a href="/billing/confirm-session" class="topnav-out">Billing</a><a href="/logout" class="topnav-out">Log out</a><a href="/prop-activation" class="prop-firm-btn">Prop Firm</a>'}
     </div>
   </nav>
 </div>
@@ -909,7 +927,7 @@ app.get('/downloads/template', frm, async (req, res) => {
 app.get('/trading-room', (req, res) => {
     res.send(shell('Get Started', `
 <style>
-.gs-wrap{width:100%;max-width:560px;display:flex;flex-direction:column;gap:16px;position:relative;z-index:1;}
+.gs-wrap{width:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px;position:relative;z-index:1;}
 .gs-step{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;transition:border-color .2s;}
 .gs-step.done{border-color:rgba(74,222,128,0.35);}
 .gs-head{display:flex;align-items:center;gap:16px;padding:22px 24px;}
@@ -945,7 +963,7 @@ app.get('/trading-room', (req, res) => {
 .gs-dl-desc{font-size:12px;color:#64748b;margin-top:1px;}
 .gs-tip{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 16px;margin-top:12px;}
 .gs-tip p{color:#475569;font-size:12px;margin:0;line-height:1.7;}
-.gs-nt-signup{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:10px 18px;background:#D9452A;color:#fff;border-radius:9px;font-size:13px;font-weight:800;letter-spacing:1px;text-decoration:none;box-shadow:0 4px 14px rgba(217,69,42,0.35);transition:all .2s;}
+.gs-nt-signup{display:inline-flex;align-items:center;justify-content:center;gap:8px;margin:12px auto 0 auto;padding:10px 18px;background:#D9452A;color:#fff;border-radius:9px;font-size:13px;font-weight:800;letter-spacing:1px;text-decoration:none;box-shadow:0 4px 14px rgba(217,69,42,0.35);transition:all .2s;}
 .gs-nt-signup:hover{background:#c43d25;transform:translateY(-1px);}
 .gs-discord-logo{width:28px;height:28px;object-fit:contain;display:block;flex-shrink:0;}
 </style>
@@ -973,9 +991,9 @@ app.get('/trading-room', (req, res) => {
     </div>
     <div class="gs-body">
       <div class="gs-divider"></div>
-      <div style="background:rgba(34,84,245,0.05);border:1px solid rgba(34,84,245,0.12);border-radius:12px;padding:14px 16px;margin-bottom:18px;display:flex;align-items:flex-start;gap:12px;">
-        <div style="flex-shrink:0;margin-top:2px;">${ninjaLogoSVG()}</div>
-        <div>
+      <div style="background:rgba(34,84,245,0.05);border:1px solid rgba(34,84,245,0.12);border-radius:12px;padding:18px 20px;margin-bottom:18px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;">
+        <div style="margin-bottom:4px;">${ninjaLogoSVG()}</div>
+        <div style="width:100%;">
           <div style="font-size:12px;font-weight:700;color:#2254F5;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">NinjaTrader Required</div>
           <div style="font-size:13px;color:#94a3b8;line-height:1.6;">You need a free NinjaTrader account before activating. Don't have one?</div>
           <a href="https://lp.ninjatrader.com/platform?im_ref=XLAQAKxrwxyZWIqQPWQSz2P0Uku26HTRR1lDXQ0&sharedid=&irpid=7019303&irgwc=1&afsrc=1" target="_blank" rel="noopener noreferrer" class="gs-nt-signup">Create Free Account &rarr;</a>
@@ -1141,7 +1159,7 @@ async function activateDiscord() {
 // Enter key support
 document.getElementById('ntemail').addEventListener('keydown', e => { if(e.key==='Enter') activateNT(); });
 document.getElementById('discord').addEventListener('keydown', e => { if(e.key==='Enter') activateDiscord(); });
-</script>`, { pill: 'GET STARTED', title: '3 Steps to Full Access', sub: 'Complete each step below to unlock everything.' }));
+</script>`, {}));
 });
 
 app.post('/trading-room/activate', frm, express.json(), async (req, res) => {
@@ -1467,10 +1485,13 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 .topnav-left a.topnav-link{color:rgba(255,255,255,0.65);font-size:14px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s}
 .topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85)}
 .topnav-right{display:flex;align-items:center;gap:12px}
-.topnav-out{color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;transition:color .2s}
-.topnav-out:hover{color:rgba(255,255,255,0.85)}
+.topnav-out{color:rgba(255,255,255,0.82);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;text-decoration:none;letter-spacing:0.02em;padding:8px 0;transition:color .2s}
+.topnav-out:hover{color:#fff}
 .topnav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);letter-spacing:0.2px;transition:background .2s,color .2s,border-color .2s}
 .topnav-cta:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18)}
+.prop-firm-btn{display:inline-block;background:#2254F5;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.02em;text-decoration:none;padding:8px 16px;border-radius:6px;border:none;transition:background .2s ease,color .2s ease}
+.prop-firm-btn:hover{background:#2d5cf7;color:#fff}
+.prop-firm-btn:active{opacity:0.92}
 @media(max-width:600px){
   .topnav{padding:0 12px;}
   .topnav-left a.topnav-link{display:none;}
@@ -1479,11 +1500,24 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
   .topnav-logo img{height:21px;}
 }
 .portal-wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:100px 24px 64px}
-.hero-section{text-align:center;margin-bottom:32px}
-.hero-section .pill{display:inline-block;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.25);border-radius:999px;color:#2254F5;font-size:11px;letter-spacing:3px;text-transform:uppercase;padding:6px 18px;margin-bottom:14px}
-.hero-section h1{font-size:38px;font-weight:700;letter-spacing:-0.5px;margin-bottom:0;color:#fff}
+.hero-section{position:relative;text-align:center;margin-bottom:32px}
+.hero-section-inner{display:inline-block;padding:8px 0 20px 0;border-radius:0;border:none;background:transparent;opacity:0;animation:heroLoadIn 0.55s cubic-bezier(0.22,1,0.36,1) forwards}
+@keyframes heroLoadIn{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
+.hero-section .pill{display:inline-block;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.25);border-radius:999px;color:#2254F5;font-size:11px;letter-spacing:3px;text-transform:uppercase;padding:6px 18px;margin-bottom:12px}
+.hero-section h1{font-size:38px;font-weight:700;letter-spacing:-0.5px;margin-bottom:6px;color:#fff;opacity:0;animation:heroTextIn 0.6s cubic-bezier(0.22,1,0.36,1) 0.1s forwards}
+.hero-section h1 .hero-name{
+  background:linear-gradient(90deg,#1d4ed8,#2563eb,#38bdf8);
+  background-size:200% 100%;
+  background-clip:text;
+  -webkit-background-clip:text;
+  color:transparent;
+  text-shadow:0 0 10px rgba(37,99,235,0.45),0 0 20px rgba(37,99,235,0.25),0 0 32px rgba(56,189,248,0.15);
+  animation:heroNameGradient 5s ease-in-out infinite;
+}
+@keyframes heroNameGradient{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes heroTextIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
 .hero-section p{color:#94a3b8;font-size:16px;line-height:1.5}
-.hero-div{height:1px;background:linear-gradient(90deg,transparent,rgba(34,84,245,0.3),transparent);margin:16px auto 0;max-width:200px}
+.hero-div{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent);margin:16px auto 0;max-width:200px}
 .section-label{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#64748b;margin:0 0 16px;text-align:center}
 .carousel-section{margin-bottom:40px}
 .carousel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:16px;flex-wrap:wrap}
@@ -1516,19 +1550,20 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
       <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:29px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" /></a>
     </div>
     <div class="topnav-right">
-      <a href="/prop-activation" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#2254F5,#3b6ff5);color:#fff;font-size:13px;font-weight:700;text-decoration:none;padding:7px 14px;border-radius:6px;border:1px solid rgba(34,84,245,0.5);letter-spacing:0.3px;box-shadow:0 0 12px rgba(34,84,245,0.45);">&#9670; Prop Firm</a>
       <a href="/billing/confirm-session" class="topnav-out">Billing</a>
       <a href="/logout" class="topnav-out">Log out</a>
-      <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>
+      <a href="/prop-activation" class="prop-firm-btn">Prop Firm</a>
     </div>
   </nav>
 </div>
 <div class="portal-wrap">
   <div class="hero-section">
-    <span class="pill">MEMBER PORTAL</span>
-    <h1>Welcome back, ${s.name}</h1>
-    <p style="font-family:'DM Sans',sans-serif;font-weight:400;font-size:17px;color:#4a6a8a;text-align:center;letter-spacing:0.2px;margin:10px 0 0 0">Stay sharp. Stay ahead.</p>
-    <div class="hero-div"></div>
+    <div class="hero-section-inner">
+      <span class="pill">MEMBER PORTAL</span>
+      <h1>Welcome back, <span class="hero-name">${s.name}</span></h1>
+      <p>Stay sharp. Stay ahead.</p>
+      <div class="hero-div"></div>
+    </div>
   </div>
   <p class="section-label">Your dashboard</p>
   <div class="carousel-section">
@@ -1595,11 +1630,12 @@ app.get('/member', requireSession, (req, res) => {
 // ─── TRADING JOURNAL (session-gated) ──────────────────────────────────────────
 app.get('/trading-journal', requireSession, (req, res) => {
     const s = req._session;
-    const hero = { pill: 'TRADING JOURNAL', title: 'Track. Review. Improve.', sub: `<span style="display:block;max-width:900px;margin:0 auto;">Every trade logged is a lesson earned.</span><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:900px;margin:20px auto 0;text-align:left;"><div style="background:#111827;border:2px solid #2254F5;border-radius:10px;padding:16px;"><div style="width:24px;height:24px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;margin-bottom:8px;">1</div><div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">Download Indicator</div><div style="font-size:11px;color:#64748b;line-height:1.5;margin-bottom:10px;">Get HVTJournalSync from your member downloads.</div><a href="/download-indicator" style="display:inline-block;background:#2254F5;color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700;">DOWNLOAD &rarr;</a></div><div style="background:#111827;border:2px solid #2254F5;border-radius:10px;padding:16px;"><div style="width:24px;height:24px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;margin-bottom:8px;">2</div><div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">Import into NinjaTrader</div><div style="font-size:11px;color:#64748b;line-height:1.5;">NinjaTrader &rarr; <strong style="color:#e2e8f0;">Tools &rarr; Import &rarr; NinjaScript</strong> &rarr; select the file.</div></div><div style="background:#111827;border:2px solid #2254F5;border-radius:10px;padding:16px;"><div style="width:24px;height:24px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;margin-bottom:8px;">3</div><div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">Add to Chart &amp; Enter Email</div><div style="font-size:11px;color:#64748b;line-height:1.5;">Right-click chart &rarr; <strong style="color:#e2e8f0;">Indicators</strong> &rarr; add HVTJournalSync &rarr; enter your Get Started email &rarr; OK.</div></div></div>` };
+    const hero = { pill: 'TRADING JOURNAL', title: 'Trading Journal', sub: 'Your complete record of trades, performance metrics, and daily progress all in one place.' };
     res.send(shell('Trading Journal', `
-    <div class="journal-wrap" style="width:100%;max-width:1400px;margin:0 auto;padding:0 20px;box-sizing:border-box;">
-      <div style="margin-top:8px;margin-bottom:16px;">
-        <a href="/member" style="color:#2254F5;font-size:13px;text-decoration:none;font-weight:500;">&larr; Back to Portal</a>
+    <div class="journal-wrap" style="width:100%;max-width:1400px;margin:0 auto;padding:0 20px;box-sizing:border-box;position:relative;z-index:1;">
+      <div class="journal-hero" style="text-align:center;margin-bottom:28px;">
+        <h1 style="font-size:28px;font-weight:700;letter-spacing:-0.3px;color:#fff;margin:0 0 8px;font-family:'DM Sans',sans-serif;">Trading Journal</h1>
+        <p style="font-size:15px;color:#94a3b8;line-height:1.5;margin:0;max-width:560px;margin-left:auto;margin-right:auto;">Your complete record of trades, performance metrics, and daily progress all in one place.</p>
       </div>
 
       <!-- Period filter -->
@@ -1716,6 +1752,9 @@ app.get('/trading-journal', requireSession, (req, res) => {
     <style>
       body{justify-content:flex-start !important;padding-top:90px !important;}
       .journal-wrap .card{max-width:none;}
+      .journal-hero{position:relative;z-index:2;}
+      .journal-hero h1{font-size:28px !important;font-weight:700 !important;letter-spacing:-0.3px !important;color:#fff !important;margin:0 0 8px !important;font-family:'DM Sans',sans-serif !important;}
+      .journal-hero p{font-size:15px !important;color:#94a3b8 !important;line-height:1.5 !important;margin:0 !important;max-width:560px;margin-left:auto !important;margin-right:auto !important;}
       .journal-tab{padding:8px 18px;border-radius:999px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;}
       .journal-tab:hover{background:rgba(255,255,255,0.08);color:#e2e8f0;}
       .journal-tab.active{background:rgba(34,84,245,0.15);border-color:rgba(34,84,245,0.35);color:#60a5fa;}
@@ -2074,20 +2113,23 @@ app.get('/course', requireSession, (req, res) => {
 html,body{height:100%;overflow:hidden}
 body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-serif;display:flex;flex-direction:column}
 
-/* ── TOPBAR ── */
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:60px;border-bottom:1px solid rgba(255,255,255,0.07);background:rgba(6,8,16,0.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);flex-shrink:0;z-index:200;position:relative}
-.topbar-left{display:flex;align-items:center;gap:0;min-width:0;flex-shrink:0}
+/* ── TOPBAR (matches member portal topnav) ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;border-bottom:1px solid rgba(255,255,255,0.08);background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);flex-shrink:0;z-index:200;position:relative}
+.topbar-left{display:flex;align-items:center;gap:12px;min-width:0;flex-shrink:0}
 .topbar-logo{display:flex;align-items:center;text-decoration:none;flex-shrink:0}
 .topbar-logo img{height:29px;width:auto;object-fit:contain;display:block;flex-shrink:0}
-.topbar-divider{width:1px;height:24px;background:rgba(255,255,255,0.1);margin:0 16px;flex-shrink:0}
-.back-btn{display:flex;align-items:center;gap:6px;color:#475569;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;white-space:nowrap;transition:color .15s;flex-shrink:0}
-.back-btn:hover{color:#94a3b8}
-.back-btn svg{flex-shrink:0}
-.topbar-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
-.course-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f6ad55;opacity:0.9;white-space:nowrap}
-.user-pill{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:5px 13px;font-size:11px;color:#64748b;font-weight:600;white-space:nowrap;flex-shrink:0}
-.mob-menu{display:none;align-items:center;justify-content:center;width:36px;height:36px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;color:#94a3b8;font-size:18px;flex-shrink:0;transition:background .15s}
-.mob-menu:hover{background:rgba(255,255,255,0.09)}
+.topbar-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.topnav-link{color:rgba(255,255,255,0.82);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;text-decoration:none;letter-spacing:0.02em;padding:8px 0;transition:color .2s}
+.topnav-link:hover{color:#fff}
+.topnav-out{color:rgba(255,255,255,0.82);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;text-decoration:none;letter-spacing:0.02em;padding:8px 0;transition:color .2s}
+.topnav-out:hover{color:#fff}
+.topnav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);letter-spacing:0.2px;transition:background .2s,color .2s,border-color .2s}
+.topnav-cta:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18)}
+.prop-firm-btn{display:inline-block;background:#2254F5;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.02em;text-decoration:none;padding:8px 16px;border-radius:6px;border:none;transition:background .2s ease,color .2s ease}
+.prop-firm-btn:hover{background:#2d5cf7;color:#fff}
+.prop-firm-btn:active{opacity:0.92}
+.mob-menu{display:none;align-items:center;justify-content:center;width:36px;height:36px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:6px;cursor:pointer;color:rgba(255,255,255,0.7);font-size:18px;flex-shrink:0;transition:background .2s,border-color .2s}
+.mob-menu:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18)}
 
 /* ── LAYOUT ── */
 .layout{display:flex;flex:1;overflow:hidden;position:relative}
@@ -2106,7 +2148,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 .section-header{display:flex;align-items:center;gap:8px;padding:10px 18px;cursor:pointer;user-select:none;transition:background .15s}
 .section-header:hover{background:rgba(255,255,255,0.025)}
 .section-dot{width:6px;height:6px;border-radius:50%;background:#1e2d3d;flex-shrink:0;transition:background .2s}
-.section.open .section-dot{background:#f6ad55}
+.section.open .section-dot{background:#2254F5}
 .section-title{font-size:11px;font-weight:700;color:#64748b;letter-spacing:0.8px;text-transform:uppercase;flex:1;transition:color .2s}
 .section.open .section-title{color:#94a3b8}
 .section-count{font-size:10px;color:#1e2d3d;font-weight:600;margin-right:4px}
@@ -2118,12 +2160,12 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 /* ── VIDEO ITEM ── */
 .video-item{display:flex;align-items:center;gap:11px;padding:8px 18px 8px 26px;cursor:pointer;transition:background .12s;position:relative}
 .video-item:hover{background:rgba(255,255,255,0.025)}
-.video-item.active{background:rgba(246,173,85,0.05)}
-.video-item.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:#f6ad55;border-radius:0 2px 2px 0}
+.video-item.active{background:rgba(34,84,245,0.06)}
+.video-item.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:#2254F5;border-radius:0 2px 2px 0}
 .video-thumb{width:52px;height:32px;border-radius:5px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .video-thumb img{width:100%;height:100%;object-fit:cover}
 .play-icon{width:13px;height:13px;color:#2d3f52}
-.video-item.active .play-icon{color:#f6ad55}
+.video-item.active .play-icon{color:#2254F5}
 .video-info{flex:1;min-width:0}
 .video-title{font-size:12px;font-weight:500;color:#475569;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .15s}
 .video-item:hover .video-title{color:#64748b}
@@ -2134,14 +2176,14 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#060810;min-width:0}
 .player-wrap{flex:1;display:flex;align-items:center;justify-content:center;background:#000;position:relative;min-height:0}
 .player-wrap iframe{width:100%;height:100%;border:none;display:block}
-.player-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#0f1623;text-align:center;padding:40px;width:100%;height:100%}
-.player-placeholder svg{opacity:0.25}
-.player-placeholder h3{font-size:18px;font-weight:700;color:#0f1623}
-.player-placeholder p{font-size:13px;color:#0f1623;max-width:300px;line-height:1.6}
+.player-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#64748b;text-align:center;padding:40px;width:100%;height:100%}
+.player-placeholder svg{opacity:0.35;color:#2254F5}
+.player-placeholder h3{font-size:18px;font-weight:700;color:#94a3b8;letter-spacing:-0.3px}
+.player-placeholder p{font-size:13px;color:#64748b;max-width:300px;line-height:1.6}
 .video-meta{padding:16px 24px;border-top:1px solid rgba(255,255,255,0.06);flex-shrink:0;background:#060810;display:none;align-items:center;gap:14px;flex-wrap:wrap}
 .video-meta h2{font-size:16px;font-weight:700;color:#fff;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .video-meta-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
-.section-badge{background:rgba(246,173,85,0.08);border:1px solid rgba(246,173,85,0.18);border-radius:20px;padding:3px 11px;font-size:10px;font-weight:700;color:#f6ad55;letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap}
+.section-badge{background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.2);border-radius:20px;padding:3px 11px;font-size:10px;font-weight:700;color:#2254F5;letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap}
 .video-dur-meta{font-size:12px;color:#334155;font-weight:500;white-space:nowrap}
 
 /* ── SIDEBAR OVERLAY (mobile) ── */
@@ -2152,8 +2194,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 @media(max-width:768px){
   .topbar{padding:0 12px;height:56px}
   .topbar-logo img{height:21px;}
-  .topbar-divider{margin:0 10px}
-  .course-label{display:none}
+  .topbar-right a.topnav-link,.topbar-right a.topnav-out{display:none}
   .mob-menu{display:flex}
   .sidebar{position:fixed;left:0;top:56px;bottom:0;width:280px;z-index:150;transform:translateX(-100%);box-shadow:4px 0 32px rgba(0,0,0,0.6)}
   .sidebar.open{transform:translateX(0)}
@@ -2162,7 +2203,6 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 }
 @media(max-width:400px){
   .topbar-logo img{height:18px;}
-  .topbar-divider{margin:0 8px}
   .user-pill{display:none}
 }
 </style>
@@ -2173,15 +2213,12 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
     <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topbar-logo">
       <img src="${LOGO_URL}" alt="High Velocity Trading" style="height:29px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" />
     </a>
-    <div class="topbar-divider"></div>
-    <a class="back-btn" href="/member">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/></svg>
-      Portal
-    </a>
   </div>
   <div class="topbar-right">
-    <span class="course-label">Course Library</span>
-    <div class="user-pill">${s.name}</div>
+    <a href="/member" class="topnav-link">Portal</a>
+    <a href="/billing/confirm-session" class="topnav-out">Billing</a>
+    <a href="/logout" class="topnav-out">Log out</a>
+    <a href="/prop-activation" class="prop-firm-btn">Prop Firm</a>
     <button class="mob-menu" id="mobMenu" aria-label="Toggle course menu">&#9776;</button>
   </div>
 </div>
@@ -3135,10 +3172,13 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#ff
 .topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:64px;width:100%;background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.08)}
 .topnav-logo img{height:29px;width:auto;object-fit:contain;display:block}
 .topnav-right{display:flex;align-items:center;gap:14px}
-.nav-link{color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;transition:color .2s}
+.nav-link{color:rgba(255,255,255,0.82);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;text-decoration:none;letter-spacing:0.02em;padding:8px 0;transition:color .2s}
 .nav-link:hover{color:#fff}
 .nav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);transition:background .2s}
 .nav-cta:hover{background:rgba(255,255,255,0.12)}
+.prop-firm-btn{display:inline-block;background:#2254F5;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.02em;text-decoration:none;padding:8px 16px;border-radius:6px;border:none;transition:background .2s ease,color .2s ease}
+.prop-firm-btn:hover{background:#2d5cf7;color:#fff}
+.prop-firm-btn:active{opacity:0.92}
 .wrap{max-width:700px;margin:0 auto;position:relative;z-index:1;padding-top:20px}
 .back{color:#2254F5;font-size:13px;text-decoration:none;font-weight:500;display:inline-block;margin-bottom:28px}
 .back:hover{color:#3b6ff5}
@@ -3183,7 +3223,7 @@ select option{background:#0d1117}
       <a href="/member" class="nav-link">Portal</a>
       <a href="/billing/confirm-session" class="nav-link">Billing</a>
       <a href="/logout" class="nav-link">Log out</a>
-      <a href="tel:786-461-4235" class="nav-cta">Call Us</a>
+      <a href="/prop-activation" class="prop-firm-btn">Prop Firm</a>
     </div>
   </nav>
 </div>
