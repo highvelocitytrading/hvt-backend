@@ -690,7 +690,7 @@ input::placeholder{color:#334155;}
       <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:39px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" /></a>
     </div>
     <div class="topnav-right" style="display:flex;align-items:center;gap:12px;">
-      ${hero && hero.hideNav ? '' : '<a href="/member" class="topnav-link" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Portal</a><a href="/billing/confirm-session" class="topnav-out" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Billing</a><a href="/logout" class="topnav-out" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Log out</a>'}
+      ${hero && hero.hideNav ? '' : '<a href="/member" class="topnav-link" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Portal</a><a href="/prop-activation" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#2254F5,#3b6ff5);color:#fff;font-size:13px;font-weight:700;text-decoration:none;padding:7px 14px;border-radius:6px;border:1px solid rgba(34,84,245,0.5);letter-spacing:0.3px;box-shadow:0 0 12px rgba(34,84,245,0.45);">&#9670; Prop Firm</a><a href="/billing/confirm-session" class="topnav-out" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Billing</a><a href="/logout" class="topnav-out" style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;">Log out</a>'}
       <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>
     </div>
   </nav>
@@ -1516,8 +1516,8 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
       <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:39px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" /></a>
     </div>
     <div class="topnav-right">
+      <a href="/prop-activation" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#2254F5,#3b6ff5);color:#fff;font-size:13px;font-weight:700;text-decoration:none;padding:7px 14px;border-radius:6px;border:1px solid rgba(34,84,245,0.5);letter-spacing:0.3px;box-shadow:0 0 12px rgba(34,84,245,0.45);">&#9670; Prop Firm</a>
       <a href="/billing/confirm-session" class="topnav-out">Billing</a>
-      <a href="/prop-activation" class="topnav-out">Activate Prop Account</a>
       <a href="/logout" class="topnav-out">Log out</a>
       <a href="tel:786-461-4235" class="topnav-cta">Call Us</a>
     </div>
@@ -3120,60 +3120,103 @@ app.get('/logout', async (req, res) => {
 // ─── PROP FIRM ACTIVATION PAGE ───────────────────────────────────────────────
 app.get('/prop-activation', requireSession, (req, res) => {
     const s = req._session;
-    res.send(shell('Activate Prop Account', `
-<div style="max-width:700px;width:100%;margin:0 auto;padding:0 20px 60px;box-sizing:border-box;">
-  <a href="/member" style="color:#2254F5;font-size:13px;text-decoration:none;font-weight:500;">&larr; Back to Portal</a>
-
-  <!-- MAIN CARD -->
-  <div style="margin-top:28px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:36px;">
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;">
-      <div style="width:44px;height:44px;border-radius:10px;background:rgba(34,84,245,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="1.7"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
-      </div>
-      <div>
-        <h2 style="font-size:20px;font-weight:700;color:#fff;margin:0;">Prop Firm Activation</h2>
-        <p style="color:#64748b;font-size:13px;margin:3px 0 0;">Authorize your email to use HVT indicators on any prop firm platform</p>
-      </div>
+    res.setHeader('Content-Type','text/html; charset=utf-8');
+    res.send(`<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="icon" type="image/png" href="/favicon.png?v=1">
+<title>Activate Prop Account – High Velocity Trading</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#fff;padding:90px 20px 60px;overflow-x:hidden}
+.bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:#000}
+.bg::before{content:'';position:absolute;top:0;left:0;width:65%;height:65%;background:radial-gradient(ellipse at 15% 30%,#00001C 0%,transparent 65%)}
+.topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:64px;width:100%;background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.08)}
+.topnav-logo img{height:39px;width:auto;object-fit:contain;display:block}
+.topnav-right{display:flex;align-items:center;gap:14px}
+.nav-link{color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;text-decoration:none;padding:8px 0;transition:color .2s}
+.nav-link:hover{color:#fff}
+.nav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);transition:background .2s}
+.nav-cta:hover{background:rgba(255,255,255,0.12)}
+.wrap{max-width:700px;margin:0 auto;position:relative;z-index:1;padding-top:20px}
+.back{color:#2254F5;font-size:13px;text-decoration:none;font-weight:500;display:inline-block;margin-bottom:28px}
+.back:hover{color:#3b6ff5}
+.hero{text-align:center;margin-bottom:32px}
+.pill{display:inline-block;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.25);border-radius:999px;color:#2254F5;font-size:11px;letter-spacing:3px;text-transform:uppercase;padding:6px 18px;margin-bottom:16px}
+.hero h1{font-size:38px;font-weight:700;color:#fff;letter-spacing:-.5px;margin-bottom:10px}
+.hero p{font-size:15px;color:#64748b;max-width:520px;margin:0 auto}
+.hero-div{height:1px;background:linear-gradient(90deg,transparent,rgba(34,84,245,0.3),transparent);max-width:200px;margin:18px auto 0}
+.card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:32px;margin-bottom:20px}
+.card-label{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:16px}
+.steps{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.step{background:#0d1117;border:1px solid rgba(34,84,245,0.22);border-radius:10px;padding:16px}
+.step-num{width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;margin-bottom:10px}
+.step h4{font-size:13px;font-weight:700;color:#fff;margin-bottom:5px}
+.step p{font-size:12px;color:#64748b;line-height:1.5}
+.step strong{color:#e2e8f0}
+.form-row{margin-bottom:16px}
+label{display:block;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b;margin-bottom:8px}
+input,select{width:100%;background:#0d1117;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px 14px;color:#fff;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s,box-shadow .2s;appearance:none;-webkit-appearance:none}
+input:focus,select:focus{border-color:#2254F5;box-shadow:0 0 0 3px rgba(34,84,245,0.15)}
+input::placeholder{color:#334155}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+select option{background:#0d1117}
+.divider{height:1px;background:rgba(255,255,255,0.07);margin:20px 0}
+#prop-msg{display:none;padding:14px 16px;border-radius:8px;font-size:14px;font-weight:500;margin-bottom:20px;line-height:1.6}
+.submit-btn{width:100%;background:linear-gradient(135deg,#2254F5,#3b6ff5);color:#fff;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:0.3px;transition:all .2s;box-shadow:0 4px 20px rgba(34,84,245,0.35);font-family:'DM Sans',sans-serif}
+.submit-btn:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(34,84,245,0.5)}
+.submit-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.act-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.act-row:last-child{border-bottom:none}
+.act-firm{font-size:14px;font-weight:600;color:#fff}
+.act-email{font-size:12px;color:#64748b;margin-top:3px}
+.act-status{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.act-date{font-size:11px;color:#475569;margin-top:3px}
+@media(max-width:600px){.steps{grid-template-columns:1fr}.nav-link{display:none}}
+</style></head><body>
+<div class="bg" aria-hidden="true"></div>
+<div class="topnav-wrap">
+  <nav class="topnav">
+    <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:39px;" onerror="this.onerror=null;this.style.display='none'"/></a>
+    <div class="topnav-right">
+      <a href="/member" class="nav-link">Portal</a>
+      <a href="/billing/confirm-session" class="nav-link">Billing</a>
+      <a href="/logout" class="nav-link">Log out</a>
+      <a href="tel:786-461-4235" class="nav-cta">Call Us</a>
     </div>
+  </nav>
+</div>
 
-    <!-- HOW IT WORKS -->
-    <p style="color:#94a3b8;font-size:11px;font-weight:700;margin:0 0 12px;text-transform:uppercase;letter-spacing:1.2px;">How it works</p>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:28px;">
-      <div style="background:#0d1117;border:1px solid rgba(34,84,245,0.25);border-radius:10px;padding:16px;">
-        <div style="width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;margin-bottom:10px;">1</div>
-        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">Activate Below</div>
-        <div style="font-size:12px;color:#64748b;line-height:1.5;">Enter your HVT email and prop firm, then click Activate</div>
-      </div>
-      <div style="background:#0d1117;border:1px solid rgba(34,84,245,0.25);border-radius:10px;padding:16px;">
-        <div style="width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;margin-bottom:10px;">2</div>
-        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">Open NinjaTrader</div>
-        <div style="font-size:12px;color:#64748b;line-height:1.5;">Go to <strong style="color:#e2e8f0;">Help &rarr; 3rd Party Licensing</strong> in NinjaTrader</div>
-      </div>
-      <div style="background:#0d1117;border:1px solid rgba(34,84,245,0.25);border-radius:10px;padding:16px;">
-        <div style="width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;margin-bottom:10px;">3</div>
-        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">Enter Your Email</div>
-        <div style="font-size:12px;color:#64748b;line-height:1.5;">Enter <strong style="color:#e2e8f0;">High Velocity Trading</strong> as vendor and your HVT email as the license key</div>
-      </div>
+<div class="wrap">
+  <a href="/member" class="back">&larr; Back to Portal</a>
+
+  <div class="hero">
+    <div class="pill">PROP FIRM</div>
+    <h1>Activate Prop Account</h1>
+    <p>Authorize your HVT email to run indicators on any prop firm platform — no machine ID needed.</p>
+    <div class="hero-div"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">How it works</div>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><h4>Activate Below</h4><p>Enter your HVT email and prop firm, then click Activate</p></div>
+      <div class="step"><div class="step-num">2</div><h4>Open NinjaTrader</h4><p>Go to <strong>Help &rarr; 3rd Party Licensing</strong> in NinjaTrader 8</p></div>
+      <div class="step"><div class="step-num">3</div><h4>Enter Your Email</h4><p>Vendor: <strong>High Velocity Trading</strong> &mdash; License Key: your HVT email</p></div>
     </div>
+  </div>
 
-    <div style="height:1px;background:rgba(255,255,255,0.07);margin:0 0 24px;"></div>
-
-    <!-- MESSAGE BOX -->
-    <div id="prop-msg" style="display:none;padding:14px 16px;border-radius:8px;font-size:14px;font-weight:500;margin-bottom:20px;line-height:1.5;"></div>
-
-    <!-- FORM -->
-    <div style="margin-bottom:16px;">
-      <label style="display:block;color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Your HVT Purchase Email</label>
-      <input id="prop-email" type="email" placeholder="email@example.com" value="${s.email || ''}"
-        style="width:100%;box-sizing:border-box;background:#0d1117;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:12px 14px;color:#fff;font-size:14px;outline:none;transition:border-color .2s;"
-        onfocus="this.style.borderColor='#2254F5'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'"/>
+  <div class="card">
+    <div class="card-label">Activate your account</div>
+    <div id="prop-msg"></div>
+    <div class="form-row">
+      <label>Your HVT Purchase Email</label>
+      <input id="prop-email" type="email" placeholder="email@example.com" value="${s.email || ''}"/>
     </div>
-
-    <div style="margin-bottom:24px;">
-      <label style="display:block;color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Prop Firm</label>
-      <select id="prop-firm-name"
-        style="width:100%;box-sizing:border-box;background:#0d1117;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:12px 14px;color:#fff;font-size:14px;outline:none;appearance:none;-webkit-appearance:none;transition:border-color .2s;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 14px center;"
-        onfocus="this.style.borderColor='#2254F5'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'">
+    <div class="form-row">
+      <label>Prop Firm</label>
+      <select id="prop-firm-name">
         <option value="">Select your prop firm...</option>
         <option>Apex Trader Funding</option>
         <option>TopstepTrader</option>
@@ -3187,99 +3230,60 @@ app.get('/prop-activation', requireSession, (req, res) => {
         <option>Other</option>
       </select>
     </div>
-
-    <button id="prop-submit" onclick="submitPropActivation()"
-      style="width:100%;background:#2254F5;color:#fff;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:0.3px;transition:background .2s;"
-      onmouseover="this.style.background='#1a42d4'" onmouseout="this.style.background='#2254F5'">
-      Activate Now
-    </button>
+    <div class="divider"></div>
+    <button class="submit-btn" id="prop-submit" onclick="submitPropActivation()">Activate Now</button>
   </div>
 
-  <!-- YOUR ACTIVATIONS -->
-  <div style="margin-top:28px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:28px;">
-    <h3 style="font-size:15px;font-weight:700;color:#fff;margin:0 0 18px;">Your Activations</h3>
+  <div class="card">
+    <div class="card-label">Your Activations</div>
     <div id="activations-list"><div style="color:#64748b;font-size:14px;">Loading...</div></div>
   </div>
 </div>
 
 <script>
-function showMsg(msg, ok) {
-  var el = document.getElementById('prop-msg');
-  el.style.display = 'block';
-  el.style.background = ok ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)';
-  el.style.border = '1px solid ' + (ok ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)');
-  el.style.color = ok ? '#4ade80' : '#f87171';
-  el.innerHTML = msg;
-  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+function showMsg(msg,ok){
+  var el=document.getElementById('prop-msg');
+  el.style.display='block';
+  el.style.background=ok?'rgba(34,197,94,0.08)':'rgba(239,68,68,0.08)';
+  el.style.border='1px solid '+(ok?'rgba(34,197,94,0.3)':'rgba(239,68,68,0.3)');
+  el.style.color=ok?'#4ade80':'#f87171';
+  el.innerHTML=msg;
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
-
-async function submitPropActivation() {
-  var email    = document.getElementById('prop-email').value.trim();
-  var firmName = document.getElementById('prop-firm-name').value.trim();
-  var btn      = document.getElementById('prop-submit');
-
-  if (!email)    return showMsg('Please enter your HVT purchase email.', false);
-  if (!firmName) return showMsg('Please select your prop firm.', false);
-
-  btn.disabled = true;
-  btn.textContent = 'Activating...';
-
-  try {
-    var r = await fetch('/api/prop-activation', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email, firmName: firmName })
-    });
-    var d = await r.json();
-    if (d.ok) {
-      showMsg(
-        '<strong>Activation complete!</strong><br>' +
-        'Your email is now authorized. In NinjaTrader go to <strong>Help &rarr; 3rd Party Licensing</strong>, ' +
-        'enter <strong>High Velocity Trading</strong> as the vendor and <strong>' + email + '</strong> as the license key.',
-        true
-      );
+async function submitPropActivation(){
+  var email=document.getElementById('prop-email').value.trim();
+  var firmName=document.getElementById('prop-firm-name').value.trim();
+  var btn=document.getElementById('prop-submit');
+  if(!email) return showMsg('Please enter your HVT purchase email.',false);
+  if(!firmName) return showMsg('Please select your prop firm.',false);
+  btn.disabled=true;btn.textContent='Activating...';
+  try{
+    var r=await fetch('/api/prop-activation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,firmName:firmName})});
+    var d=await r.json();
+    if(d.ok){
+      showMsg('<strong>&#10003; Activation complete!</strong><br>In NinjaTrader go to <strong>Help &rarr; 3rd Party Licensing</strong>, enter <strong>High Velocity Trading</strong> as vendor and <strong>'+email+'</strong> as the license key.',true);
       loadActivations();
     } else {
-      showMsg(d.error || 'Activation failed. Please contact support.', false);
+      showMsg(d.error||'Activation failed. Please contact support.',false);
     }
-  } catch(e) {
-    showMsg('Network error. Please try again.', false);
-  }
-
-  btn.disabled = false;
-  btn.textContent = 'Activate Now';
+  } catch(e){ showMsg('Network error. Please try again.',false); }
+  btn.disabled=false;btn.textContent='Activate Now';
 }
-
-async function loadActivations() {
-  try {
-    var r = await fetch('/api/prop-activations/mine');
-    var d = await r.json();
-    var el = document.getElementById('activations-list');
-    if (!d.ok || !d.activations || !d.activations.length) {
-      el.innerHTML = '<div style="color:#64748b;font-size:14px;">No activations yet.</div>';
-      return;
-    }
-    el.innerHTML = d.activations.map(function(a) {
-      var statusColor = a.status === 'active' ? '#4ade80' : '#f87171';
-      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.05);">'
-        + '<div>'
-        + '<div style="font-size:14px;font-weight:600;color:#fff;">' + a.firm_name + '</div>'
-        + '<div style="font-size:12px;color:#64748b;margin-top:3px;">' + a.email + '</div>'
-        + '</div>'
-        + '<div style="text-align:right;flex-shrink:0;margin-left:16px;">'
-        + '<div style="font-size:11px;color:' + statusColor + ';font-weight:700;text-transform:uppercase;letter-spacing:1px;">' + a.status + '</div>'
-        + '<div style="font-size:11px;color:#475569;margin-top:3px;">' + new Date(a.created_at).toLocaleDateString() + '</div>'
-        + '</div>'
-        + '</div>';
-    }).join('') + '<div style="height:1px;"></div>';
-  } catch(e) {
-    document.getElementById('activations-list').innerHTML = '<div style="color:#64748b;font-size:14px;">Could not load activations.</div>';
-  }
+async function loadActivations(){
+  try{
+    var r=await fetch('/api/prop-activations/mine');
+    var d=await r.json();
+    var el=document.getElementById('activations-list');
+    if(!d.ok||!d.activations||!d.activations.length){el.innerHTML='<div style="color:#64748b;font-size:14px;">No activations yet.</div>';return;}
+    el.innerHTML=d.activations.map(function(a){
+      var sc=a.status==='active'?'#4ade80':'#f87171';
+      return '<div class="act-row"><div><div class="act-firm">'+a.firm_name+'</div><div class="act-email">'+a.email+'</div></div><div style="text-align:right;flex-shrink:0;margin-left:16px;"><div class="act-status" style="color:'+sc+';">'+a.status+'</div><div class="act-date">'+new Date(a.created_at).toLocaleDateString()+'</div></div></div>';
+    }).join('');
+  } catch(e){ document.getElementById('activations-list').innerHTML='<div style="color:#64748b;font-size:14px;">Could not load activations.</div>'; }
 }
-
 loadActivations();
 </script>
-`, { pill: 'PROP FIRM', title: 'Activate Prop Account', sub: 'Authorize your HVT email to run indicators on any prop firm platform — no machine ID needed.' }));
+</body></html>`);
 });
 
 // ─── PROP ACTIVATION API ─────────────────────────────────────────────────────
