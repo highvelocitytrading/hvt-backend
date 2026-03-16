@@ -1633,11 +1633,6 @@ app.get('/trading-journal', requireSession, (req, res) => {
     const hero = { pill: 'TRADING JOURNAL', title: 'Trading Journal', sub: 'Your complete record of trades, performance metrics, and daily progress all in one place.' };
     res.send(shell('Trading Journal', `
     <div class="journal-wrap" style="width:100%;max-width:1400px;margin:0 auto;padding:0 20px;box-sizing:border-box;position:relative;z-index:1;">
-      <div class="journal-hero" style="text-align:center;margin-bottom:28px;">
-        <h1 style="font-size:28px;font-weight:700;letter-spacing:-0.3px;color:#fff;margin:0 0 8px;font-family:'DM Sans',sans-serif;">Trading Journal</h1>
-        <p style="font-size:15px;color:#94a3b8;line-height:1.5;margin:0;max-width:560px;margin-left:auto;margin-right:auto;">Your complete record of trades, performance metrics, and daily progress all in one place.</p>
-      </div>
-
       <!-- Period filter -->
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
         <span style="font-size:12px;color:#64748b;font-weight:600;">Period:</span>
