@@ -1984,24 +1984,24 @@ app.get('/trading-journal', requireSession, (req, res) => {
             if(p==='month') return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
             return true;
           });
-          // Sort filtered trades oldest→newest for streak logic
+          // Parse net_pnl as float (Supabase can return strings)
+          f=f.map(function(t){return Object.assign({},t,{net_pnl:parseFloat(t.net_pnl)||0});});
+          // Sort: oldest→newest for streak, newest→oldest for display
           var fAsc=f.slice().sort(function(a,b){return new Date(a.exit_time)-new Date(b.exit_time);});
-          // newest→oldest for display
           var fDesc=f.slice().sort(function(a,b){return new Date(b.exit_time)-new Date(a.exit_time);});
 
           var wins=f.filter(function(t){return t.net_pnl>0;});
           var losses=f.filter(function(t){return t.net_pnl<0;});
-          // Round net to avoid floating point drift
-          var net=Math.round(f.reduce(function(s,t){return s+(t.net_pnl||0);},0)*100)/100;
-          var aw=wins.length?Math.round(wins.reduce(function(s,t){return s+(t.net_pnl||0);},0)/wins.length*100)/100:null;
-          var al=losses.length?Math.round(Math.abs(losses.reduce(function(s,t){return s+(t.net_pnl||0);},0)/losses.length)*100)/100:null;
-          var gw=Math.round(wins.reduce(function(s,t){return s+(t.net_pnl||0);},0)*100)/100;
-          var gl=Math.round(Math.abs(losses.reduce(function(s,t){return s+(t.net_pnl||0);},0))*100)/100;
+          var net=Math.round(f.reduce(function(s,t){return s+t.net_pnl;},0)*100)/100;
+          var aw=wins.length?Math.round(wins.reduce(function(s,t){return s+t.net_pnl;},0)/wins.length*100)/100:null;
+          var al=losses.length?Math.round(Math.abs(losses.reduce(function(s,t){return s+t.net_pnl;},0)/losses.length)*100)/100:null;
+          var gw=Math.round(wins.reduce(function(s,t){return s+t.net_pnl;},0)*100)/100;
+          var gl=Math.round(Math.abs(losses.reduce(function(s,t){return s+t.net_pnl;},0))*100)/100;
 
-          // ── TRADE STREAK — iterate oldest→newest, count from end ─────────
+          // ── TRADE STREAK — walk fAsc from newest end backward ────────────
           var ts=0,sd=null;
           for(var j=fAsc.length-1;j>=0;j--){
-            var ww=fAsc[j].net_pnl>0;
+            var ww=fAsc[j].net_pnl>0;  // already parsed as float above
             if(sd===null) sd=ww;
             if(ww===sd) ts++;
             else break;
