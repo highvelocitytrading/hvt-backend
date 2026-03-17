@@ -1968,31 +1968,56 @@ app.get('/trading-journal', requireSession, (req, res) => {
         var liveData={pnl:{},trades:{},recent:[],open:[]};
         function applyPeriodFilter(p){
           var now=new Date();
+          // Filter trades by period using LOCAL date comparison
           var f=liveData.recent.filter(function(t){
             var d=new Date(t.exit_time);
-            if(p==='day') return d.toDateString()===now.toDateString();
+            if(p==='day'){
+              return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();
+            }
             if(p==='week'){var w=new Date(now);w.setDate(now.getDate()-now.getDay());w.setHours(0,0,0,0);return d>=w;}
             if(p==='month') return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
             return true;
           });
-          var wins=f.filter(function(t){return t.net_pnl>0;}),losses=f.filter(function(t){return t.net_pnl<=0;});
+          // Only count real losses (net_pnl strictly < 0), ignore breakeven
+          var wins=f.filter(function(t){return t.net_pnl>0;});
+          var losses=f.filter(function(t){return t.net_pnl<0;});
           var net=f.reduce(function(s,t){return s+(t.net_pnl||0);},0);
           var wp=f.length?Math.round(wins.length/f.length*100):null;
           var aw=wins.length?wins.reduce(function(s,t){return s+(t.net_pnl||0);},0)/wins.length:null;
-          var al=losses.length?losses.reduce(function(s,t){return s+(t.net_pnl||0);},0)/losses.length:null;
+          var al=losses.length?Math.abs(losses.reduce(function(s,t){return s+(t.net_pnl||0);},0)/losses.length):null;
           var gw=wins.reduce(function(s,t){return s+(t.net_pnl||0);},0);
           var gl=Math.abs(losses.reduce(function(s,t){return s+(t.net_pnl||0);},0));
-          var pf=gl>0?gw/gl:(gw>0?999:null);
-          var dk=Object.keys(liveData.pnl).sort();var ds=0;
-          for(var i=dk.length-1;i>=0;i--){if(liveData.pnl[dk[i]]>0)ds++;else break;}
+          // Profit factor: show — when no trades, pure number when losses exist, blank loss side when no losses
+          var pf=gl>0?(gw/gl):null;
+          // Day streak: count consecutive green DAYS backwards using all closed trades grouped by local date
+          var dayMap={};
+          liveData.recent.forEach(function(t){
+            var d=new Date(t.exit_time);
+            var k=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+            dayMap[k]=(dayMap[k]||0)+(t.net_pnl||0);
+          });
+          var dayKeys=Object.keys(dayMap).sort();
+          var ds=0;
+          for(var i=dayKeys.length-1;i>=0;i--){
+            if(dayMap[dayKeys[i]]>0) ds++;
+            else break;
+          }
+          // Trade streak: consecutive wins/losses in filtered period
           var ts=0,sd=null;
-          for(var j=liveData.recent.length-1;j>=0;j--){var ww=liveData.recent[j].net_pnl>0;if(sd===null)sd=ww;if(ww===sd)ts++;else break;}
+          for(var j=f.length-1;j>=0;j--){
+            var ww=f[j].net_pnl>0;
+            if(sd===null) sd=ww;
+            if(ww===sd) ts++;
+            else break;
+          }
           function s(id,txt,col){var e=document.getElementById(id);if(e){e.textContent=txt;if(col)e.style.color=col;}}
           s('stat-pnl',(net>=0?'+':'')+'$'+Math.abs(net).toFixed(2),net>0?'#4ade80':net<0?'#f87171':'#94a3b8');
-          s('stat-avgwl',aw!==null?'+$'+aw.toFixed(0)+' / -$'+Math.abs(al||0).toFixed(0):'—',aw!==null?'#e2e8f0':'#94a3b8');
+          // Avg win/loss: show — on the side that has no data
+          var avgStr=(aw!==null?'+$'+aw.toFixed(0):'—')+' / '+(al!==null?'-$'+al.toFixed(0):'—');
+          s('stat-avgwl',aw!==null||al!==null?avgStr:'—',(aw!==null||al!==null)?'#e2e8f0':'#94a3b8');
           s('stat-daystreak',ds+' day'+(ds!==1?'s':''),ds>0?'#4ade80':'#94a3b8');
           s('stat-wins',wp!==null?wp+'%':'—',wp!==null?(wp>=50?'#4ade80':'#f87171'):'#94a3b8');
-          s('stat-pf',pf!==null?pf.toFixed(2):'—',pf!==null?(pf>=1?'#4ade80':'#f87171'):'#94a3b8');
+          s('stat-pf',pf!==null?pf.toFixed(2):(f.length&&!losses.length&&wins.length?'Perfect':'—'),pf!==null?(pf>=1?'#4ade80':'#f87171'):(f.length&&!losses.length&&wins.length?'#4ade80':'#94a3b8'));
           s('stat-tradestreak',ts+' trade'+(ts!==1?'s':''),ts>0&&sd===true?'#4ade80':ts>0&&sd===false?'#f87171':'#94a3b8');
           var tb=document.querySelector('#trades-recent table tbody');
           if(tb){if(!f.length){tb.innerHTML='<tr><td colspan="3" style="text-align:center;color:#64748b;padding:28px;">No trades recorded yet</td></tr>';}
@@ -2005,7 +2030,7 @@ app.get('/trading-journal', requireSession, (req, res) => {
           samplePnL=liveData.pnl;sampleTrades=liveData.trades;render();
         }
         function loadJournalData(){fetch('/api/journal/data',{credentials:'include'}).then(function(r){return r.ok?r.json():Promise.reject(r.status);}).then(function(d){liveData=d;applyPeriodFilter(period);}).catch(function(e){console.warn('[HVTJournal]',e);});}
-        document.querySelectorAll('.journal-tab').forEach(function(btn){btn.addEventListener('click',function(){setTimeout(function(){applyPeriodFilter(period);},0);});});
+        document.querySelectorAll('.journal-tab').forEach(function(btn){btn.addEventListener('click',function(){document.querySelectorAll('.journal-tab').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');period=btn.getAttribute('data-period');applyPeriodFilter(period);});});
         loadJournalData();
         setInterval(loadJournalData,10000);
       })();
