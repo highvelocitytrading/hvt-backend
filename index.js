@@ -2600,9 +2600,9 @@ app.post('/admin/cancel', adm, express.json(), async (req, res) => {
             }
 
             // 3. Update Supabase — only update the specific record by ID to avoid constraint issues
-            // Valid statuses: active, pending_jotform, pending_authorize, inactive
+            // Valid statuses per Supabase check constraint: active, pending_jotform, pending_authorize, cancelled
             if (l.id) {
-                const { error: updErr } = await supabase.from(LICENSE_TABLE).update({ status: 'inactive', updated_at: nowISO() }).eq('id', l.id);
+                const { error: updErr } = await supabase.from(LICENSE_TABLE).update({ status: 'cancelled', updated_at: nowISO() }).eq('id', l.id);
                 if (updErr) {
                     console.error('[AdminCancel] lifetime DB update failed:', updErr.message);
                     // NT license already revoked — log but don't block success
@@ -2613,7 +2613,7 @@ app.post('/admin/cancel', adm, express.json(), async (req, res) => {
             } else {
                 // Fallback: update by email with explicit valid status
                 const { error: updErr } = await supabase.from(LICENSE_TABLE)
-                    .update({ status: 'inactive', updated_at: nowISO() })
+                    .update({ status: 'cancelled', updated_at: nowISO() })
                     .eq('email', email)
                     .eq('status', 'active');
                 if (updErr) {
