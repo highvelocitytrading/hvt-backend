@@ -1296,7 +1296,7 @@ app.post('/trading-room/activate-discord', frm, express.json(), async (req, res)
 
         if (isMonthly) await supabase.from(MEMBERSHIP_TABLE).update({ discord_user_id: uid, discord_username: discUser, updated_at: nowISO() }).eq('email', email);
         if (isDiscord) await supabase.from(DISCORD_TABLE).update({ discord_user_id: uid, discord_username: discUser, updated_at: nowISO() }).eq('email', email);
-        if (isLifetime) await supabase.from(LICENSE_TABLE).update({ discord_user_id: uid, discord_username: discUser, updated_at: nowISO() }).eq('email', email);
+        if (isLifetime) await supabase.from(LICENSE_TABLE).update({ discord_user_id: uid, updated_at: nowISO() }).eq('email', email).catch(e => console.error('[Discord] LIC update:', e.message));
 
         console.log(`✅ Discord-only: @${discUser} (${uid}) → ${email}`);
         res.json({ ok: true });
@@ -1944,12 +1944,13 @@ const JOURNAL_RATE = rateLimit({ max: 120 });
 async function verifyJournalEmail(email) {
     if (!email) return null;
     const e = email.toLowerCase().trim();
+    const safe = p => p.then(r => r).catch(() => ({ data: null }));
     const [{ data: m }, { data: l }, { data: d }, { data: mNT }, { data: lNT }] = await Promise.all([
-        supabase.from(MEMBERSHIP_TABLE).select('email,status,expires_at').eq('email', e).maybeSingle(),
-        supabase.from(LICENSE_TABLE).select('email,status').eq('email', e).maybeSingle(),
-        supabase.from(DISCORD_TABLE).select('email,status,expires_at').eq('email', e).maybeSingle(),
-        supabase.from(MEMBERSHIP_TABLE).select('email,status,expires_at').eq('nt_email', e).maybeSingle(),
-        supabase.from(LICENSE_TABLE).select('email,status').eq('nt_email', e).maybeSingle()
+        safe(supabase.from(MEMBERSHIP_TABLE).select('email,status,expires_at').eq('email', e).maybeSingle()),
+        safe(supabase.from(LICENSE_TABLE).select('email,status').eq('email', e).maybeSingle()),
+        safe(supabase.from(DISCORD_TABLE).select('email,status,expires_at').eq('email', e).maybeSingle()),
+        safe(supabase.from(MEMBERSHIP_TABLE).select('email,status,expires_at').eq('nt_email', e).maybeSingle()),
+        safe(supabase.from(LICENSE_TABLE).select('email,status').eq('nt_email', e).maybeSingle())
     ]);
     const isMonthly  = (m?.status==='active'&&new Date(m.expires_at)>new Date())||(mNT?.status==='active'&&new Date(mNT.expires_at)>new Date());
     const isLifetime = l?.status==='active'||lNT?.status==='active';
@@ -1964,11 +1965,13 @@ app.post('/api/journal/trade', JOURNAL_RATE, express.json(), async (req, res) =>
         const canonical = await verifyJournalEmail(email);
         if (!canonical) return res.status(401).json({ error: 'No active membership found for this email.' });
         if (!trade||!trade.trade_id) return res.status(400).json({ error: 'Missing trade data.' });
+        const safeNum = v => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
         const { error } = await supabase.from(JOURNAL_TABLE).upsert({
             email: canonical, account_name: trade.account_name||null, instrument: trade.instrument||null,
-            direction: trade.direction||null, quantity: trade.quantity||0, entry_price: trade.entry_price||0,
-            exit_price: trade.exit_price||0, entry_time: trade.entry_time||null, exit_time: trade.exit_time||null,
-            pnl: trade.pnl||0, commission: trade.commission||0, net_pnl: trade.net_pnl||0,
+            direction: trade.direction||null, quantity: parseInt(trade.quantity)||0,
+            entry_price: safeNum(trade.entry_price), exit_price: safeNum(trade.exit_price),
+            entry_time: trade.entry_time||null, exit_time: trade.exit_time||null,
+            pnl: safeNum(trade.pnl), commission: safeNum(trade.commission), net_pnl: safeNum(trade.net_pnl),
             trade_id: trade.trade_id, is_open: false, unrealized_pnl: 0, updated_at: nowISO()
         }, { onConflict: 'trade_id' });
         if (error) { console.error('[Journal/trade]', error.message); return res.status(500).json({ error: 'DB error.' }); }
@@ -1983,14 +1986,15 @@ app.post('/api/journal/positions', JOURNAL_RATE, express.json(), async (req, res
         if (!canonical) return res.status(401).json({ error: 'No active membership found for this email.' });
         await supabase.from(JOURNAL_TABLE).update({ is_open: false, updated_at: nowISO() }).eq('email', canonical).eq('is_open', true);
         if (open_positions&&open_positions.length>0) {
-            await supabase.from(JOURNAL_TABLE).insert(open_positions.map(p => ({
+            // Use deterministic trade_id so upsert deduplicates on rapid timer calls
+            await supabase.from(JOURNAL_TABLE).upsert(open_positions.map(p => ({
                 email: canonical, account_name: p.account_name||null, instrument: p.instrument||null,
                 direction: p.direction||null, quantity: p.quantity||0, entry_price: p.avg_price||0,
                 exit_price: 0, entry_time: p.updated_at||nowISO(), exit_time: null,
                 pnl: 0, commission: 0, net_pnl: 0,
-                trade_id: `open_${canonical}_${p.instrument}_${Date.now()}`,
+                trade_id: `open_${canonical}_${(p.instrument||'').replace(/[^a-z0-9]/gi,'_')}`,
                 is_open: true, unrealized_pnl: p.unrealized_pnl||0, updated_at: nowISO()
-            })));
+            })), { onConflict: 'trade_id' });
         }
         res.json({ ok: true });
     } catch (e) { console.error('[Journal/positions]', e.message); res.status(500).json({ error: 'Server error.' }); }
@@ -2960,7 +2964,7 @@ app.get('/admin', adm, adminGuard, async (req, res) => {
         'function doCancel(email,type){',
         '  showMsg("cancelMsg",true,"Cancelling "+email+"...");',
         '  post("/admin/cancel",{email:email,type:type},',
-        '    function(d){var note=d.db_note?" (Note: "+d.db_note+")":"";showMsg("cancelMsg",true,"\\u2713 Revoked: "+email+(d.nt_revoked?" \\u2014 NT revoked":"")+note);setTimeout(function(){location.reload();},2000);},',
+        '    function(d){var note=d.db_note?" (Note: "+d.db_note+")":"";var action=type==="lifetime"?"Revoked":"Cancelled";showMsg("cancelMsg",true,"\\u2713 "+action+": "+email+(d.nt_revoked?" \\u2014 NT revoked":"")+(d.db_updated?" \\u2014 DB updated":"")+note);setTimeout(function(){location.reload();},2000);},',
         '    function(e){showMsg("cancelMsg",false,"Error: "+e);}',
         '  );',
         '}',
@@ -3438,6 +3442,7 @@ app.post('/api/prop-activation', requireSession, frm, express.json(), async (req
 
 // ─── MY PROP ACTIVATIONS ─────────────────────────────────────────────────────
 app.get('/api/prop-activations/mine', requireSession, async (req, res) => {
+    try {
     const s = req._session;
     const { data, error } = await supabase
         .from(PROP_FIRM_TABLE)
@@ -3447,6 +3452,7 @@ app.get('/api/prop-activations/mine', requireSession, async (req, res) => {
 
     if (error) return res.status(500).json({ ok: false, error: error.message });
     res.json({ ok: true, activations: data || [] });
+    } catch(e) { console.error('[PropMine]', e.message); res.status(500).json({ ok: false, error: 'Server error.' }); }
 });
 
 // ─── ADMIN: VIEW ALL PROP ACTIVATIONS ────────────────────────────────────────
@@ -3580,7 +3586,7 @@ app.post('/admin/prop-activations/:id/revoke', adm, express.json(), async (req, 
         return res.json({ ok: true, message: 'Already revoked.' });
 
     // Revoke from NT Ecosystem
-    if (record.nt_license_id) await ntRevokeLicense(record.nt_license_id);
+    if (record.nt_license_id) { try { await ntRevokeLicense(record.nt_license_id); } catch(e) { console.error("[PropRevoke] NT revoke error:", e.message); } }
 
     const { error } = await supabase
         .from(PROP_FIRM_TABLE)
