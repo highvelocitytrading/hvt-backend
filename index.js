@@ -101,7 +101,7 @@ const JOURNAL_TABLE    = 'journal_trades';
 const PROP_FIRM_TABLE  = 'prop_firm_activations';
 
 // ─── NINJATRADER ECOSYSTEM API ────────────────────────────────────────────────
-const NT_PRODUCT_ID = process.env.NT_PRODUCT_ID || '1196';
+const NT_PRODUCT_ID = process.env.NT_PRODUCT_ID || '1212';
 const NT_USERNAME   = process.env.NT_USERNAME   || '';
 const NT_PASSWORD   = process.env.NT_PASSWORD   || '';
 let   ntToken       = null;
@@ -658,7 +658,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;margin
 .topnav-right a.topnav-link:hover,.topnav-right a.topnav-out:hover{color:#fff;}
 .topnav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);letter-spacing:0.2px;transition:background .2s,color .2s,border-color .2s;}
 .topnav-cta:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18);}
-.prop-firm-btn{display:inline-block;background:#2254F5;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.02em;text-decoration:none;padding:8px 16px;border-radius:6px;border:none;transition:background .2s ease,color .2s ease;}
+.prop-firm-btn{display:inline-block;background:#2254F5;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.02em;text-decoration:none;padding:8px 14px;border-radius:6px;border:none;transition:background .2s ease,color .2s ease;white-space:nowrap;}
 .prop-firm-btn:hover{background:#2d5cf7;color:#fff;}
 .prop-firm-btn:active{opacity:0.92;}
 @media(max-width:600px){
@@ -709,7 +709,7 @@ input::placeholder{color:#334155;}
       <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:29px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" /></a>
     </div>
     <div class="topnav-right" style="display:flex;align-items:center;gap:12px;">
-      ${hero && hero.hideNav ? '' : '<a href="/member" class="topnav-link">Portal</a><a href="/billing/confirm-session" class="topnav-out">Billing</a><a href="/logout" class="topnav-out">Log out</a><a href="/prop-activation" class="prop-firm-btn">Prop Firm</a>'}
+      ${hero && hero.hideNav ? '' : '<a href="/member" class="topnav-link">Portal</a><a href="/billing/confirm-session" class="topnav-out">Billing</a><a href="/logout" class="topnav-out">Log out</a><a href="/prop-activation" class="prop-firm-btn">Activate Software for Prop Firms</a>'}
     </div>
   </nav>
 </div>
@@ -1489,7 +1489,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 .topnav-out:hover{color:#fff}
 .topnav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);letter-spacing:0.2px;transition:background .2s,color .2s,border-color .2s}
 .topnav-cta:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18)}
-.prop-firm-btn{display:inline-block;background:#2254F5;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.02em;text-decoration:none;padding:8px 16px;border-radius:6px;border:none;transition:background .2s ease,color .2s ease}
+.prop-firm-btn{display:inline-block;background:#2254F5;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.02em;text-decoration:none;padding:8px 14px;border-radius:6px;border:none;transition:background .2s ease,color .2s ease;white-space:nowrap}
 .prop-firm-btn:hover{background:#2d5cf7;color:#fff}
 .prop-firm-btn:active{opacity:0.92}
 @media(max-width:600px){
@@ -1552,7 +1552,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
     <div class="topnav-right">
       <a href="/billing/confirm-session" class="topnav-out">Billing</a>
       <a href="/logout" class="topnav-out">Log out</a>
-      <a href="/prop-activation" class="prop-firm-btn">Prop Firm</a>
+      <a href="/prop-activation" class="prop-firm-btn">Activate Software for Prop Firms</a>
     </div>
   </nav>
 </div>
@@ -2120,7 +2120,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 .topnav-out:hover{color:#fff}
 .topnav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);letter-spacing:0.2px;transition:background .2s,color .2s,border-color .2s}
 .topnav-cta:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18)}
-.prop-firm-btn{display:inline-block;background:#2254F5;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.02em;text-decoration:none;padding:8px 16px;border-radius:6px;border:none;transition:background .2s ease,color .2s ease}
+.prop-firm-btn{display:inline-block;background:#2254F5;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.02em;text-decoration:none;padding:8px 14px;border-radius:6px;border:none;transition:background .2s ease,color .2s ease;white-space:nowrap}
 .prop-firm-btn:hover{background:#2d5cf7;color:#fff}
 .prop-firm-btn:active{opacity:0.92}
 .mob-menu{display:none;align-items:center;justify-content:center;width:36px;height:36px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:6px;cursor:pointer;color:rgba(255,255,255,0.7);font-size:18px;flex-shrink:0;transition:background .2s,border-color .2s}
@@ -2213,7 +2213,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
     <a href="/member" class="topnav-link">Portal</a>
     <a href="/billing/confirm-session" class="topnav-out">Billing</a>
     <a href="/logout" class="topnav-out">Log out</a>
-    <a href="/prop-activation" class="prop-firm-btn">Prop Firm</a>
+    <a href="/prop-activation" class="prop-firm-btn">Activate Software for Prop Firms</a>
     <button class="mob-menu" id="mobMenu" aria-label="Toggle course menu">&#9776;</button>
   </div>
 </div>
@@ -2584,7 +2584,7 @@ app.post('/admin/cancel', adm, express.json(), async (req, res) => {
 
         if (type === 'lifetime') {
             // 1. Fetch record
-            const { data: lRows, error: fetchErr } = await supabase.from(LICENSE_TABLE).select('nt_license_id,status,email').eq('email', email).order('updated_at', { ascending: false }).limit(1);
+            const { data: lRows, error: fetchErr } = await supabase.from(LICENSE_TABLE).select('id,nt_license_id,status,email').eq('email', email).order('updated_at', { ascending: false }).limit(1);
             console.log('[AdminCancel] lifetime fetch:', lRows, fetchErr?.message);
             const l = (lRows && lRows.length > 0) ? lRows[0] : null;
             if (!l) return res.status(404).json({ error: 'No lifetime license found for: ' + email });
@@ -2595,11 +2595,29 @@ app.post('/admin/cancel', adm, express.json(), async (req, res) => {
                 catch (e) { console.error('[AdminCancel] NT revoke failed:', e.message); }
             }
 
-            // 3. Update Supabase — license_keys constraint only allows: active, pending_jotform, pending_authorize, inactive
-            const { data: upd, error: updErr } = await supabase.from(LICENSE_TABLE).update({ status: 'inactive', updated_at: nowISO() }).eq('email', email).select();
-            console.log('[AdminCancel] lifetime update result:', upd, updErr?.message);
-            if (updErr) return res.status(500).json({ error: 'DB update failed: ' + updErr.message });
-            result.db_updated = true;
+            // 3. Update Supabase — only update the specific record by ID to avoid constraint issues
+            // Valid statuses: active, pending_jotform, pending_authorize, inactive
+            if (l.id) {
+                const { error: updErr } = await supabase.from(LICENSE_TABLE).update({ status: 'inactive', updated_at: nowISO() }).eq('id', l.id);
+                if (updErr) {
+                    console.error('[AdminCancel] lifetime DB update failed:', updErr.message);
+                    // NT license already revoked — log but don't block success
+                    result.db_note = 'NT revoked. DB update skipped: ' + updErr.message;
+                } else {
+                    result.db_updated = true;
+                }
+            } else {
+                // Fallback: update by email with explicit valid status
+                const { error: updErr } = await supabase.from(LICENSE_TABLE)
+                    .update({ status: 'inactive', updated_at: nowISO() })
+                    .eq('email', email)
+                    .eq('status', 'active');
+                if (updErr) {
+                    result.db_note = 'NT revoked. DB update skipped: ' + updErr.message;
+                } else {
+                    result.db_updated = true;
+                }
+            }
 
         } else if (type === 'discord') {
             // 1. Fetch record
@@ -2942,7 +2960,7 @@ app.get('/admin', adm, adminGuard, async (req, res) => {
         'function doCancel(email,type){',
         '  showMsg("cancelMsg",true,"Cancelling "+email+"...");',
         '  post("/admin/cancel",{email:email,type:type},',
-        '    function(d){showMsg("cancelMsg",true,"\\u2713 Cancelled: "+email+(d.db_updated?" \\u2014 DB updated":""));setTimeout(function(){location.reload();},1500);},',
+        '    function(d){var note=d.db_note?" (Note: "+d.db_note+")":"";showMsg("cancelMsg",true,"\\u2713 Revoked: "+email+(d.nt_revoked?" \\u2014 NT revoked":"")+note);setTimeout(function(){location.reload();},2000);},',
         '    function(e){showMsg("cancelMsg",false,"Error: "+e);}',
         '  );',
         '}',
@@ -3171,7 +3189,7 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#ff
 .nav-link:hover{color:#fff}
 .nav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);transition:background .2s}
 .nav-cta:hover{background:rgba(255,255,255,0.12)}
-.prop-firm-btn{display:inline-block;background:#2254F5;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.02em;text-decoration:none;padding:8px 16px;border-radius:6px;border:none;transition:background .2s ease,color .2s ease}
+.prop-firm-btn{display:inline-block;background:#2254F5;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.02em;text-decoration:none;padding:8px 14px;border-radius:6px;border:none;transition:background .2s ease,color .2s ease;white-space:nowrap}
 .prop-firm-btn:hover{background:#2d5cf7;color:#fff}
 .prop-firm-btn:active{opacity:0.92}
 .wrap{max-width:700px;margin:0 auto;position:relative;z-index:1;padding-top:20px}
@@ -3218,7 +3236,7 @@ select option{background:#0d1117}
       <a href="/member" class="nav-link">Portal</a>
       <a href="/billing/confirm-session" class="nav-link">Billing</a>
       <a href="/logout" class="nav-link">Log out</a>
-      <a href="/prop-activation" class="prop-firm-btn">Prop Firm</a>
+      <a href="/prop-activation" class="prop-firm-btn">Activate Software for Prop Firms</a>
     </div>
   </nav>
 </div>
