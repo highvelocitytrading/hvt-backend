@@ -227,7 +227,9 @@ async function ntCreateLicense(email, type) {
 }
 
 async function ntRevokeLicense(ntLicenseId) {
-    if (!ntToken || !ntLicenseId) return;
+    if (!ntLicenseId) return;
+    if (!ntToken) { await ntLogin(); }
+    if (!ntToken) { console.error('[NT] Cannot revoke — no token'); return; }
     try {
         const r = await fetchFn(`https://ecosystemapi.ninjatrader.com/v1/products/${NT_PRODUCT_ID}/licenses/${ntLicenseId}`, {
             method: 'PATCH',
@@ -272,11 +274,12 @@ function verifyJF(req) {
 
 // ─── DISCORD API ─────────────────────────────────────────────────────────────
 async function dc(method, path, body) {
+    const ctrl = new AbortController(); const _t = setTimeout(() => ctrl.abort(), 8000);
     const r = await fetchFn(`https://discord.com/api/v10${path}`, {
-        method,
+        method, signal: ctrl.signal,
         headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
         body: body ? JSON.stringify(body) : undefined
-    });
+    }); clearTimeout(_t);
     if (r.status === 204) return null;
     const d = await r.json();
     if (!r.ok) throw new Error(`Discord ${r.status}: ${JSON.stringify(d)}`);
@@ -597,6 +600,7 @@ async function sendMagicLink(email, token, type) {
 
 // ─── AUTHNET CANCEL ───────────────────────────────────────────────────────────
 async function cancelSub(subId) {
+    if (!subId) throw new Error('cancelSub: no subscription ID provided');
     const r = await fetchFn('https://api.authorize.net/xml/v1/request.api', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ARBCancelSubscriptionRequest: { merchantAuthentication: { name: AUTHNET_API_LOGIN_ID, transactionKey: AUTHNET_TRANSACTION_KEY }, subscriptionId: String(subId) } })
@@ -1372,7 +1376,6 @@ async function getSessionAsync(req) {
             .eq('session_token', token)
             .maybeSingle();
         if (mem && mem.session_expires && mem.session_expires > now) {
-            const isActive = mem.status === 'active' && new Date(mem.expires_at) > new Date();
             const s = {
                 email: mem.email,
                 name: (mem.full_name || 'Trader').split(' ')[0],
@@ -1468,6 +1471,9 @@ app.get('/course/confirm', async (req, res) => {
         // Set 7-day session cookie — member stays logged in across the portal
         const sessToken = createSession(rec.email, name, plan);
         res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${sessToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${7*24*3600}`);
+        // Invalidate the one-time token so the link cannot be reused
+        const clearTable = lData ? LICENSE_TABLE : MEMBERSHIP_TABLE;
+        supabase.from(clearTable).update({ course_token: null, course_token_expires: null, updated_at: nowISO() }).eq('course_token', token).then(() => {}).catch(e => console.error('[CourseConfirm clear token]', e.message));
         return res.redirect('/member');
     } catch (e) { console.error('[CourseConfirm]', e.message); res.send(resultPage('error', 'Error', 'Something went wrong.')); }
 });
@@ -1992,7 +1998,7 @@ app.post('/api/journal/positions', JOURNAL_RATE, express.json(), async (req, res
         await supabase.from(JOURNAL_TABLE).update({ is_open: false, updated_at: nowISO() }).eq('email', canonical).eq('is_open', true);
         if (open_positions&&open_positions.length>0) {
             // Use deterministic trade_id so upsert deduplicates on rapid timer calls
-            await supabase.from(JOURNAL_TABLE).upsert(open_positions.map(p => ({
+            const { error: posErr } = await supabase.from(JOURNAL_TABLE).upsert(open_positions.map(p => ({
                 email: canonical, account_name: p.account_name||null, instrument: p.instrument||null,
                 direction: p.direction||null, quantity: p.quantity||0, entry_price: p.avg_price||0,
                 exit_price: 0, entry_time: p.updated_at||nowISO(), exit_time: null,
@@ -2000,6 +2006,7 @@ app.post('/api/journal/positions', JOURNAL_RATE, express.json(), async (req, res
                 trade_id: `open_${canonical}_${(p.instrument||'').replace(/[^a-z0-9]/gi,'_')}`,
                 is_open: true, unrealized_pnl: p.unrealized_pnl||0, updated_at: nowISO()
             })), { onConflict: 'trade_id' });
+            if (posErr) console.error('[Journal/positions] upsert error:', posErr.message);
         }
         res.json({ ok: true });
     } catch (e) { console.error('[Journal/positions]', e.message); res.status(500).json({ error: 'Server error.' }); }
@@ -3646,7 +3653,7 @@ async function revokeRow(id, btn) {
     });
     var d = await r.json();
     if (d.ok) {
-      var td = btn.closest('tr').querySelectorAll('td')[3];
+      var td = btn.closest('tr').querySelectorAll('td')[4];
       td.innerHTML = '<span style="padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:rgba(239,68,68,0.1);color:#f87171;">REVOKED</span>';
       btn.style.display = 'none';
     } else {
@@ -3700,5 +3707,11 @@ app.get('/', (req, res) => res.redirect(302, '/login'));
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ ok: false, error: 'not_found' }));
+
+// ─── GLOBAL ERROR HANDLER ────────────────────────────────────────────────────
+app.use((err, req, res, next) => {
+    console.error('[UnhandledError]', err.message, err.stack);
+    res.status(500).json({ ok: false, error: 'Internal server error.' });
+});
 
 app.listen(PORT, () => console.log(`🚀 HVT Backend on port ${PORT}`));
