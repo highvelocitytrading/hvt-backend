@@ -241,6 +241,37 @@ async function ntRevokeLicense(ntLicenseId) {
     } catch (e) { console.error('[NT] Revoke error:', e.message); }
 }
 
+// ─── PROP FIRM: revoke all active prop activations for an email ─────────────
+// Called whenever a monthly membership is cancelled/expired/suspended
+
+
+// ─── PROP FIRM: REVOKE ALL ACTIVE ACTIVATIONS FOR A MONTHLY MEMBER ───────────
+// Called whenever a monthly membership is cancelled/expired.
+// Lifetime members KEEP their prop access — this only applies to monthly.
+async function revokeMonthlyPropActivations(email) {
+    if (!email) return;
+    try {
+        const { data: props } = await supabase
+            .from(PROP_FIRM_TABLE)
+            .select('id, nt_license_id')
+            .eq('email', email.toLowerCase().trim())
+            .eq('status', 'active');
+        if (!props || !props.length) return;
+        for (const p of props) {
+            if (p.nt_license_id) {
+                try { await ntRevokeLicense(p.nt_license_id); }
+                catch (e) { console.error('[PropRevoke] NT revoke error:', e.message); }
+            }
+            await supabase.from(PROP_FIRM_TABLE)
+                .update({ status: 'revoked', updated_at: nowISO() })
+                .eq('id', p.id);
+        }
+        console.log(`[PropRevoke] ✅ Revoked ${props.length} prop activation(s) for monthly cancel: ${email}`);
+    } catch (e) {
+        console.error('[PropRevoke] Error revoking prop activations:', e.message);
+    }
+}
+
 // ─── SUPABASE ────────────────────────────────────────────────────────────────
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 console.log(`[INIT] Supabase connected: ${MEMBERSHIP_TABLE} | ${LICENSE_TABLE} | ${DISCORD_TABLE}`);
@@ -812,7 +843,10 @@ app.post('/webhooks/membership-authnet', wh, express.json(), async (req, res) =>
             // Step 3: strip Discord role and NT license
             if (m?.discord_user_id) try { await stripRole(m.discord_user_id, DISCORD_MONTHLY_ROLE_ID); } catch (e) { console.error('[MemberAN strip role]', e.message); }
             if (m?.nt_license_id)   try { await ntRevokeLicense(m.nt_license_id); } catch (e) { console.error('[MemberAN revoke NT]', e.message); }
-            console.log(`🚫 Membership cancelled (AN): ${m?.email || email || subId}`);
+            // Revoke any prop firm activations — monthly members lose prop access when they stop paying
+            const cancelledEmail = m?.email || email;
+            if (cancelledEmail) revokeMonthlyPropActivations(cancelledEmail).catch(e => console.error('[MemberAN PropRevoke]', e.message));
+            console.log(`🚫 Membership cancelled (AN): ${cancelledEmail || subId}`);
         }
         // res already sent 200 above
     } catch (e) { console.error('[MemberAN]', e.message); /* res already sent */ }
@@ -2504,7 +2538,11 @@ app.get('/cancel/confirm', async (req, res) => {
         if (data.authnet_subscription_id) try { await cancelSub(data.authnet_subscription_id); } catch (e) { console.error('[CancelSub]', e.message); }
         if (data.discord_user_id) try { await stripRole(data.discord_user_id, DISCORD_MONTHLY_ROLE_ID); } catch {}
         if (data.nt_license_id)   try { await ntRevokeLicense(data.nt_license_id); } catch {}
+        // Revoke prop firm activations on manual cancel
+        revokeMonthlyPropActivations(data.email).catch(e => console.error('[CancelConfirm PropRevoke]', e.message));
         await supabase.from(MEMBERSHIP_TABLE).update({ status: 'cancelled', cancel_token: null, cancel_token_expires: null, updated_at: nowISO() }).eq('cancel_token', token);
+        // Revoke any active prop firm activations
+        await revokeMonthlyPropActivations(data.email).catch(e => console.error('[CancelConfirm prop revoke]', e.message));
         console.log(`🚫 Cancelled: ${data.email}`);
         res.send(resultPage('success', 'Membership Cancelled', 'Your membership has been successfully cancelled.<br><br>You will retain access until the end of your current billing period.'));
     } catch (e) { console.error('[CancelConfirm]', e.message); res.send(resultPage('error', 'Error', 'Something went wrong. Please contact support.')); }
@@ -2692,6 +2730,10 @@ app.post('/admin/cancel', adm, express.json(), async (req, res) => {
             console.log('[AdminCancel] monthly update result:', upd, updErr?.message);
             if (updErr) return res.status(500).json({ error: 'DB update failed: ' + updErr.message });
             result.db_updated = true;
+            // 6. Revoke any active prop firm activations for this monthly member
+            await revokeMonthlyPropActivations(email).catch(e => console.error('[AdminCancel prop revoke]', e.message));
+            // 6. Revoke any prop firm activations
+            revokeMonthlyPropActivations(email).catch(e => console.error('[AdminCancel PropRevoke]', e.message));
         }
 
         console.log('[AdminCancel] SUCCESS:', result);
@@ -2710,10 +2752,13 @@ app.post('/admin/remove-role', adm, express.json(), async (req, res) => {
         if (!uid) return res.status(400).json({ error: 'discord_user_id required' });
         const allRoles = [DISCORD_MONTHLY_ROLE_ID, DISCORD_LIFETIME_ROLE_ID, ...(DISCORD_ROOM_ROLE_ID ? [DISCORD_ROOM_ROLE_ID] : [])];
         for (const rid of allRoles) try { await stripRole(uid, rid); } catch {}
-        await Promise.all([
+        const [{ data: stripped }] = await Promise.all([
+            supabase.from(MEMBERSHIP_TABLE).select('email').eq('discord_user_id', uid).maybeSingle(),
             supabase.from(MEMBERSHIP_TABLE).update({ status: 'cancelled', updated_at: nowISO() }).eq('discord_user_id', uid),
             supabase.from(DISCORD_TABLE).update({ status: 'cancelled', updated_at: nowISO() }).eq('discord_user_id', uid)
         ]);
+        // Revoke prop firm activations for this user
+        if (stripped?.email) revokeMonthlyPropActivations(stripped.email).catch(e => console.error('[AdminRemoveRole PropRevoke]', e.message));
         console.log('[Admin] All roles stripped:', uid);
         res.json({ ok: true });
     } catch (e) { console.error('[AdminRemoveRole]', e.message); res.status(500).json({ error: e.message }); }
@@ -3439,10 +3484,12 @@ app.post('/api/prop-activation', requireSession, frm, express.json(), async (req
         if (!email || !firmName)
             return res.status(400).json({ ok: false, error: 'Email and prop firm are required.' });
 
-        const cleanEmail = email.trim().toLowerCase();
+        // ── Always use the authenticated session email — ignore body email ──
+        // Prevents member A from activating prop access using member B's email
+        const cleanEmail = s.email.trim().toLowerCase();
         const cleanFirm  = firmName.trim();
 
-        // ── Verify active HVT membership ──────────────────────────────────
+        // ── Verify active HVT membership (live check — no cached state) ──
         const [{ data: m1 }, { data: m2 }] = await Promise.all([
             supabase.from(MEMBERSHIP_TABLE).select('email,status,expires_at').eq('email', cleanEmail).maybeSingle(),
             supabase.from(LICENSE_TABLE).select('email,status').eq('email', cleanEmail).maybeSingle()
@@ -3450,7 +3497,7 @@ app.post('/api/prop-activation', requireSession, frm, express.json(), async (req
         const isMonthly  = m1?.status === 'active' && new Date(m1.expires_at) > new Date();
         const isLifetime = m2?.status === 'active';
         if (!isMonthly && !isLifetime)
-            return res.status(403).json({ ok: false, error: 'No active HVT membership found for this email. Please use the email you purchased with.' });
+            return res.status(403).json({ ok: false, error: 'No active HVT membership found. Your subscription may have expired. Please contact support.' });
 
         // ── Check for existing active activation — return existing HVT ID ──
         const { data: existing } = await supabase
@@ -3463,6 +3510,13 @@ app.post('/api/prop-activation', requireSession, frm, express.json(), async (req
             .maybeSingle();
 
         if (existing) {
+            // Re-validate membership is still active before returning stored ID
+            // Prevents lapsed monthly members from accessing prop system
+            if (!isMonthly && !isLifetime) {
+                // Revoke the stored activation — member is no longer paying
+                await revokeMonthlyPropActivations(cleanEmail);
+                return res.status(403).json({ ok: false, error: 'Your HVT membership has expired. Please renew to access prop firm features.' });
+            }
             console.log(`[PropActivation] Returning existing activation for ${cleanEmail} | hvt_id=${existing.hvt_id}`);
             return res.json({ ok: true, alreadyActive: true, hvtId: existing.hvt_id, firmName: existing.firm_name });
         }
@@ -3527,14 +3581,35 @@ app.get('/api/license-check', async (req, res) => {
     try {
         const email = (req.query.email || req.query.machineId || '').toLowerCase().trim();
         if (!email) return res.json({ authorized: false });
-        const { data } = await supabase
+
+        // Step 1: check prop firm activation exists and is active
+        const { data: prop } = await supabase
             .from(PROP_FIRM_TABLE)
-            .select('id,status')
+            .select('id, status')
             .eq('email', email)
             .eq('status', 'active')
             .limit(1)
             .maybeSingle();
-        res.json({ authorized: !!data });
+
+        if (!prop) return res.json({ authorized: false });
+
+        // Step 2: verify underlying HVT membership is STILL active
+        // Lifetime members always pass. Monthly members must have non-expired, active plan.
+        const [{ data: mem }, { data: lic }] = await Promise.all([
+            supabase.from(MEMBERSHIP_TABLE).select('status,expires_at').eq('email', email).maybeSingle(),
+            supabase.from(LICENSE_TABLE).select('status').eq('email', email).maybeSingle()
+        ]);
+        const isLifetime = lic?.status === 'active';
+        const isMonthly  = mem?.status === 'active' && mem.expires_at && new Date(mem.expires_at) > new Date();
+
+        if (!isLifetime && !isMonthly) {
+            // Membership lapsed — auto-revoke the prop activation so DB stays clean
+            revokeMonthlyPropActivations(email).catch(e => console.error('[LicenseCheck revoke]', e.message));
+            console.log(`[LicenseCheck] ❌ Denied ${email} — membership no longer active`);
+            return res.json({ authorized: false });
+        }
+
+        res.json({ authorized: true });
     } catch(e) {
         console.error('[LicenseCheck]', e.message);
         res.json({ authorized: false });
