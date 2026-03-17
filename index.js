@@ -1716,44 +1716,49 @@ app.get('/trading-journal', requireSession, (req, res) => {
         <button type="button" class="journal-tab" data-period="all">All</button>
       </div>
 
-      <!-- Row 1: Net P&L, Avg win/loss, Day Streak -->
-      <div class="journal-metrics" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px;">
-        <div class="card j-card" style="padding:18px 20px;">
-          <div class="j-card-label">Net P&L</div>
-          <div class="j-card-value" id="stat-pnl" style="color:#94a3b8;">$0.00</div>
-          <div class="j-chart-line j-chart-empty" aria-hidden="true"></div>
-        </div>
-        <div class="card j-card" style="padding:18px 20px;">
-          <div class="j-card-label">Avg win/loss trade</div>
-          <div class="j-card-value" id="stat-avgwl" style="color:#94a3b8;">—</div>
-          <div class="j-bar-wrap j-bar-empty"><div class="j-bar j-bar-win" style="width:0;"></div><div class="j-bar j-bar-loss" style="width:0;"></div></div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:6px;color:#64748b;"><span>—</span><span>—</span></div>
-        </div>
-        <div class="card j-card" style="padding:18px 20px;">
-          <div class="j-card-label">Current Day Streak</div>
-          <div class="j-card-value" id="stat-daystreak" style="color:#94a3b8;">0 days</div>
-          <div style="display:flex;gap:12px;font-size:12px;margin-top:6px;color:#64748b;"><span>0W</span><span>0L</span></div>
-        </div>
-      </div>
-
-      <!-- Row 2: Win %, Profit Factor, Trade Streak -->
+      <!-- Stats: Net P&L | Avg Win/Loss | Trade Streak -->
       <div class="journal-metrics" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
-        <div class="card j-card" style="padding:18px 20px;">
-          <div class="j-card-label">Trade Win %</div>
-          <div class="j-card-value" id="stat-wins" style="color:#94a3b8;">—</div>
-          <div class="j-donut j-donut-half j-donut-empty" style="--p:0;" aria-hidden="true"></div>
-          <div style="display:flex;justify-content:center;gap:16px;font-size:11px;margin-top:6px;color:#64748b;"><span>0</span><span>0</span></div>
+
+        <!-- Net P&L -->
+        <div class="card j-card" style="padding:20px 22px;">
+          <div class="j-card-label">Net P&L</div>
+          <div class="j-card-value" id="stat-pnl" style="color:#94a3b8;">+$0.00</div>
+          <div id="pnl-bar-wrap" class="j-bar-wrap" style="margin-top:12px;">
+            <div id="pnl-bar" class="j-bar j-bar-win" style="width:0%;transition:width 0.4s ease;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:5px;color:#64748b;">
+            <span id="pnl-trades-label">0 trades</span>
+            <span id="pnl-today-label"></span>
+          </div>
         </div>
-        <div class="card j-card" style="padding:18px 20px;">
-          <div class="j-card-label">Profit Factor</div>
-          <div class="j-card-value" id="stat-pf" style="color:#94a3b8;">—</div>
-          <div class="j-donut j-donut-full j-donut-empty" style="--p:0;" aria-hidden="true"></div>
+
+        <!-- Avg Win / Loss -->
+        <div class="card j-card" style="padding:20px 22px;">
+          <div class="j-card-label">Avg Win / Avg Loss</div>
+          <div class="j-card-value" id="stat-avgwl" style="color:#94a3b8;">— / —</div>
+          <div class="j-bar-wrap" id="avgwl-bar-wrap" style="margin-top:12px;">
+            <div id="avgwl-bar-win" class="j-bar j-bar-win" style="width:50%;transition:width 0.4s ease;"></div>
+            <div id="avgwl-bar-loss" class="j-bar j-bar-loss" style="width:50%;transition:width 0.4s ease;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:5px;color:#64748b;">
+            <span id="avgwl-wins-label" style="color:#22c55e;">0 wins</span>
+            <span id="avgwl-losses-label" style="color:#ef4444;">0 losses</span>
+          </div>
         </div>
-        <div class="card j-card" style="padding:18px 20px;">
+
+        <!-- Current Trade Streak -->
+        <div class="card j-card" style="padding:20px 22px;">
           <div class="j-card-label">Current Trade Streak</div>
           <div class="j-card-value" id="stat-tradestreak" style="color:#94a3b8;">0 trades</div>
-          <div style="display:flex;gap:12px;font-size:12px;margin-top:6px;color:#64748b;"><span>0W</span><span>0L</span></div>
+          <div style="margin-top:12px;display:flex;align-items:center;gap:8px;">
+            <div id="streak-dots" style="display:flex;gap:4px;flex-wrap:wrap;max-width:200px;"></div>
+          </div>
+          <div style="display:flex;gap:16px;font-size:11px;margin-top:6px;color:#64748b;">
+            <span id="streak-w-label">0W</span>
+            <span id="streak-l-label">0L</span>
+          </div>
         </div>
+
       </div>
 
       <!-- Two columns: Trades table | Calendar -->
@@ -1966,59 +1971,80 @@ app.get('/trading-journal', requireSession, (req, res) => {
         document.getElementById('cal-info').onclick = function(){ alert('Daily PnL: green = profit day, red = loss day. Live from NinjaTrader via HVTJournalSync.'); };
         render();
         var liveData={pnl:{},trades:{},recent:[],open:[]};
+        function g(id){return document.getElementById(id);}
+        function setText(id,txt,col){var e=g(id);if(e){e.textContent=txt;if(col)e.style.color=col;}}
         function applyPeriodFilter(p){
           var now=new Date();
-          // Filter trades by period using LOCAL date comparison
+          // Filter by period using local date
           var f=liveData.recent.filter(function(t){
             var d=new Date(t.exit_time);
-            if(p==='day'){
-              return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();
-            }
+            if(p==='day') return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();
             if(p==='week'){var w=new Date(now);w.setDate(now.getDate()-now.getDay());w.setHours(0,0,0,0);return d>=w;}
             if(p==='month') return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
             return true;
           });
-          // Only count real losses (net_pnl strictly < 0), ignore breakeven
           var wins=f.filter(function(t){return t.net_pnl>0;});
           var losses=f.filter(function(t){return t.net_pnl<0;});
           var net=f.reduce(function(s,t){return s+(t.net_pnl||0);},0);
-          var wp=f.length?Math.round(wins.length/f.length*100):null;
           var aw=wins.length?wins.reduce(function(s,t){return s+(t.net_pnl||0);},0)/wins.length:null;
           var al=losses.length?Math.abs(losses.reduce(function(s,t){return s+(t.net_pnl||0);},0)/losses.length):null;
           var gw=wins.reduce(function(s,t){return s+(t.net_pnl||0);},0);
           var gl=Math.abs(losses.reduce(function(s,t){return s+(t.net_pnl||0);},0));
-          // Profit factor: show — when no trades, pure number when losses exist, blank loss side when no losses
-          var pf=gl>0?(gw/gl):null;
-          // Day streak: count consecutive green DAYS backwards using all closed trades grouped by local date
-          var dayMap={};
-          liveData.recent.forEach(function(t){
-            var d=new Date(t.exit_time);
-            var k=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
-            dayMap[k]=(dayMap[k]||0)+(t.net_pnl||0);
-          });
-          var dayKeys=Object.keys(dayMap).sort();
-          var ds=0;
-          for(var i=dayKeys.length-1;i>=0;i--){
-            if(dayMap[dayKeys[i]]>0) ds++;
-            else break;
-          }
-          // Trade streak: consecutive wins/losses in filtered period
+          // Trade streak from filtered trades
           var ts=0,sd=null;
-          for(var j=f.length-1;j>=0;j--){
-            var ww=f[j].net_pnl>0;
-            if(sd===null) sd=ww;
-            if(ww===sd) ts++;
-            else break;
+          for(var j=f.length-1;j>=0;j--){var ww=f[j].net_pnl>0;if(sd===null)sd=ww;if(ww===sd)ts++;else break;}
+
+          // ── NET P&L ──────────────────────────────────────────────────────
+          var pnlColor=net>0?'#4ade80':net<0?'#ef4444':'#94a3b8';
+          setText('stat-pnl',(net>=0?'+':'')+'\$'+Math.abs(net).toFixed(2),pnlColor);
+          var pnlBar=g('pnl-bar');
+          if(pnlBar){
+            var pnlPct=f.length?Math.min(100,Math.abs(net)/Math.max(Math.abs(net),1)*100):0;
+            pnlBar.style.width=(f.length?Math.min(100,70+Math.min(30,f.length*3))+'%':'0%');
+            pnlBar.className='j-bar '+(net>=0?'j-bar-win':'j-bar-loss');
           }
-          function s(id,txt,col){var e=document.getElementById(id);if(e){e.textContent=txt;if(col)e.style.color=col;}}
-          s('stat-pnl',(net>=0?'+':'')+'$'+Math.abs(net).toFixed(2),net>0?'#4ade80':net<0?'#f87171':'#94a3b8');
-          // Avg win/loss: show — on the side that has no data
-          var avgStr=(aw!==null?'+$'+aw.toFixed(0):'—')+' / '+(al!==null?'-$'+al.toFixed(0):'—');
-          s('stat-avgwl',aw!==null||al!==null?avgStr:'—',(aw!==null||al!==null)?'#e2e8f0':'#94a3b8');
-          s('stat-daystreak',ds+' day'+(ds!==1?'s':''),ds>0?'#4ade80':'#94a3b8');
-          s('stat-wins',wp!==null?wp+'%':'—',wp!==null?(wp>=50?'#4ade80':'#f87171'):'#94a3b8');
-          s('stat-pf',pf!==null?pf.toFixed(2):(f.length&&!losses.length&&wins.length?'Perfect':'—'),pf!==null?(pf>=1?'#4ade80':'#f87171'):(f.length&&!losses.length&&wins.length?'#4ade80':'#94a3b8'));
-          s('stat-tradestreak',ts+' trade'+(ts!==1?'s':''),ts>0&&sd===true?'#4ade80':ts>0&&sd===false?'#f87171':'#94a3b8');
+          setText('pnl-trades-label',f.length+' trade'+(f.length!==1?'s':''),'#64748b');
+          setText('pnl-today-label',wins.length+'W / '+losses.length+'L','#64748b');
+
+          // ── AVG WIN / AVG LOSS ───────────────────────────────────────────
+          var awStr=aw!==null?'+\$'+aw.toFixed(0):'—';
+          var alStr=al!==null?'-\$'+al.toFixed(0):'—';
+          setText('stat-avgwl',awStr+' / '+alStr,aw!==null?'#e2e8f0':'#94a3b8');
+          var totalBar=gw+gl;
+          var winPct=totalBar>0?Math.round(gw/totalBar*100):50;
+          var lossPct=100-winPct;
+          var bw=g('avgwl-bar-win'),bl=g('avgwl-bar-loss');
+          if(bw&&bl){
+            if(f.length===0){bw.style.width='50%';bl.style.width='50%';}
+            else{bw.style.width=winPct+'%';bl.style.width=lossPct+'%';}
+          }
+          setText('avgwl-wins-label',wins.length+' win'+(wins.length!==1?'s':''),'#22c55e');
+          setText('avgwl-losses-label',losses.length+' loss'+(losses.length!==1?'es':''),'#ef4444');
+
+          // ── TRADE STREAK ─────────────────────────────────────────────────
+          var streakColor=ts>0&&sd===true?'#4ade80':ts>0&&sd===false?'#ef4444':'#94a3b8';
+          var streakLabel=ts>0?(sd===true?'▲ '+ts+' win'+(ts!==1?'s':''):'▼ '+ts+' loss'+(ts!==1?'es':'')):'0 trades';
+          setText('stat-tradestreak',streakLabel,streakColor);
+          // Dot indicators — up to 8 dots showing streak
+          var dotsEl=g('streak-dots');
+          if(dotsEl){
+            dotsEl.innerHTML='';
+            var show=Math.min(ts,8);
+            for(var d2=0;d2<show;d2++){
+              var dot=document.createElement('div');
+              dot.style.cssText='width:10px;height:10px;border-radius:50%;background:'+(sd===true?'#22c55e':'#ef4444')+';opacity:'+(1-(d2*0.08))+';';
+              dotsEl.appendChild(dot);
+            }
+            if(ts===0){
+              var dot0=document.createElement('div');
+              dot0.style.cssText='width:10px;height:10px;border-radius:50%;background:#334155;';
+              dotsEl.appendChild(dot0);
+            }
+          }
+          var wCount=f.filter(function(t){return t.net_pnl>0;}).length;
+          var lCount=f.filter(function(t){return t.net_pnl<0;}).length;
+          setText('streak-w-label',wCount+'W','#22c55e');
+          setText('streak-l-label',lCount+'L','#ef4444');
           var tb=document.querySelector('#trades-recent table tbody');
           if(tb){if(!f.length){tb.innerHTML='<tr><td colspan="3" style="text-align:center;color:#64748b;padding:28px;">No trades recorded yet</td></tr>';}
           else{tb.innerHTML=f.slice().reverse().map(function(t){var c=t.net_pnl>0?'#4ade80':t.net_pnl<0?'#f87171':'#94a3b8';var d=new Date(t.exit_time);
