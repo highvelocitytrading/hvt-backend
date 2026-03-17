@@ -62,6 +62,9 @@ const frm = rateLimit({ max: 10 });
 const adm = rateLimit({ max: 30 });
 
 // ─── ENV ─────────────────────────────────────────────────────────────────────
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
+console.log('[INIT] DEMO_MODE =', DEMO_MODE);
+
 const requiredEnv = [
     'SUPABASE_URL',
     'SUPABASE_SERVICE_ROLE_KEY',
@@ -71,9 +74,13 @@ const requiredEnv = [
 ];
 const missing = requiredEnv.filter(k => !process.env[k] || String(process.env[k]).trim() === '');
 if (missing.length) {
-    console.error('[FATAL] Missing required env. Set these in Railway (or .env):');
-    missing.forEach(k => console.error('  -', k));
-    process.exit(1);
+    if (DEMO_MODE) {
+        console.warn('[WARN] DEMO_MODE=true and some env are missing (server will still start):');
+        missing.forEach(k => console.warn('  -', k));
+    } else {
+        console.warn('[WARN] Missing env (server will still start, but some features may fail):');
+        missing.forEach(k => console.warn('  -', k));
+    }
 }
 
 const SUPABASE_URL              = process.env.SUPABASE_URL;
@@ -273,8 +280,15 @@ async function revokeMonthlyPropActivations(email) {
 }
 
 // ─── SUPABASE ────────────────────────────────────────────────────────────────
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-console.log(`[INIT] Supabase connected: ${MEMBERSHIP_TABLE} | ${LICENSE_TABLE} | ${DISCORD_TABLE}`);
+let supabase = null;
+if (DEMO_MODE) {
+    console.warn('[INIT] DEMO_MODE=true – skipping Supabase client (DB-backed features disabled).');
+} else if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+    console.log(`[INIT] Supabase connected: ${MEMBERSHIP_TABLE} | ${LICENSE_TABLE} | ${DISCORD_TABLE}`);
+} else {
+    console.warn('[WARN] Supabase env missing — database features will fail until configured.');
+}
 
 // ── Ensure prop_firm_activations has hvt_id column ────────────────────────
 // Run this SQL in Supabase if not already done:
@@ -333,6 +347,10 @@ async function getGuildAll() {
 
 // ─── EMAIL ───────────────────────────────────────────────────────────────────
 async function sendEmail(to, subject, html) {
+    if (DEMO_MODE) {
+        console.log('[Email DEMO]', { to, subject });
+        return { demo: true };
+    }
     if (!RESEND_API_KEY) {
         console.warn('[Email] RESEND_API_KEY not set – skipping send', { to, subject });
         return { skipped: true };
@@ -1442,6 +1460,15 @@ async function getSessionAsync(req) {
 }
 
 async function requireSession(req, res, next) {
+    if (DEMO_MODE) {
+        req._session = {
+            email: 'demo@highvelocitytrading.com',
+            name: 'Demo Trader',
+            plan: 'Demo Access',
+            expires: Date.now() + 7 * 24 * 60 * 60 * 1000
+        };
+        return next();
+    }
     const s = await getSessionAsync(req);
     if (s) { req._session = s; return next(); }
     res.redirect('/login');
@@ -1449,6 +1476,7 @@ async function requireSession(req, res, next) {
 
 // ─── LOGIN PAGE (was /course) ─────────────────────────────────────────────────
 app.get('/login', async (req, res) => {
+    if (DEMO_MODE) return res.redirect('/member');
     if (await getSessionAsync(req)) return res.redirect('/member');
     res.send(shell('Member Login', `
     <div style="width:100%;max-width:520px;">
@@ -2304,16 +2332,26 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 // To add a video: add ytId: 'YOUTUBE_VIDEO_ID' to any video object
 // To add a section: copy the section block pattern below
 var COURSE = [
-  { title: 'Psychology', videos: [
-    { title: 'Welcome to HVT',                      dur: '1m',  ytId: '' },
-    { title: 'Why Traders Fail in the Long Run',    dur: '4m',  ytId: '' },
-    { title: 'How to Set Yourself Up for Success',  dur: '4m',  ytId: '' },
-    { title: 'Expand Your Horizon',                 dur: '3m',  ytId: '' },
-    { title: 'Next Steps',                          dur: '1m',  ytId: '' }
+  { title: 'Introduction', videos: [
+    { title: 'Welcome to the HVT Portal',           dur: '2m',  ytId: '' },
+    { title: 'How This Course Is Structured',       dur: '3m',  ytId: '' },
+    { title: 'Getting the Most Out of HVT',         dur: '3m',  ytId: '' }
   ]},
-  { title: 'Basic Technicals', videos: [
-    { title: 'Anatomy of a Candlestick',            dur: '9m',  ytId: '' },
-    { title: 'Structure \u2014 Uptrend vs Downtrend', dur: '7m', ytId: '' }
+  { title: 'Indicators', videos: [
+    { title: 'Overview of HVT Indicators',          dur: '4m',  ytId: '' },
+    { title: 'Reading Momentum & Trend',            dur: '5m',  ytId: '' },
+    { title: 'Combining Signals for Entries',       dur: '6m',  ytId: '' }
+  ]},
+  { title: 'Risk Management', videos: [
+    { title: 'Position Sizing & Daily Loss Limits', dur: '5m',  ytId: '' },
+    { title: 'Stop Placement & Trade Invalidation', dur: '4m',  ytId: '' },
+    { title: 'Building a Risk Plan You Keep',       dur: '4m',  ytId: '' }
+  ]},
+  { title: 'Psychology', videos: [
+    { title: 'Welcome to HVT Psychology',           dur: '3m',  ytId: '' },
+    { title: 'Why Traders Fail in the Long Run',    dur: '4m',  ytId: '' },
+    { title: 'Discipline, FOMO, and Tilt',          dur: '5m',  ytId: '' },
+    { title: 'Creating a Professional Routine',     dur: '4m',  ytId: '' }
   ]}
   // ADD MORE SECTIONS HERE:
   // ,{ title: 'Section Name', videos: [
@@ -3790,7 +3828,10 @@ app.post('/admin/prop-activations/:id/revoke', adm, express.json(), async (req, 
 });
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.redirect(302, '/login'));
+app.get('/', (req, res) => {
+    if (DEMO_MODE) return res.redirect(302, '/member');
+    res.redirect(302, '/login');
+});
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ ok: false, error: 'not_found' }));
