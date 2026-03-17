@@ -284,6 +284,7 @@ console.log(`[INIT] Supabase connected: ${MEMBERSHIP_TABLE} | ${LICENSE_TABLE} |
 // ─── SHARED HELPERS ───────────────────────────────────────────────────────────
 function pickFirst(...v) { for (const x of v) { if (typeof x === 'string' && x.trim()) return x.trim(); if (typeof x === 'number') return String(x); } return null; }
 function genKey()        { return `HVT-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`; }
+function esc(s)          { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function now30days()     { return new Date(Date.now() + 30 * 86400000).toISOString(); }
 function nowISO()        { return new Date().toISOString(); }
 
@@ -2010,6 +2011,7 @@ app.post('/api/journal/trade', JOURNAL_RATE, express.json(), async (req, res) =>
         const canonical = await verifyJournalEmail(email);
         if (!canonical) return res.status(401).json({ error: 'No active membership found for this email.' });
         if (!trade||!trade.trade_id) return res.status(400).json({ error: 'Missing trade data.' });
+        if (typeof trade.trade_id !== 'string' || trade.trade_id.length > 200) return res.status(400).json({ error: 'Invalid trade_id.' });
         const safeNum = v => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
         const { error } = await supabase.from(JOURNAL_TABLE).upsert({
             email: canonical, account_name: trade.account_name||null, instrument: trade.instrument||null,
@@ -2892,19 +2894,19 @@ app.get('/admin', adm, adminGuard, async (req, res) => {
         const exp = m.expires_at ? new Date(m.expires_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'N/A';
         const ntB = m.nt_license_id ? '<span style="color:#60a5fa;font-size:11px;">NT#' + m.nt_license_id + '</span>' : '<span style="color:#334155;">\u2014</span>';
         const act = m.status === 'active' ? actionBtn(m.email,'monthly','CANCEL') : '<span style="color:#334155;font-size:12px;">Inactive</span>';
-        return '<tr><td>' + (m.full_name||'\u2014') + '</td><td class="em">' + m.email + '</td><td>' + badge(m.status) + '</td><td class="dt">' + exp + '</td><td>' + ntB + '</td><td>' + act + '</td></tr>';
+        return '<tr><td>' + esc(m.full_name||'\u2014') + '</td><td class="em">' + esc(m.email) + '</td><td>' + badge(m.status) + '</td><td class="dt">' + esc(exp) + '</td><td>' + ntB + '</td><td>' + act + '</td></tr>';
     }).join('') || '<tr><td colspan="6" class="empty">No records</td></tr>';
 
     const licenseRows = (licenses || []).map(l => {
         const ntB = l.nt_license_id ? '<span style="color:#60a5fa;font-size:11px;">NT#' + l.nt_license_id + '</span>' : '<span style="color:#334155;">\u2014</span>';
         const act = l.status === 'active' ? actionBtn(l.email,'lifetime','REVOKE') : '<span style="color:#334155;font-size:12px;">Inactive</span>';
-        return '<tr><td>' + (l.full_name||'\u2014') + '</td><td class="em">' + l.email + '</td><td>' + badge(l.status,true) + '</td><td class="dt" style="font-family:monospace;font-size:11px;">' + (l.license_key||'') + '</td><td>' + ntB + '</td><td>' + act + '</td></tr>';
+        return '<tr><td>' + esc(l.full_name||'\u2014') + '</td><td class="em">' + esc(l.email) + '</td><td>' + badge(l.status,true) + '</td><td class="dt" style="font-family:monospace;font-size:11px;">' + esc(l.license_key||'') + '</td><td>' + ntB + '</td><td>' + act + '</td></tr>';
     }).join('') || '<tr><td colspan="6" class="empty">No records</td></tr>';
 
     const discordRows = (discordMems || []).map(d => {
         const exp = d.expires_at ? new Date(d.expires_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'N/A';
         const act = d.status === 'active' ? actionBtn(d.email,'discord','CANCEL') : '<span style="color:#334155;font-size:12px;">Inactive</span>';
-        return '<tr><td>' + (d.full_name||'\u2014') + '</td><td class="em">' + d.email + '</td><td>' + badge(d.status) + '</td><td class="dt">' + exp + '</td><td style="color:#a78bfa;font-size:12px;">' + (d.discord_username||(d.discord_user_id?'Linked':'\u2014')) + '</td><td>' + act + '</td></tr>';
+        return '<tr><td>' + esc(d.full_name||'\u2014') + '</td><td class="em">' + esc(d.email) + '</td><td>' + badge(d.status) + '</td><td class="dt">' + esc(exp) + '</td><td style="color:#a78bfa;font-size:12px;">' + esc(d.discord_username||(d.discord_user_id?'Linked':'\u2014')) + '</td><td>' + act + '</td></tr>';
     }).join('') || '<tr><td colspan="5" class="empty">No records</td></tr>';
 
     const liveRows = liveHVT.map(m => {
@@ -3483,6 +3485,7 @@ app.post('/api/prop-activation', requireSession, frm, express.json(), async (req
         const { email, firmName } = req.body || {};
         if (!email || !firmName)
             return res.status(400).json({ ok: false, error: 'Email and prop firm are required.' });
+        if (firmName.trim().length > 100) return res.status(400).json({ ok: false, error: 'Firm name too long.' });
 
         // ── Always use the authenticated session email — ignore body email ──
         // Prevents member A from activating prop access using member B's email
@@ -3635,7 +3638,7 @@ app.get('/api/prop-activations/mine', requireSession, async (req, res) => {
 app.get('/admin/prop-activations', adm, async (req, res) => {
     const secret = req.query.secret || req.headers['x-admin-secret'];
     if (secret !== ADMIN_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
-
+    try {
     const { data, error } = await supabase
         .from(PROP_FIRM_TABLE)
         .select('*')
@@ -3654,16 +3657,16 @@ app.get('/admin/prop-activations', adm, async (req, res) => {
 
     const rows = (data || []).map(r => `
         <tr>
-          <td style="padding:11px 14px;color:#e2e8f0;font-size:13px;">${r.email}</td>
-          <td style="padding:11px 14px;color:#94a3b8;font-size:13px;">${r.member_name || '—'}</td>
-          <td style="padding:11px 14px;font-family:monospace;color:#2254F5;font-size:13px;font-weight:700;letter-spacing:1px;">${r.hvt_id || '—'}</td>
-          <td style="padding:11px 14px;color:#60a5fa;font-size:13px;font-weight:600;">${r.firm_name}</td>
+          <td style="padding:11px 14px;color:#e2e8f0;font-size:13px;">${esc(r.email)}</td>
+          <td style="padding:11px 14px;color:#94a3b8;font-size:13px;">${esc(r.member_name || '—')}</td>
+          <td style="padding:11px 14px;font-family:monospace;color:#2254F5;font-size:13px;font-weight:700;letter-spacing:1px;">${esc(r.hvt_id || '—')}</td>
+          <td style="padding:11px 14px;color:#60a5fa;font-size:13px;font-weight:600;">${esc(r.firm_name)}</td>
           <td style="padding:11px 14px;">
             <span style="padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
               background:${r.status==='active'?'rgba(34,197,94,0.1)':'rgba(239,68,68,0.1)'};
               color:${r.status==='active'?'#4ade80':'#f87171'};">${r.status}</span>
           </td>
-          <td style="padding:11px 14px;color:#475569;font-size:11px;">${r.nt_license_id || '—'}</td>
+          <td style="padding:11px 14px;color:#475569;font-size:11px;">${esc(r.nt_license_id || '—')}</td>
           <td style="padding:11px 14px;color:#475569;font-size:12px;">${new Date(r.created_at).toLocaleString()}</td>
           <td style="padding:11px 14px;">
             ${r.status === 'active'
@@ -3742,39 +3745,48 @@ async function revokeRow(id, btn) {
 }
 </script>
 </body></html>`);
+    } catch(e) { console.error('[AdminPropList]', e.message); res.status(500).json({ ok: false, error: 'Server error.' }); }
 });
 
 // ─── ADMIN: REVOKE A PROP ACTIVATION ─────────────────────────────────────────
 app.post('/admin/prop-activations/:id/revoke', adm, express.json(), async (req, res) => {
     const secret = req.query.secret || req.headers['x-admin-secret'];
     if (secret !== ADMIN_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    try {
+        const { id } = req.params;
+        if (!id) return res.status(400).json({ ok: false, error: 'Missing id.' });
 
-    const { id } = req.params;
+        const { data: record, error: fetchErr } = await supabase
+            .from(PROP_FIRM_TABLE)
+            .select('nt_license_id, status')
+            .eq('id', id)
+            .maybeSingle();
 
-    const { data: record, error: fetchErr } = await supabase
-        .from(PROP_FIRM_TABLE)
-        .select('nt_license_id, status')
-        .eq('id', id)
-        .maybeSingle();
+        if (fetchErr || !record)
+            return res.status(404).json({ ok: false, error: 'Activation not found.' });
 
-    if (fetchErr || !record)
-        return res.status(404).json({ ok: false, error: 'Activation not found.' });
+        if (record.status === 'revoked')
+            return res.json({ ok: true, message: 'Already revoked.' });
 
-    if (record.status === 'revoked')
-        return res.json({ ok: true, message: 'Already revoked.' });
+        // Revoke NT Ecosystem license
+        if (record.nt_license_id) {
+            try { await ntRevokeLicense(record.nt_license_id); }
+            catch(e) { console.error('[PropRevoke] NT revoke error:', e.message); }
+        }
 
-    // Revoke from NT Ecosystem
-    if (record.nt_license_id) { try { await ntRevokeLicense(record.nt_license_id); } catch(e) { console.error("[PropRevoke] NT revoke error:", e.message); } }
+        const { error } = await supabase
+            .from(PROP_FIRM_TABLE)
+            .update({ status: 'revoked', updated_at: nowISO() })
+            .eq('id', id);
 
-    const { error } = await supabase
-        .from(PROP_FIRM_TABLE)
-        .update({ status: 'revoked', updated_at: nowISO() })
-        .eq('id', id);
+        if (error) return res.status(500).json({ ok: false, error: error.message });
 
-    if (error) return res.status(500).json({ ok: false, error: error.message });
-
-    console.log(`[PropRevoke] ✅ Revoked activation id=${id}`);
-    res.json({ ok: true });
+        console.log(`[PropRevoke] ✅ Revoked activation id=${id}`);
+        res.json({ ok: true });
+    } catch(e) {
+        console.error('[PropRevoke] Fatal:', e.message);
+        res.status(500).json({ ok: false, error: 'Server error.' });
+    }
 });
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
