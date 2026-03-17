@@ -243,6 +243,11 @@ async function ntRevokeLicense(ntLicenseId) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 console.log(`[INIT] Supabase connected: ${MEMBERSHIP_TABLE} | ${LICENSE_TABLE} | ${DISCORD_TABLE}`);
 
+// ── Ensure prop_firm_activations has hvt_id column ────────────────────────
+// Run this SQL in Supabase if not already done:
+// ALTER TABLE prop_firm_activations ADD COLUMN IF NOT EXISTS hvt_id TEXT;
+// CREATE UNIQUE INDEX IF NOT EXISTS prop_firm_activations_hvt_id_idx ON prop_firm_activations(hvt_id) WHERE hvt_id IS NOT NULL;
+
 // ─── SHARED HELPERS ───────────────────────────────────────────────────────────
 function pickFirst(...v) { for (const x of v) { if (typeof x === 'string' && x.trim()) return x.trim(); if (typeof x === 'number') return String(x); } return null; }
 function genKey()        { return `HVT-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`; }
@@ -3255,16 +3260,48 @@ select option{background:#0d1117}
     <div class="hero-div"></div>
   </div>
 
-  <div class="card">
-    <div class="card-label">How it works</div>
-    <div class="steps">
-      <div class="step"><div class="step-num">1</div><h4>Activate Below</h4><p>Enter your HVT email and prop firm, then click Activate</p></div>
-      <div class="step"><div class="step-num">2</div><h4>Open NinjaTrader</h4><p>Go to <strong>Help &rarr; 3rd Party Licensing</strong> in NinjaTrader 8</p></div>
-      <div class="step"><div class="step-num">3</div><h4>Enter Your Email</h4><p>Vendor: <strong>High Velocity Trading</strong> &mdash; License Key: your HVT email</p></div>
+  <!-- ACTIVATION SUCCESS CARD (hidden until activation) -->
+  <div class="card" id="activation-success" style="display:none;border-color:rgba(34,197,94,0.3);">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+      <div style="width:32px;height:32px;border-radius:50%;background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;color:#4ade80;flex-shrink:0;">&#10003;</div>
+      <div>
+        <div style="font-size:16px;font-weight:700;color:#4ade80;">Software Activated</div>
+        <div style="font-size:12px;color:#64748b;margin-top:2px;">Activated for <span id="confirmed-firm"></span></div>
+      </div>
+    </div>
+    <div style="background:#0d1117;border:1px solid rgba(34,84,245,0.3);border-radius:10px;padding:20px;margin-bottom:20px;">
+      <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">Your HVT License ID</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div id="hvt-id-display" style="font-family:monospace;font-size:22px;font-weight:800;color:#2254F5;letter-spacing:2px;flex:1;"></div>
+        <button id="copy-btn" onclick="copyHvtId()" style="background:rgba(34,84,245,0.1);border:1px solid rgba(34,84,245,0.3);color:#2254F5;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;">Copy ID</button>
+      </div>
+      <div style="font-size:12px;color:#475569;margin-top:8px;">Save this — you'll need it every time you set up NinjaTrader on a new machine</div>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;">How to activate in NinjaTrader</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px;">1</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Open NinjaTrader 8 and go to <strong style="color:#e2e8f0;">Help &rarr; 3rd Party Licensing</strong></div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px;">2</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Under Vendor Name enter exactly: <strong style="color:#e2e8f0;font-family:monospace;">HighVelocityTrading</strong></div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px;">3</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Under User Defined ID paste your HVT ID: <strong style="color:#2254F5;font-family:monospace;" id="hvt-id-inline">your ID above</strong></div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px;">4</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Click <strong style="color:#e2e8f0;">Submit</strong> — your HVT indicators will unlock immediately</div>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding:12px 14px;background:rgba(246,173,85,0.06);border:1px solid rgba(246,173,85,0.2);border-radius:8px;">
+      <div style="font-size:12px;color:#f6ad55;line-height:1.6;">&#128161; This works on any prop firm machine. Repeat steps 1-4 on each new machine or account you trade on.</div>
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="activation-form">
     <div class="card-label">Activate your account</div>
     <div id="prop-msg"></div>
     <div class="form-row">
@@ -3305,8 +3342,37 @@ function showMsg(msg,ok){
   el.style.border='1px solid '+(ok?'rgba(34,197,94,0.3)':'rgba(239,68,68,0.3)');
   el.style.color=ok?'#4ade80':'#f87171';
   el.innerHTML=msg;
-  el.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
+
+function showActivationSuccess(hvtId, firmName){
+  // Hide form, show the activation card
+  document.getElementById('activation-form').style.display='none';
+  var card=document.getElementById('activation-success');
+  card.style.display='block';
+  document.getElementById('hvt-id-display').textContent=hvtId;
+  var inline=document.getElementById('hvt-id-inline');if(inline)inline.textContent=hvtId;
+  document.getElementById('confirmed-firm').textContent=firmName;
+  card.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function copyHvtId(){
+  var id=document.getElementById('hvt-id-display').textContent;
+  navigator.clipboard.writeText(id).then(function(){
+    var btn=document.getElementById('copy-btn');
+    btn.textContent='Copied!';
+    btn.style.background='rgba(74,222,128,0.15)';
+    btn.style.borderColor='rgba(74,222,128,0.4)';
+    btn.style.color='#4ade80';
+    setTimeout(function(){
+      btn.textContent='Copy ID';
+      btn.style.background='';btn.style.borderColor='';btn.style.color='';
+    },2000);
+  }).catch(function(){
+    var id=document.getElementById('hvt-id-display').textContent;
+    prompt('Copy your HVT ID:',id);
+  });
+}
+
 async function submitPropActivation(){
   var email=document.getElementById('prop-email').value.trim();
   var firmName=document.getElementById('prop-firm-name').value.trim();
@@ -3318,25 +3384,40 @@ async function submitPropActivation(){
     var r=await fetch('/api/prop-activation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,firmName:firmName})});
     var d=await r.json();
     if(d.ok){
-      showMsg('<strong>&#10003; Activation complete!</strong><br>In NinjaTrader go to <strong>Help &rarr; 3rd Party Licensing</strong>, enter <strong>High Velocity Trading</strong> as vendor and <strong>'+email+'</strong> as the license key.',true);
+      showActivationSuccess(d.hvtId, d.firmName||firmName);
       loadActivations();
     } else {
       showMsg(d.error||'Activation failed. Please contact support.',false);
+      btn.disabled=false;btn.textContent='Activate Now';
     }
-  } catch(e){ showMsg('Network error. Please try again.',false); }
-  btn.disabled=false;btn.textContent='Activate Now';
+  } catch(e){
+    showMsg('Network error. Please try again.',false);
+    btn.disabled=false;btn.textContent='Activate Now';
+  }
 }
+
 async function loadActivations(){
   try{
     var r=await fetch('/api/prop-activations/mine');
     var d=await r.json();
     var el=document.getElementById('activations-list');
-    if(!d.ok||!d.activations||!d.activations.length){el.innerHTML='<div style="color:#64748b;font-size:14px;">No activations yet.</div>';return;}
+    if(!d.ok||!d.activations||!d.activations.length){
+      el.innerHTML='<div style="color:#64748b;font-size:14px;">No activations yet.</div>';
+      return;
+    }
     el.innerHTML=d.activations.map(function(a){
       var sc=a.status==='active'?'#4ade80':'#f87171';
-      return '<div class="act-row"><div><div class="act-firm">'+a.firm_name+'</div><div class="act-email">'+a.email+'</div></div><div style="text-align:right;flex-shrink:0;margin-left:16px;"><div class="act-status" style="color:'+sc+';">'+a.status+'</div><div class="act-date">'+new Date(a.created_at).toLocaleDateString()+'</div></div></div>';
+      var hvtBadge=a.hvt_id?'<div style="font-family:monospace;font-size:13px;color:#2254F5;margin-top:3px;font-weight:700;">'+a.hvt_id+'</div>':'';
+      return '<div class="act-row"><div><div class="act-firm">'+a.firm_name+'</div>'+hvtBadge+'<div class="act-email">'+a.email+'</div></div><div style="text-align:right;flex-shrink:0;margin-left:16px;"><div class="act-status" style="color:'+sc+';">'+a.status+'</div><div class="act-date">'+new Date(a.created_at).toLocaleDateString()+'</div></div></div>';
     }).join('');
-  } catch(e){ document.getElementById('activations-list').innerHTML='<div style="color:#64748b;font-size:14px;">Could not load activations.</div>'; }
+    // If user has an active activation, show success card immediately
+    var active=d.activations.find(function(a){return a.status==='active'&&a.hvt_id;});
+    if(active){
+      showActivationSuccess(active.hvt_id, active.firm_name);
+    }
+  } catch(e){
+    document.getElementById('activations-list').innerHTML='<div style="color:#64748b;font-size:14px;">Could not load activations.</div>';
+  }
 }
 loadActivations();
 </script>
@@ -3345,99 +3426,112 @@ loadActivations();
 
 // ─── PROP ACTIVATION API ─────────────────────────────────────────────────────
 app.post('/api/prop-activation', requireSession, frm, express.json(), async (req, res) => {
-    const s                   = req._session;
-    const { email, firmName } = req.body || {};
-
-    if (!email || !firmName)
-        return res.status(400).json({ ok: false, error: 'Email and prop firm are required.' });
-
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanFirm  = firmName.trim();
-
-    // ── Verify email is an active HVT member (check both tables) ──
-    const [{ data: m1 }, { data: m2 }] = await Promise.all([
-        supabase.from(MEMBERSHIP_TABLE).select('email, status').eq('email', cleanEmail).maybeSingle(),
-        supabase.from(LICENSE_TABLE).select('email, status').eq('email', cleanEmail).maybeSingle()
-    ]);
-
-    const member = m1 || m2;
-    if (!member)
-        return res.status(403).json({ ok: false, error: 'Email not found in HVT membership. Please use the email you purchased with.' });
-
-    if (member.status !== 'active')
-        return res.status(403).json({ ok: false, error: 'Your HVT membership is not currently active. Please contact support.' });
-
-    // ── Check if this email already has an active prop activation ──
-    const { data: existing } = await supabase
-        .from(PROP_FIRM_TABLE)
-        .select('id, firm_name, status')
-        .eq('email', cleanEmail)
-        .eq('status', 'active')
-        .maybeSingle();
-
-    if (existing) {
-        // Already activated — just return success so they can get the NT instructions
-        return res.json({ ok: true, alreadyActive: true });
-    }
-
-    // ── Create NT Ecosystem license for this email ──
-    if (!ntToken) await ntLogin();
-    if (!ntToken) return res.status(500).json({ ok: false, error: 'Could not connect to NinjaTrader. Please try again in a moment.' });
-
-    let ntLicenseId = null;
     try {
-        const expiry = new Date();
-        expiry.setFullYear(expiry.getFullYear() + 99); // effectively permanent
-        const r = await fetchFn(`https://ecosystemapi.ninjatrader.com/v1/products/${NT_PRODUCT_ID}/licenses`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${ntToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                license: {
-                    email:               cleanEmail,
-                    licenseType:         'Lifetime',
-                    expirationDateUTC:   expiry.toISOString()
-                }
-            })
-        });
-        const d = await r.json();
-        console.log(`[PropActivation] NT API response for ${cleanEmail}:`, JSON.stringify(d));
+        const s                   = req._session;
+        const { email, firmName } = req.body || {};
+        if (!email || !firmName)
+            return res.status(400).json({ ok: false, error: 'Email and prop firm are required.' });
 
-        if (d?.errorText && d.errorText !== '') {
-            // NT may return "already licensed" — treat as success
-            if (d.errorText.toLowerCase().includes('already')) {
-                console.log(`[PropActivation] Already licensed in NT for ${cleanEmail} — proceeding`);
-            } else {
-                console.error(`[PropActivation] NT error for ${cleanEmail}:`, d.errorText);
-                return res.status(500).json({ ok: false, error: 'NinjaTrader licensing failed. Please contact support.' });
-            }
+        const cleanEmail = email.trim().toLowerCase();
+        const cleanFirm  = firmName.trim();
+
+        // ── Verify active HVT membership ──────────────────────────────────
+        const [{ data: m1 }, { data: m2 }] = await Promise.all([
+            supabase.from(MEMBERSHIP_TABLE).select('email,status,expires_at').eq('email', cleanEmail).maybeSingle(),
+            supabase.from(LICENSE_TABLE).select('email,status').eq('email', cleanEmail).maybeSingle()
+        ]);
+        const isMonthly  = m1?.status === 'active' && new Date(m1.expires_at) > new Date();
+        const isLifetime = m2?.status === 'active';
+        if (!isMonthly && !isLifetime)
+            return res.status(403).json({ ok: false, error: 'No active HVT membership found for this email. Please use the email you purchased with.' });
+
+        // ── Check for existing active activation — return existing HVT ID ──
+        const { data: existing } = await supabase
+            .from(PROP_FIRM_TABLE)
+            .select('id,hvt_id,firm_name,status,nt_license_id')
+            .eq('email', cleanEmail)
+            .eq('status', 'active')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (existing) {
+            console.log(`[PropActivation] Returning existing activation for ${cleanEmail} | hvt_id=${existing.hvt_id}`);
+            return res.json({ ok: true, alreadyActive: true, hvtId: existing.hvt_id, firmName: existing.firm_name });
         }
 
-        if (d?.result) ntLicenseId = String(d.result);
+        // ── Generate unique HVT ID ─────────────────────────────────────────
+        const hvtId = 'HVT-' + crypto.randomBytes(4).toString('hex').toUpperCase();
 
-    } catch (e) {
-        console.error('[PropActivation] NT API error:', e.message);
-        return res.status(500).json({ ok: false, error: 'Could not reach NinjaTrader. Please try again.' });
+        // ── Create NT Ecosystem license (email-based, permanent) ──────────
+        if (!ntToken) await ntLogin();
+        if (!ntToken) return res.status(500).json({ ok: false, error: 'Could not connect to NinjaTrader. Please try again in a moment.' });
+
+        let ntLicenseId = null;
+        const expiry = new Date();
+        expiry.setFullYear(expiry.getFullYear() + 99);
+        try {
+            const r = await fetchFn(`https://ecosystemapi.ninjatrader.com/v1/products/${NT_PRODUCT_ID}/licenses`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${ntToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ license: { email: cleanEmail, licenseType: 'Lifetime', expirationDateUTC: expiry.toISOString() } })
+            });
+            const d = await r.json();
+            console.log(`[PropActivation] NT response for ${cleanEmail}:`, JSON.stringify(d));
+            if (d?.errorText && d.errorText !== '') {
+                if (d.errorText.toLowerCase().includes('already')) {
+                    console.log(`[PropActivation] Already in NT — continuing | ${cleanEmail}`);
+                } else {
+                    console.error(`[PropActivation] NT error:`, d.errorText);
+                    return res.status(500).json({ ok: false, error: 'NinjaTrader licensing failed. Contact support.' });
+                }
+            }
+            if (d?.result) ntLicenseId = String(d.result);
+        } catch (e) {
+            console.error('[PropActivation] NT API error:', e.message);
+            return res.status(500).json({ ok: false, error: 'Could not reach NinjaTrader. Please try again.' });
+        }
+
+        // ── Save to Supabase ──────────────────────────────────────────────
+        const { error: dbErr } = await supabase.from(PROP_FIRM_TABLE).insert({
+            email:         cleanEmail,
+            member_name:   s.name || '',
+            firm_name:     cleanFirm,
+            hvt_id:        hvtId,
+            nt_license_id: ntLicenseId,
+            status:        'active',
+            created_at:    nowISO(),
+            updated_at:    nowISO()
+        });
+        if (dbErr) console.error('[PropActivation] DB insert error (NT license still created):', dbErr.message);
+
+        console.log(`[PropActivation] ✅ ${cleanEmail} | ${cleanFirm} | hvt_id=${hvtId} | nt_id=${ntLicenseId}`);
+        res.json({ ok: true, hvtId, firmName: cleanFirm });
+    } catch(e) {
+        console.error('[PropActivation] Fatal:', e.message);
+        res.status(500).json({ ok: false, error: 'Server error. Please try again.' });
     }
+});
 
-    // ── Save to Supabase ──
-    const { error: dbErr } = await supabase.from(PROP_FIRM_TABLE).insert({
-        email:         cleanEmail,
-        member_name:   s.name || '',
-        firm_name:     cleanFirm,
-        nt_license_id: ntLicenseId,
-        status:        'active',
-        created_at:    nowISO(),
-        updated_at:    nowISO()
-    });
-
-    if (dbErr) {
-        console.error('[PropActivation] Supabase insert error:', dbErr.message);
-        // NT license was created — log it but don't fail the user
-        console.error('[PropActivation] NT license created but DB log failed. NT ID:', ntLicenseId);
+// ─── LICENSE CHECK (called by NT indicators) ────────────────────────────────
+// Indicators call: GET /api/license-check?email=EMAIL
+// Returns { authorized: true/false }
+app.get('/api/license-check', async (req, res) => {
+    try {
+        const email = (req.query.email || req.query.machineId || '').toLowerCase().trim();
+        if (!email) return res.json({ authorized: false });
+        const { data } = await supabase
+            .from(PROP_FIRM_TABLE)
+            .select('id,status')
+            .eq('email', email)
+            .eq('status', 'active')
+            .limit(1)
+            .maybeSingle();
+        res.json({ authorized: !!data });
+    } catch(e) {
+        console.error('[LicenseCheck]', e.message);
+        res.json({ authorized: false });
     }
-
-    console.log(`[PropActivation] ✅ ${cleanEmail} | ${cleanFirm} | nt_id=${ntLicenseId}`);
-    res.json({ ok: true });
 });
 
 // ─── MY PROP ACTIVATIONS ─────────────────────────────────────────────────────
@@ -3446,7 +3540,7 @@ app.get('/api/prop-activations/mine', requireSession, async (req, res) => {
     const s = req._session;
     const { data, error } = await supabase
         .from(PROP_FIRM_TABLE)
-        .select('email, firm_name, status, created_at')
+        .select('email, firm_name, status, created_at, hvt_id')
         .eq('email', s.email.toLowerCase())
         .order('created_at', { ascending: false });
 
@@ -3480,12 +3574,14 @@ app.get('/admin/prop-activations', adm, async (req, res) => {
         <tr>
           <td style="padding:11px 14px;color:#e2e8f0;font-size:13px;">${r.email}</td>
           <td style="padding:11px 14px;color:#94a3b8;font-size:13px;">${r.member_name || '—'}</td>
+          <td style="padding:11px 14px;font-family:monospace;color:#2254F5;font-size:13px;font-weight:700;letter-spacing:1px;">${r.hvt_id || '—'}</td>
           <td style="padding:11px 14px;color:#60a5fa;font-size:13px;font-weight:600;">${r.firm_name}</td>
           <td style="padding:11px 14px;">
             <span style="padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
               background:${r.status==='active'?'rgba(34,197,94,0.1)':'rgba(239,68,68,0.1)'};
               color:${r.status==='active'?'#4ade80':'#f87171'};">${r.status}</span>
           </td>
+          <td style="padding:11px 14px;color:#475569;font-size:11px;">${r.nt_license_id || '—'}</td>
           <td style="padding:11px 14px;color:#475569;font-size:12px;">${new Date(r.created_at).toLocaleString()}</td>
           <td style="padding:11px 14px;">
             ${r.status === 'active'
@@ -3529,7 +3625,7 @@ ${topFirms ? `<div class="firms"><div class="firms-lbl">By Prop Firm</div>${topF
 <div class="search-wrap"><input type="text" id="srch" placeholder="Search email or firm..." oninput="filterRows(this.value)"/></div>
 <table id="tbl">
   <thead><tr>
-    <th>Email</th><th>Name</th><th>Prop Firm</th><th>Status</th><th>Date</th><th>Action</th>
+    <th>Email</th><th>Name</th><th>HVT ID</th><th>Prop Firm</th><th>Status</th><th>NT License ID</th><th>Date</th><th>Action</th>
   </tr></thead>
   <tbody id="tbody">${rows}</tbody>
 </table>
