@@ -750,7 +750,7 @@ input::placeholder{color:#334155;}
       <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:29px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" /></a>
     </div>
     <div class="topnav-right" style="display:flex;align-items:center;gap:12px;">
-      ${hero && hero.hideNav ? '' : '<a href="/member" class="topnav-link">Portal</a><a href="/billing/confirm-session" class="topnav-out">Billing</a><a href="/logout" class="topnav-out">Log out</a><a href="/prop-activation" class="prop-firm-btn">Activate Software for Prop Firms</a>'}
+      ${hero && hero.hideNav ? '' : '<a href="/member" class="topnav-link">Portal</a><a href="/billing/confirm-session" class="topnav-out">Billing</a><a href="/logout" class="topnav-out">Log out</a><a href="/prop-activation" class="prop-firm-btn">Prop Firms</a>'}
     </div>
   </nav>
 </div>
@@ -1598,7 +1598,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
     <div class="topnav-right">
       <a href="/billing/confirm-session" class="topnav-out">Billing</a>
       <a href="/logout" class="topnav-out">Log out</a>
-      <a href="/prop-activation" class="prop-firm-btn">Activate Software for Prop Firms</a>
+      <a href="/prop-activation" class="prop-firm-btn">Prop Firms</a>
     </div>
   </nav>
 </div>
@@ -2265,7 +2265,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
     <a href="/member" class="topnav-link">Portal</a>
     <a href="/billing/confirm-session" class="topnav-out">Billing</a>
     <a href="/logout" class="topnav-out">Log out</a>
-    <a href="/prop-activation" class="prop-firm-btn">Activate Software for Prop Firms</a>
+    <a href="/prop-activation" class="prop-firm-btn">Prop Firms</a>
     <button class="mob-menu" id="mobMenu" aria-label="Toggle course menu">&#9776;</button>
   </div>
 </div>
@@ -3299,7 +3299,7 @@ select option{background:#0d1117}
       <a href="/member" class="nav-link">Portal</a>
       <a href="/billing/confirm-session" class="nav-link">Billing</a>
       <a href="/logout" class="nav-link">Log out</a>
-      <a href="/prop-activation" class="prop-firm-btn">Activate Software for Prop Firms</a>
+      <a href="/prop-activation" class="prop-firm-btn">Prop Firms</a>
     </div>
   </nav>
 </div>
