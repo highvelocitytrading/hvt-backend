@@ -25,11 +25,10 @@ app.use(express.static(path.join(__dirname, 'public'), {
 }));
 
 
-// ─── FAVICON & LOGO EXPLICIT ROUTES (backup if static middleware misses them) ──
-const FAVICON_PATH = path.join(__dirname, 'public', 'HVTicon.png');
-app.get('/favicon.ico',  (req, res) => res.sendFile(FAVICON_PATH));
-app.get('/favicon.png',  (req, res) => res.sendFile(FAVICON_PATH));
-app.get('/HVTicon.png',  (req, res) => res.sendFile(FAVICON_PATH));
+// ─── LOGO EXPLICIT ROUTE (backup if static middleware misses it) ──────────────
+app.get('/favicon.png', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'favicon.png'));
+});
 app.get('/hvt-logo.cropped.png', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'hvt-logo.cropped.png'));
 });
@@ -625,6 +624,37 @@ async function sendCourseEmail(email, token) {
     await sendEmail(email, 'Access Your HVT Member Portal', html);
 }
 
+async function sendCancelConfirmEmail(email, expiresAt) {
+    const expDate = new Date(expiresAt);
+    const dateStr = expDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#000;font-family:'DM Sans',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#000;padding:40px 20px;">
+  <tr><td align="center">
+    <table width="560" cellpadding="0" cellspacing="0" style="background:#0d1117;border-radius:16px;border:1px solid rgba(255,255,255,0.08);overflow:hidden;max-width:560px;width:100%;">
+      <tr><td style="height:4px;background:linear-gradient(90deg,#2254F5,#3b6ff5);"></td></tr>
+      <tr><td style="padding:36px 40px 28px;">
+        <p style="margin:0 0 24px;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#2254F5;">HIGH VELOCITY TRADING</p>
+        <h1 style="margin:0 0 16px;font-size:26px;font-weight:700;color:#fff;line-height:1.2;">Cancellation Confirmed</h1>
+        <p style="margin:0 0 20px;font-size:15px;color:#94a3b8;line-height:1.7;">Your cancellation request has been processed. <strong style="color:#fff;">You will not be charged again.</strong></p>
+        <div style="background:rgba(34,84,245,0.06);border:1px solid rgba(34,84,245,0.2);border-radius:12px;padding:20px 24px;margin:0 0 24px;">
+          <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#2254F5;">YOUR ACCESS CONTINUES UNTIL</p>
+          <p style="margin:0;font-size:22px;font-weight:700;color:#fff;">${dateStr}</p>
+          <p style="margin:8px 0 0;font-size:13px;color:#64748b;">All features — Discord, indicators, trading journal, and course — remain fully active until this date.</p>
+        </div>
+        <p style="margin:0 0 28px;font-size:14px;color:#64748b;line-height:1.7;">After ${dateStr}, your access will be automatically removed. If you change your mind before then, reply to this email or call us at <strong style="color:#94a3b8;">786-461-4235</strong> and we can reactivate your membership.</p>
+        <p style="margin:0;font-size:13px;color:#334155;">— The HVT Team</p>
+      </td></tr>
+      <tr><td style="padding:20px 40px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+        <p style="margin:0;font-size:11px;color:#1e2d3d;">High Velocity Trading &nbsp;|&nbsp; <a href="https://highvelocitytrading.com" style="color:#1e2d3d;text-decoration:none;">highvelocitytrading.com</a></p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+    await sendEmail(email, 'Your HVT Membership Has Been Cancelled — Access Continues Until ' + dateStr, html);
+}
+
 async function sendMagicLink(email, token, type) {
     const url       = `${APP_URL}/${type}/confirm?token=${token}`;
     const isBilling = type === 'billing';
@@ -859,14 +889,13 @@ app.post('/webhooks/membership-authnet', wh, express.json(), async (req, res) =>
             if (!lookupVal) { console.warn('[MemberAN] No subId or email for cancel event'); return; }
             const { data: m } = await supabase.from(MEMBERSHIP_TABLE).select('discord_user_id,nt_license_id,email').eq(lookupKey, lookupVal).maybeSingle();
             // Step 2: update status
-            await supabase.from(MEMBERSHIP_TABLE).update({ status: 'cancelled', updated_at: nowISO() }).eq(lookupKey, lookupVal);
-            // Step 3: strip Discord role and NT license
-            if (m?.discord_user_id) try { await stripRole(m.discord_user_id, DISCORD_MONTHLY_ROLE_ID); } catch (e) { console.error('[MemberAN strip role]', e.message); }
-            if (m?.nt_license_id)   try { await ntRevokeLicense(m.nt_license_id); } catch (e) { console.error('[MemberAN revoke NT]', e.message); }
-            // Revoke any prop firm activations — monthly members lose prop access when they stop paying
+            // Authnet webhook fired — sub is cancelled, keep status active till expires_at
+            const anCancelsAt = m?.expires_at || nowISO();
+            await supabase.from(MEMBERSHIP_TABLE).update({ status: 'pending_cancel', cancels_at: anCancelsAt, updated_at: nowISO() }).eq(lookupKey, lookupVal);
+            // Do NOT strip Discord/NT yet — member paid through expires_at
             const cancelledEmail = m?.email || email;
-            if (cancelledEmail) revokeMonthlyPropActivations(cancelledEmail).catch(e => console.error('[MemberAN PropRevoke]', e.message));
-            console.log(`🚫 Membership cancelled (AN): ${cancelledEmail || subId}`);
+            if (cancelledEmail) try { await sendCancelConfirmEmail(cancelledEmail, anCancelsAt); } catch(e) { console.error('[MemberAN cancel email]', e.message); }
+            console.log('[MemberAN] Pending cancel: ' + (cancelledEmail || subId) + ' — access until ' + anCancelsAt);
         }
         // res already sent 200 above
     } catch (e) { console.error('[MemberAN]', e.message); /* res already sent */ }
@@ -1242,7 +1271,7 @@ app.post('/trading-room/activate', frm, express.json(), async (req, res) => {
         const mem0 = mem?.[0] ?? null;
         const lic  = licRows?.[0] ?? null;
         const dm0  = dm?.[0] ?? null;
-        const isMonthly  = mem0?.status === 'active' && new Date(mem0.expires_at) > new Date();
+        const isMonthly  = (mem0?.status === 'active' || mem0?.status === 'pending_cancel') && new Date(mem0.expires_at) > new Date();
         const isLifetime = lic?.status === 'active';
         const isDiscord  = dm0?.status  === 'active' && new Date(dm0.expires_at)  > new Date();
 
@@ -1302,7 +1331,7 @@ app.post('/trading-room/activate-nt', frm, express.json(), async (req, res) => {
             mem = m; lic = l;
         }
 
-        const isMonthly  = mem?.status === 'active' && new Date(mem.expires_at) > new Date();
+        const isMonthly  = (mem?.status === 'active' || mem?.status === 'pending_cancel') && new Date(mem.expires_at) > new Date();
         const isLifetime = lic?.status === 'active';
         if (!isMonthly && !isLifetime) return res.status(403).json({ error: 'No active membership found. Please also enter your purchase email, or contact support at 786-461-4235.' });
 
@@ -1343,7 +1372,7 @@ app.post('/trading-room/activate-discord', frm, express.json(), async (req, res)
         const mem2 = memRows2?.[0] ?? null;
         const lic2 = licRows2?.[0] ?? null;
         const dm2  = dmRows2?.[0] ?? null;
-        const isMonthly  = mem2?.status === 'active' && new Date(mem2.expires_at) > new Date();
+        const isMonthly  = (mem2?.status === 'active' || mem2?.status === 'pending_cancel') && new Date(mem2.expires_at) > new Date();
         const isLifetime = lic2?.status === 'active';
         const isDiscord  = dm2?.status  === 'active' && new Date(dm2.expires_at) > new Date();
 
@@ -1509,7 +1538,7 @@ app.post('/course/request', frm, express.json(), async (req, res) => {
         if (!email) return res.status(400).json({ error: 'Email is required' });
         const { data: mem } = await supabase.from(MEMBERSHIP_TABLE).select('status,expires_at').eq('email', email).maybeSingle();
         const { data: lic } = await supabase.from(LICENSE_TABLE).select('status').eq('email', email).maybeSingle();
-        const isMonthly  = mem?.status === 'active' && new Date(mem.expires_at) > new Date();
+        const isMonthly  = (mem?.status === 'active' || mem?.status === 'pending_cancel') && new Date(mem.expires_at) > new Date();
         const isLifetime = lic?.status === 'active';
         if (!isMonthly && !isLifetime) return res.status(403).json({ error: 'No active membership found. Visit highvelocitytrading.com or call 786-461-4235.' });
         const token   = crypto.randomBytes(32).toString('hex');
@@ -2643,16 +2672,23 @@ app.get('/cancel/confirm', async (req, res) => {
         if (!data) return res.send(resultPage('error', 'Invalid Link', 'This link is invalid or has expired.'));
         if (new Date(data.cancel_token_expires) < new Date()) return res.send(resultPage('error', 'Link Expired', 'This link has expired. <a href="/cancel" style="color:#f87171;">Request a new one</a>.'));
         if (data.status === 'cancelled') return res.send(resultPage('info', 'Already Cancelled', 'Your membership is already cancelled.'));
+        // Cancel Authnet subscription — stops future charges but keeps access till expires_at
         if (data.authnet_subscription_id) try { await cancelSub(data.authnet_subscription_id); } catch (e) { console.error('[CancelSub]', e.message); }
-        if (data.discord_user_id) try { await stripRole(data.discord_user_id, DISCORD_MONTHLY_ROLE_ID); } catch {}
-        if (data.nt_license_id)   try { await ntRevokeLicense(data.nt_license_id); } catch {}
-        // Revoke prop firm activations on manual cancel
-        revokeMonthlyPropActivations(data.email).catch(e => console.error('[CancelConfirm PropRevoke]', e.message));
-        await supabase.from(MEMBERSHIP_TABLE).update({ status: 'cancelled', cancel_token: null, cancel_token_expires: null, updated_at: nowISO() }).eq('cancel_token', token);
-        // Revoke any active prop firm activations
-        await revokeMonthlyPropActivations(data.email).catch(e => console.error('[CancelConfirm prop revoke]', e.message));
-        console.log(`🚫 Cancelled: ${data.email}`);
-        res.send(resultPage('success', 'Membership Cancelled', 'Your membership has been successfully cancelled.<br><br>You will retain access until the end of your current billing period.'));
+        // Mark as pending_cancel — status stays 'active' so they keep Discord/NT/portal access
+        // cancels_at = their current expires_at so we know when to clean up
+        const cancelsAt = data.expires_at || nowISO();
+        await supabase.from(MEMBERSHIP_TABLE).update({
+            status: 'pending_cancel',
+            cancels_at: cancelsAt,
+            cancel_token: null,
+            cancel_token_expires: null,
+            updated_at: nowISO()
+        }).eq('cancel_token', token);
+        // Send confirmation email telling them access continues until expires_at
+        try { await sendCancelConfirmEmail(data.email, cancelsAt); } catch (e) { console.error('[CancelConfirm email]', e.message); }
+        console.log('[CancelConfirm] Pending cancel: ' + data.email + ' — access until ' + cancelsAt);
+        const expDateStr = new Date(cancelsAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        res.send(resultPage('success', 'Cancellation Confirmed', 'Your subscription has been cancelled. No future charges will occur.<br><br>You have full access to everything until <strong style="color:#fff;">' + expDateStr + '</strong>. After that your account will be automatically closed.'));
     } catch (e) { console.error('[CancelConfirm]', e.message); res.send(resultPage('error', 'Error', 'Something went wrong. Please contact support.')); }
 });
 
