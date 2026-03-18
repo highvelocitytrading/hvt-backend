@@ -1476,8 +1476,11 @@ async function requireSession(req, res, next) {
 
 // ─── LOGIN PAGE (was /course) ─────────────────────────────────────────────────
 app.get('/login', async (req, res) => {
+    try {
     if (DEMO_MODE) return res.redirect('/member');
-    if (await getSessionAsync(req)) return res.redirect('/member');
+    const _sess = await getSessionAsync(req);
+    if (_sess) return res.redirect('/member');
+    } catch(e) { /* session check failed, show login */ }
     res.send(shell('Member Login', `
     <div style="width:100%;max-width:520px;">
       <div class="card" style="max-width:520px;">
@@ -1987,16 +1990,21 @@ app.get('/trading-journal', requireSession, (req, res) => {
             if(p==='month') return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
             return true;
           });
+          // Parse net_pnl as float — Supabase can return strings
+          f=f.map(function(t){var n=parseFloat(t.net_pnl);return Object.assign({},t,{net_pnl:isNaN(n)?0:n});});
+          // Sort oldest→newest for streak, newest→oldest for display
+          var fAsc=f.slice().sort(function(a,b){return new Date(a.exit_time)-new Date(b.exit_time);});
+          var fDesc=f.slice().sort(function(a,b){return new Date(b.exit_time)-new Date(a.exit_time);});
           var wins=f.filter(function(t){return t.net_pnl>0;});
           var losses=f.filter(function(t){return t.net_pnl<0;});
-          var net=f.reduce(function(s,t){return s+(t.net_pnl||0);},0);
-          var aw=wins.length?wins.reduce(function(s,t){return s+(t.net_pnl||0);},0)/wins.length:null;
-          var al=losses.length?Math.abs(losses.reduce(function(s,t){return s+(t.net_pnl||0);},0)/losses.length):null;
-          var gw=wins.reduce(function(s,t){return s+(t.net_pnl||0);},0);
-          var gl=Math.abs(losses.reduce(function(s,t){return s+(t.net_pnl||0);},0));
-          // Trade streak from filtered trades
+          var net=Math.round(f.reduce(function(s,t){return s+t.net_pnl;},0)*100)/100;
+          var aw=wins.length?Math.round(wins.reduce(function(s,t){return s+t.net_pnl;},0)/wins.length*100)/100:null;
+          var al=losses.length?Math.round(Math.abs(losses.reduce(function(s,t){return s+t.net_pnl;},0)/losses.length)*100)/100:null;
+          var gw=Math.round(wins.reduce(function(s,t){return s+t.net_pnl;},0)*100)/100;
+          var gl=Math.round(Math.abs(losses.reduce(function(s,t){return s+t.net_pnl;},0))*100)/100;
+          // Trade streak — iterate fAsc from newest end backward
           var ts=0,sd=null;
-          for(var j=f.length-1;j>=0;j--){var ww=f[j].net_pnl>0;if(sd===null)sd=ww;if(ww===sd)ts++;else break;}
+          for(var j=fAsc.length-1;j>=0;j--){var ww=fAsc[j].net_pnl>0;if(sd===null)sd=ww;if(ww===sd)ts++;else break;}
 
           // ── NET P&L ──────────────────────────────────────────────────────
           var pnlColor=net>0?'#4ade80':net<0?'#ef4444':'#94a3b8';
@@ -2051,7 +2059,7 @@ app.get('/trading-journal', requireSession, (req, res) => {
           setText('streak-l-label',lCount+'L','#ef4444');
           var tb=document.querySelector('#trades-recent table tbody');
           if(tb){if(!f.length){tb.innerHTML='<tr><td colspan="3" style="text-align:center;color:#64748b;padding:28px;">No trades recorded yet</td></tr>';}
-          else{tb.innerHTML=f.slice().reverse().map(function(t){var c=t.net_pnl>0?'#4ade80':t.net_pnl<0?'#f87171':'#94a3b8';var d=new Date(t.exit_time);
+          else{tb.innerHTML=fDesc.map(function(t){var c=t.net_pnl>0?'#4ade80':t.net_pnl<0?'#f87171':'#94a3b8';var d=new Date(t.exit_time);
             return '<tr><td>'+(t.instrument||'—')+'</td><td>'+(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear()+'</td><td style="color:'+c+';font-weight:600;">'+(t.net_pnl>=0?'+':'')+' $'+Math.abs(t.net_pnl||0).toFixed(2)+'</td></tr>';}).join('');}}
           var ob=document.querySelector('#trades-open table tbody');
           if(ob){if(!liveData.open||!liveData.open.length){ob.innerHTML='<tr><td colspan="3" style="text-align:center;color:#64748b;padding:24px;">No open positions</td></tr>';}
@@ -2724,7 +2732,7 @@ app.post('/admin/refresh-nt-token', adm, express.json(), async (req, res) => {
 app.post('/admin/cancel', adm, express.json(), async (req, res) => {
     console.log('[AdminCancel] body:', JSON.stringify(req.body));
     if (req.body?.key !== ADMIN_SECRET) {
-        console.log('[AdminCancel] UNAUTHORIZED — key mismatch. Got:', req.body?.key, 'Expected:', ADMIN_SECRET);
+        console.log('[AdminCancel] UNAUTHORIZED — key mismatch');
         return res.status(403).json({ error: 'Unauthorized' });
     }
     try {
