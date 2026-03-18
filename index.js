@@ -25,10 +25,11 @@ app.use(express.static(path.join(__dirname, 'public'), {
 }));
 
 
-// ─── LOGO EXPLICIT ROUTE (backup if static middleware misses it) ──────────────
-app.get('/favicon.png', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'favicon.png'));
-});
+// ─── FAVICON & LOGO EXPLICIT ROUTES (backup if static middleware misses them) ──
+const FAVICON_PATH = path.join(__dirname, 'public', 'HVTicon.png');
+app.get('/favicon.ico',  (req, res) => res.sendFile(FAVICON_PATH));
+app.get('/favicon.png',  (req, res) => res.sendFile(FAVICON_PATH));
+app.get('/HVTicon.png',  (req, res) => res.sendFile(FAVICON_PATH));
 app.get('/hvt-logo.cropped.png', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'hvt-logo.cropped.png'));
 });
