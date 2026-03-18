@@ -99,7 +99,7 @@ const DISCORD_GUILD_ID         = process.env.DISCORD_GUILD_ID         || '146069
 const DISCORD_MONTHLY_ROLE_ID  = process.env.DISCORD_MONTHLY_ROLE_ID  || '1476634274424819897';
 const DISCORD_LIFETIME_ROLE_ID = process.env.DISCORD_LIFETIME_ROLE_ID || '1476634362811384001';
 const DISCORD_ROOM_ROLE_ID     = process.env.DISCORD_ROOM_ROLE_ID     || '';
-const DISCORD_INVITE_URL       = process.env.DISCORD_INVITE_URL       || 'https://discord.gg/highvelocitytrading';
+const DISCORD_INVITE_URL       = process.env.DISCORD_INVITE_URL       || 'https://discord.gg/2xG96nV4Hn';
 
 const MEMBERSHIP_TABLE = process.env.SUPABASE_TABLE || 'membershipstab';
 const LICENSE_TABLE    = 'license_keys';
@@ -444,7 +444,7 @@ async function sendWelcome(email, fullName, type) {
             <div>
               <div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Join the HVT Discord Server</div>
               <div style="color:#64748b;font-size:13px;line-height:1.7;margin-bottom:12px;">Our Discord is where the community lives. Join the server using the button at the top of our website, then head to your member portal to activate your Trading Room role — you'll need your Discord username to complete this step.</div>
-              <a href="https://highvelocitytrading.com" style="display:inline-block;background:rgba(34,84,245,0.12);border:1px solid rgba(34,84,245,0.3);color:#60a5fa;text-decoration:none;padding:10px 22px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:1px;">JOIN DISCORD &rarr;</a>
+              <a href="https://discord.gg/2xG96nV4Hn" style="display:inline-block;background:rgba(34,84,245,0.12);border:1px solid rgba(34,84,245,0.3);color:#60a5fa;text-decoration:none;padding:10px 22px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:1px;">JOIN DISCORD &rarr;</a>
             </div>
           </div>
         </div>
@@ -527,7 +527,7 @@ async function sendWelcome(email, fullName, type) {
             <div>
               <div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Join the HVT Discord &amp; Activate Your Free Trading Room Access</div>
               <div style="color:#64748b;font-size:13px;line-height:1.7;margin-bottom:12px;">Join the server from the button at the top of our website, then head to your member portal to activate your Trading Room role. You'll need your Discord username — it's found by clicking your profile picture at the bottom left of Discord.</div>
-              <a href="https://highvelocitytrading.com" style="display:inline-block;background:rgba(246,173,85,0.1);border:1px solid rgba(246,173,85,0.3);color:#f6ad55;text-decoration:none;padding:10px 22px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:1px;">JOIN DISCORD &rarr;</a>
+              <a href="https://discord.gg/2xG96nV4Hn" style="display:inline-block;background:rgba(246,173,85,0.1);border:1px solid rgba(246,173,85,0.3);color:#f6ad55;text-decoration:none;padding:10px 22px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:1px;">JOIN DISCORD &rarr;</a>
             </div>
           </div>
         </div>
@@ -577,7 +577,7 @@ async function sendDiscordWelcome(email, fullName) {
             <div style="flex:1;">
               <div style="color:#fff;font-size:15px;font-weight:700;margin-bottom:6px;">Join the HVT Discord Server</div>
               <div style="color:#94a3b8;font-size:13px;line-height:1.6;margin-bottom:16px;">Click the button below to visit our website and join the Discord server. <strong style="color:#fff;">You must join the server first</strong> before you can get your Trading Room role.</div>
-              <a href="https://highvelocitytrading.com" style="display:inline-block;background:#2254F5;color:#fff;text-decoration:none;padding:13px 28px;border-radius:999px;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">JOIN DISCORD SERVER &rarr;</a>
+              <a href="https://discord.gg/2xG96nV4Hn" style="display:inline-block;background:#2254F5;color:#fff;text-decoration:none;padding:13px 28px;border-radius:999px;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">JOIN DISCORD SERVER &rarr;</a>
             </div>
           </div>
         </div>
@@ -2363,11 +2363,13 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
   <div class="main">
     <div class="player-wrap" id="playerWrap">
       <div class="player-placeholder" id="placeholder">
-        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.8">
-          <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"/>
-        </svg>
-        <h3>Select a lesson</h3>
-        <p>Choose a video from the course menu to get started.</p>
+        <div style="width:72px;height:72px;border-radius:50%;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.18);display:flex;align-items:center;justify-content:center;margin-bottom:8px;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="1.5" style="opacity:0.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/>
+          </svg>
+        </div>
+        <h3 style="font-size:18px;font-weight:700;color:#94a3b8;letter-spacing:-0.3px;">HVT Masterclass</h3>
+        <p style="font-size:13px;color:#334155;max-width:300px;line-height:1.6;">Select a lesson from the menu to begin. Your progress is saved automatically.</p>
       </div>
       <iframe id="player" style="display:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;web-share" allowfullscreen></iframe>
     </div>
@@ -2496,9 +2498,11 @@ function playVideo(si, vi){
     playerEl.src = '';
     placeholderEl.style.display = 'flex';
     placeholderEl.innerHTML =
-      '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.8" style="opacity:.2">' +
-      '<path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>' +
-      '<h3>Coming Soon</h3><p>This lesson will be available shortly. Check back soon.</p>';
+      '<div style="width:64px;height:64px;border-radius:50%;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:4px;">' +
+      '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="1.5" style="opacity:0.7"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg>' +
+      '</div>' +
+      '<h3 style="color:#94a3b8;font-size:17px;font-weight:700;letter-spacing:-0.3px;">' + esc(v.title) + '</h3>' +
+      '<p style="color:#334155;font-size:13px;max-width:280px;line-height:1.6;">This lesson is part of the HVT Masterclass. Video content loads here automatically once published.</p>';
   }
   titleEl.textContent   = v.title;
   sectionEl.textContent = COURSE[si].title;
