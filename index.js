@@ -943,17 +943,16 @@ app.post('/webhooks/discord-authnet', wh, express.json(), async (req, res) => {
             }
             console.log(`✅ Discord member renewed (AN): ${email} (existing=${!!existing?.discord_user_id})`);
         } else if (CANCEL_EVENTS.includes(eventType)) {
-            // Step 1: fetch discord_user_id BEFORE update
             const lookupKey = subId ? 'authnet_subscription_id' : 'email';
             const lookupVal = subId || email;
             if (!lookupVal) { console.warn('[DiscordAN] No subId or email for cancel event'); return; }
-            const rid = DISCORD_ROOM_ROLE_ID || DISCORD_MONTHLY_ROLE_ID;
-            const { data: dm } = await supabase.from(DISCORD_TABLE).select('discord_user_id,email').eq(lookupKey, lookupVal).maybeSingle();
-            // Step 2: update status
-            await supabase.from(DISCORD_TABLE).update({ status: 'cancelled', updated_at: nowISO() }).eq(lookupKey, lookupVal);
-            // Step 3: strip Discord role
-            if (dm?.discord_user_id) try { await stripRole(dm.discord_user_id, rid); } catch (e) { console.error('[DiscordAN strip role]', e.message); }
-            console.log(`🚫 Discord cancelled (AN): ${dm?.email || email || subId}`);
+            const { data: dm } = await supabase.from(DISCORD_TABLE).select('discord_user_id,email,expires_at').eq(lookupKey, lookupVal).maybeSingle();
+            // Keep active until expires_at — same graceful cancel as monthly
+            const discCancelsAt = dm?.expires_at || nowISO();
+            await supabase.from(DISCORD_TABLE).update({ status: 'pending_cancel', cancels_at: discCancelsAt, updated_at: nowISO() }).eq(lookupKey, lookupVal);
+            const discEmail = dm?.email || email;
+            if (discEmail) try { await sendCancelConfirmEmail(discEmail, discCancelsAt); } catch(e) { console.error('[DiscordAN cancel email]', e.message); }
+            console.log('[DiscordAN] Pending cancel: ' + (discEmail || subId) + ' access until ' + discCancelsAt);
         }
         // res already sent 200 above
     } catch (e) { console.error('[DiscordAN]', e.message); /* res already sent */ }
@@ -964,7 +963,7 @@ app.get('/check-access', frm, async (req, res) => {
     if (!email) return res.status(400).json({ active: false });
     try {
         const { data } = await supabase.from(MEMBERSHIP_TABLE).select('status,expires_at').eq('email', email).maybeSingle();
-        res.json({ active: data?.status === 'active' && new Date(data.expires_at) > new Date() });
+        res.json({ active: (data?.status === 'active' || data?.status === 'pending_cancel') && new Date(data.expires_at) > new Date() });
     } catch (e) { console.error('[CheckAccess]', e.message); res.status(500).json({ active: false }); }
 });
 
@@ -1559,7 +1558,7 @@ app.get('/course/confirm', async (req, res) => {
         const rec = mData || lData;
         if (!rec) return res.send(resultPage('error', 'Invalid Link', 'This link is invalid or has expired.'));
         if (!rec.course_token_expires || new Date(rec.course_token_expires) < new Date()) return res.send(resultPage('error', 'Link Expired', 'This link has expired. <a href="/login" style="color:#2254F5;">Request a new one</a>.'));
-        const isMonthly  = mData?.status === 'active' && new Date(mData.expires_at) > new Date();
+        const isMonthly  = (mData?.status === 'active' || mData?.status === 'pending_cancel') && new Date(mData.expires_at) > new Date();
         const isLifetime = lData?.status === 'active';
         if (!isMonthly && !isLifetime) return res.send(resultPage('error', 'Access Revoked', 'Your membership is no longer active.'));
         const name    = (rec.full_name || 'Trader').split(' ')[0];
@@ -2119,7 +2118,7 @@ async function verifyJournalEmail(email) {
         safe(supabase.from(MEMBERSHIP_TABLE).select('email,status,expires_at').eq('nt_email', e).maybeSingle()),
         safe(supabase.from(LICENSE_TABLE).select('email,status').eq('nt_email', e).maybeSingle())
     ]);
-    const isMonthly  = (m?.status==='active'&&new Date(m.expires_at)>new Date())||(mNT?.status==='active'&&new Date(mNT.expires_at)>new Date());
+    const isMonthly  = ((m?.status==='active'||m?.status==='pending_cancel')&&new Date(m.expires_at)>new Date())||((mNT?.status==='active'||mNT?.status==='pending_cancel')&&new Date(mNT.expires_at)>new Date());
     const isLifetime = l?.status==='active'||lNT?.status==='active';
     const isDiscord  = d?.status==='active'&&new Date(d.expires_at)>new Date();
     if (!isMonthly&&!isLifetime&&!isDiscord) return null;
@@ -2230,7 +2229,7 @@ app.get('/billing/confirm-session', async (req, res, next) => {
     // Human-readable status labels
     const statusLabels = { active: '&#9679; Active', cancelled: 'Membership Ended', expired: 'Membership Ended', ended: 'Membership Ended', inactive: 'Membership Ended', error: 'Unable to Load' };
     const statusLabel = statusLabels[status] || 'Membership Ended';
-    const isActive = status === 'active';
+    const isActive = (status === 'active' || status === 'pending_cancel');
     const sc = isActive ? '#4ade80' : '#f87171';
     const sb = isActive ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)';
     const sbd = isActive ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.2)';
@@ -2603,8 +2602,8 @@ app.get('/billing/confirm', async (req, res) => {
         if (!data.billing_token_expires || new Date(data.billing_token_expires) < new Date()) return res.send(resultPage('error', 'Link Expired', 'This link has expired. <a href="/billing" style="color:#2254F5;">Request a new one</a>.'));
         const { status, email, full_name: name = 'Member', expires_at } = data;
         const exAt    = expires_at ? new Date(expires_at) : null;
-        const sc      = status === 'active' ? '#4ade80' : '#f87171';
-        const sb      = status === 'active' ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)';
+        const sc      = (status === 'active' || status === 'pending_cancel') ? '#4ade80' : '#f87171';
+        const sb      = (status === 'active' || status === 'pending_cancel') ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)';
         const sbd     = status === 'active' ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.2)';
         const next    = exAt ? exAt.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }) : 'N/A';
         const days    = exAt ? Math.max(0, Math.ceil((exAt - new Date()) / 86400000)) : 0;
@@ -3639,7 +3638,7 @@ app.post('/api/prop-activation', requireSession, frm, express.json(), async (req
             supabase.from(MEMBERSHIP_TABLE).select('email,status,expires_at').eq('email', cleanEmail).maybeSingle(),
             supabase.from(LICENSE_TABLE).select('email,status').eq('email', cleanEmail).maybeSingle()
         ]);
-        const isMonthly  = m1?.status === 'active' && new Date(m1.expires_at) > new Date();
+        const isMonthly  = (m1?.status === 'active' || m1?.status === 'pending_cancel') && new Date(m1.expires_at) > new Date();
         const isLifetime = m2?.status === 'active';
         if (!isMonthly && !isLifetime)
             return res.status(403).json({ ok: false, error: 'No active HVT membership found. Your subscription may have expired. Please contact support.' });
@@ -3745,7 +3744,7 @@ app.get('/api/license-check', async (req, res) => {
             supabase.from(LICENSE_TABLE).select('status').eq('email', email).maybeSingle()
         ]);
         const isLifetime = lic?.status === 'active';
-        const isMonthly  = mem?.status === 'active' && mem.expires_at && new Date(mem.expires_at) > new Date();
+        const isMonthly  = (mem?.status === 'active' || mem?.status === 'pending_cancel') && mem.expires_at && new Date(mem.expires_at) > new Date();
 
         if (!isLifetime && !isMonthly) {
             // Membership lapsed — auto-revoke the prop activation so DB stays clean
