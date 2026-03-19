@@ -3451,7 +3451,7 @@ select option{background:#0d1117}
   <div class="hero">
     <div class="pill">PROP FIRM</div>
     <h1>Activate Prop Account</h1>
-    <p>Authorize your HVT email to run indicators on any prop firm platform — no machine ID needed.</p>
+    <p>Authorize your Machine ID to run HVT indicators on any prop firm platform. One-time setup per machine.</p>
     <div class="hero-div"></div>
   </div>
 
@@ -3460,39 +3460,30 @@ select option{background:#0d1117}
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
       <div style="width:32px;height:32px;border-radius:50%;background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;color:#4ade80;flex-shrink:0;">&#10003;</div>
       <div>
-        <div style="font-size:16px;font-weight:700;color:#4ade80;">Software Activated</div>
+        <div style="font-size:16px;font-weight:700;color:#4ade80;">Machine Authorized</div>
         <div style="font-size:12px;color:#64748b;margin-top:2px;">Activated for <span id="confirmed-firm"></span></div>
       </div>
     </div>
     <div style="background:#0d1117;border:1px solid rgba(34,84,245,0.3);border-radius:10px;padding:20px;margin-bottom:20px;">
-      <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">Your HVT License ID</div>
+      <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">Authorized Machine ID</div>
       <div style="display:flex;align-items:center;gap:12px;">
-        <div id="hvt-id-display" style="font-family:monospace;font-size:22px;font-weight:800;color:#2254F5;letter-spacing:2px;flex:1;"></div>
-        <button id="copy-btn" onclick="copyHvtId()" style="background:rgba(34,84,245,0.1);border:1px solid rgba(34,84,245,0.3);color:#2254F5;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;">Copy ID</button>
+        <div id="hvt-id-display" style="font-family:monospace;font-size:15px;font-weight:700;color:#4ade80;letter-spacing:1px;flex:1;word-break:break-all;"></div>
       </div>
-      <div style="font-size:12px;color:#475569;margin-top:8px;">Save this — you'll need it every time you set up NinjaTrader on a new machine</div>
+      <div style="font-size:12px;color:#475569;margin-top:8px;">This machine is now authorized. Your HVT indicators will load automatically on this machine.</div>
     </div>
-    <div style="font-size:12px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;">How to activate in NinjaTrader</div>
+    <div style="font-size:12px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;">You're all set</div>
     <div style="display:flex;flex-direction:column;gap:10px;">
       <div style="display:flex;align-items:flex-start;gap:12px;">
-        <div style="width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px;">1</div>
-        <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Open NinjaTrader 8 and go to <strong style="color:#e2e8f0;">Help &rarr; 3rd Party Licensing</strong></div>
+        <div style="width:22px;height:22px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px;">&#10003;</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Your Machine ID has been authorized in our system. Load your HVT indicators on NinjaTrader — they will run automatically.</div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:12px;">
-        <div style="width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px;">2</div>
-        <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Under Vendor Name enter exactly: <strong style="color:#e2e8f0;font-family:monospace;">HighVelocityTrading</strong></div>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:12px;">
-        <div style="width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px;">3</div>
-        <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Under User Defined ID paste your HVT ID: <strong style="color:#2254F5;font-family:monospace;" id="hvt-id-inline">your ID above</strong></div>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:12px;">
-        <div style="width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px;">4</div>
-        <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Click <strong style="color:#e2e8f0;">Submit</strong> — your HVT indicators will unlock immediately</div>
+        <div style="width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px;">&#128161;</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Trading on a new prop firm account or machine? Come back here and submit the new Machine ID — takes 30 seconds.</div>
       </div>
     </div>
-    <div style="margin-top:16px;padding:12px 14px;background:rgba(246,173,85,0.06);border:1px solid rgba(246,173,85,0.2);border-radius:8px;">
-      <div style="font-size:12px;color:#f6ad55;line-height:1.6;">&#128161; This works on any prop firm machine. Repeat steps 1-4 on each new machine or account you trade on.</div>
+    <div style="margin-top:16px;padding:12px 14px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:8px;">
+      <div style="font-size:12px;color:#4ade80;line-height:1.6;">&#10003; No 3rd Party Licensing dialog needed. Your machine is authorized directly.</div>
     </div>
   </div>
 
@@ -3500,8 +3491,9 @@ select option{background:#0d1117}
     <div class="card-label">Activate your account</div>
     <div id="prop-msg"></div>
     <div class="form-row">
-      <label>Your HVT Purchase Email</label>
-      <input id="prop-email" type="email" placeholder="email@example.com" value="${s.email || ''}"/>
+      <label>Your Machine ID</label>
+      <input id="prop-machine-id" type="text" placeholder="e.g. A1B2C3D4E5F6..." style="font-family:monospace;"/>
+      <div style="font-size:12px;color:#475569;margin-top:6px;">In NinjaTrader go to <strong style="color:#94a3b8;">Help &rarr; About</strong> and copy the Machine ID shown there.</div>
     </div>
     <div class="form-row">
       <label>Prop Firm</label>
@@ -3569,17 +3561,17 @@ function copyHvtId(){
 }
 
 async function submitPropActivation(){
-  var email=document.getElementById('prop-email').value.trim();
+  var machineId=document.getElementById('prop-machine-id').value.trim();
   var firmName=document.getElementById('prop-firm-name').value.trim();
   var btn=document.getElementById('prop-submit');
-  if(!email) return showMsg('Please enter your HVT purchase email.',false);
+  if(!machineId) return showMsg('Please enter your Machine ID from NinjaTrader Help → About.',false);
   if(!firmName) return showMsg('Please select your prop firm.',false);
   btn.disabled=true;btn.textContent='Activating...';
   try{
-    var r=await fetch('/api/prop-activation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,firmName:firmName})});
+    var r=await fetch('/api/prop-activation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({machineId:machineId,firmName:firmName})});
     var d=await r.json();
     if(d.ok){
-      showActivationSuccess(d.hvtId, d.firmName||firmName);
+      showActivationSuccess(d.machineId||machineId, d.firmName||firmName);
       loadActivations();
     } else {
       showMsg(d.error||'Activation failed. Please contact support.',false);
@@ -3602,7 +3594,7 @@ async function loadActivations(){
     }
     el.innerHTML=d.activations.map(function(a){
       var sc=a.status==='active'?'#4ade80':'#f87171';
-      var hvtBadge=a.hvt_id?'<div style="font-family:monospace;font-size:13px;color:#2254F5;margin-top:3px;font-weight:700;">'+a.hvt_id+'</div>':'';
+      var hvtBadge=a.machine_id?'<div style="font-family:monospace;font-size:11px;color:#475569;margin-top:3px;">Machine: '+a.machine_id.substring(0,16)+'...</div>':'';
       return '<div class="act-row"><div><div class="act-firm">'+a.firm_name+'</div>'+hvtBadge+'<div class="act-email">'+a.email+'</div></div><div style="text-align:right;flex-shrink:0;margin-left:16px;"><div class="act-status" style="color:'+sc+';">'+a.status+'</div><div class="act-date">'+new Date(a.created_at).toLocaleDateString()+'</div></div></div>';
     }).join('');
     // If user has an active activation, show success card immediately
@@ -3623,15 +3615,16 @@ loadActivations();
 app.post('/api/prop-activation', requireSession, frm, express.json(), async (req, res) => {
     try {
         const s                   = req._session;
-        const { email, firmName } = req.body || {};
-        if (!email || !firmName)
-            return res.status(400).json({ ok: false, error: 'Email and prop firm are required.' });
+        const { machineId, firmName } = req.body || {};
+        if (!machineId || !firmName)
+            return res.status(400).json({ ok: false, error: 'Machine ID and prop firm are required.' });
+        if (machineId.trim().length > 200) return res.status(400).json({ ok: false, error: 'Machine ID too long.' });
         if (firmName.trim().length > 100) return res.status(400).json({ ok: false, error: 'Firm name too long.' });
 
-        // ── Always use the authenticated session email — ignore body email ──
-        // Prevents member A from activating prop access using member B's email
-        const cleanEmail = s.email.trim().toLowerCase();
-        const cleanFirm  = firmName.trim();
+        // Always use the authenticated session email for membership check
+        const cleanEmail  = s.email.trim().toLowerCase();
+        const cleanMachine = machineId.trim();
+        const cleanFirm   = firmName.trim();
 
         // ── Verify active HVT membership (live check — no cached state) ──
         const [{ data: m1 }, { data: m2 }] = await Promise.all([
@@ -3644,74 +3637,41 @@ app.post('/api/prop-activation', requireSession, frm, express.json(), async (req
             return res.status(403).json({ ok: false, error: 'No active HVT membership found. Your subscription may have expired. Please contact support.' });
 
         // ── Check for existing active activation — return existing HVT ID ──
-        const { data: existing } = await supabase
+        // ── Check if this machine ID already activated ──────────────────────
+        const { data: existingMachine } = await supabase
             .from(PROP_FIRM_TABLE)
-            .select('id,hvt_id,firm_name,status,nt_license_id')
-            .eq('email', cleanEmail)
+            .select('id,machine_id,firm_name,status')
+            .eq('machine_id', cleanMachine)
             .eq('status', 'active')
-            .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
 
-        if (existing) {
-            // Re-validate membership is still active before returning stored ID
-            // Prevents lapsed monthly members from accessing prop system
+        if (existingMachine) {
             if (!isMonthly && !isLifetime) {
-                // Revoke the stored activation — member is no longer paying
                 await revokeMonthlyPropActivations(cleanEmail);
                 return res.status(403).json({ ok: false, error: 'Your HVT membership has expired. Please renew to access prop firm features.' });
             }
-            console.log(`[PropActivation] Returning existing activation for ${cleanEmail} | hvt_id=${existing.hvt_id}`);
-            return res.json({ ok: true, alreadyActive: true, hvtId: existing.hvt_id, firmName: existing.firm_name });
+            console.log('[PropActivation] Returning existing machine activation: ' + cleanMachine);
+            return res.json({ ok: true, alreadyActive: true, machineId: cleanMachine, firmName: existingMachine.firm_name });
         }
 
-        // ── Generate unique HVT ID ─────────────────────────────────────────
-        const hvtId = 'HVT' + crypto.randomBytes(4).toString('hex').toUpperCase();
-
-        // ── Create NT Ecosystem license (email-based, permanent) ──────────
-        if (!ntToken) await ntLogin();
-        if (!ntToken) return res.status(500).json({ ok: false, error: 'Could not connect to NinjaTrader. Please try again in a moment.' });
-
-        let ntLicenseId = null;
-        const expiry = new Date();
-        expiry.setFullYear(expiry.getFullYear() + 99);
-        try {
-            const r = await fetchFn(`https://ecosystemapi.ninjatrader.com/v1/products/${NT_PRODUCT_ID}/licenses`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${ntToken}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ license: { email: cleanEmail, licenseType: 'Lifetime', expirationDateUTC: expiry.toISOString() } })
-            });
-            const d = await r.json();
-            console.log(`[PropActivation] NT response for ${cleanEmail}:`, JSON.stringify(d));
-            if (d?.errorText && d.errorText !== '') {
-                if (d.errorText.toLowerCase().includes('already')) {
-                    console.log(`[PropActivation] Already in NT — continuing | ${cleanEmail}`);
-                } else {
-                    console.error(`[PropActivation] NT error:`, d.errorText);
-                    return res.status(500).json({ ok: false, error: 'NinjaTrader licensing failed. Contact support.' });
-                }
-            }
-            if (d?.result) ntLicenseId = String(d.result);
-        } catch (e) {
-            console.error('[PropActivation] NT API error:', e.message);
-            return res.status(500).json({ ok: false, error: 'Could not reach NinjaTrader. Please try again.' });
-        }
-
-        // ── Save to Supabase ──────────────────────────────────────────────
+        // ── Save machine ID to Supabase — instant authorization ───────────
         const { error: dbErr } = await supabase.from(PROP_FIRM_TABLE).insert({
-            email:         cleanEmail,
-            member_name:   s.name || '',
-            firm_name:     cleanFirm,
-            hvt_id:        hvtId,
-            nt_license_id: ntLicenseId,
-            status:        'active',
-            created_at:    nowISO(),
-            updated_at:    nowISO()
+            email:       cleanEmail,
+            member_name: s.name || '',
+            firm_name:   cleanFirm,
+            machine_id:  cleanMachine,
+            status:      'active',
+            created_at:  nowISO(),
+            updated_at:  nowISO()
         });
-        if (dbErr) console.error('[PropActivation] DB insert error (NT license still created):', dbErr.message);
+        if (dbErr) {
+            console.error('[PropActivation] DB insert error:', dbErr.message);
+            return res.status(500).json({ ok: false, error: 'Could not save activation. Please try again.' });
+        }
 
-        console.log(`[PropActivation] ✅ ${cleanEmail} | ${cleanFirm} | hvt_id=${hvtId} | nt_id=${ntLicenseId}`);
-        res.json({ ok: true, hvtId, firmName: cleanFirm });
+        console.log('[PropActivation] ✅ ' + cleanEmail + ' | ' + cleanFirm + ' | machine=' + cleanMachine);
+        res.json({ ok: true, machineId: cleanMachine, firmName: cleanFirm });
     } catch(e) {
         console.error('[PropActivation] Fatal:', e.message);
         res.status(500).json({ ok: false, error: 'Server error. Please try again.' });
@@ -3719,26 +3679,29 @@ app.post('/api/prop-activation', requireSession, frm, express.json(), async (req
 });
 
 // ─── LICENSE CHECK (called by NT indicators) ────────────────────────────────
-// Indicators call: GET /api/license-check?email=EMAIL
+// Indicators call: GET /api/license-check?machineId=MACHINEID
 // Returns { authorized: true/false }
 app.get('/api/license-check', async (req, res) => {
     try {
-        const email = (req.query.email || req.query.machineId || '').toLowerCase().trim();
-        if (!email) return res.json({ authorized: false });
+        const machineId = (req.query.machineId || req.query.machine_id || '').trim();
+        if (!machineId) return res.json({ authorized: false });
 
-        // Step 1: check prop firm activation exists and is active
+        // Step 1: check machine ID is in prop_firm_activations and active
         const { data: prop } = await supabase
             .from(PROP_FIRM_TABLE)
-            .select('id, status')
-            .eq('email', email)
+            .select('id,status,email')
+            .eq('machine_id', machineId)
             .eq('status', 'active')
             .limit(1)
             .maybeSingle();
 
-        if (!prop) return res.json({ authorized: false });
+        if (!prop) {
+            console.log('[LicenseCheck] Machine not found: ' + machineId.substring(0,12));
+            return res.json({ authorized: false });
+        }
 
-        // Step 2: verify underlying HVT membership is STILL active
-        // Lifetime members always pass. Monthly members must have non-expired, active plan.
+        // Step 2: verify the member's HVT membership is still active
+        const email = prop.email;
         const [{ data: mem }, { data: lic }] = await Promise.all([
             supabase.from(MEMBERSHIP_TABLE).select('status,expires_at').eq('email', email).maybeSingle(),
             supabase.from(LICENSE_TABLE).select('status').eq('email', email).maybeSingle()
@@ -3747,12 +3710,13 @@ app.get('/api/license-check', async (req, res) => {
         const isMonthly  = (mem?.status === 'active' || mem?.status === 'pending_cancel') && mem.expires_at && new Date(mem.expires_at) > new Date();
 
         if (!isLifetime && !isMonthly) {
-            // Membership lapsed — auto-revoke the prop activation so DB stays clean
+            // Membership lapsed — auto-revoke prop activation so DB stays clean
             revokeMonthlyPropActivations(email).catch(e => console.error('[LicenseCheck revoke]', e.message));
-            console.log(`[LicenseCheck] ❌ Denied ${email} — membership no longer active`);
+            console.log('[LicenseCheck] Denied ' + email + ' — membership no longer active');
             return res.json({ authorized: false });
         }
 
+        console.log('[LicenseCheck] ✅ Authorized machine: ' + machineId.substring(0,12) + '...');
         res.json({ authorized: true });
     } catch(e) {
         console.error('[LicenseCheck]', e.message);
