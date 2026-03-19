@@ -3666,7 +3666,7 @@ app.post('/api/prop-activation', requireSession, frm, express.json(), async (req
         }
 
         // ── Generate unique HVT ID ─────────────────────────────────────────
-        const hvtId = 'HVT-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+        const hvtId = 'HVT' + crypto.randomBytes(4).toString('hex').toUpperCase();
 
         // ── Create NT Ecosystem license (email-based, permanent) ──────────
         if (!ntToken) await ntLogin();
