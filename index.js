@@ -3598,9 +3598,9 @@ async function loadActivations(){
       return '<div class="act-row"><div><div class="act-firm">'+a.firm_name+'</div>'+hvtBadge+'<div class="act-email">'+a.email+'</div></div><div style="text-align:right;flex-shrink:0;margin-left:16px;"><div class="act-status" style="color:'+sc+';">'+a.status+'</div><div class="act-date">'+new Date(a.created_at).toLocaleDateString()+'</div></div></div>';
     }).join('');
     // If user has an active activation, show success card immediately
-    var active=d.activations.find(function(a){return a.status==='active'&&a.hvt_id;});
+    var active=d.activations.find(function(a){return a.status==='active'&&a.machine_id;});
     if(active){
-      showActivationSuccess(active.hvt_id, active.firm_name);
+      showActivationSuccess(active.machine_id, active.firm_name);
     }
   } catch(e){
     document.getElementById('activations-list').innerHTML='<div style="color:#64748b;font-size:14px;">Could not load activations.</div>';
@@ -3730,7 +3730,7 @@ app.get('/api/prop-activations/mine', requireSession, async (req, res) => {
     const s = req._session;
     const { data, error } = await supabase
         .from(PROP_FIRM_TABLE)
-        .select('email, firm_name, status, created_at, hvt_id')
+        .select('email, firm_name, status, created_at, machine_id')
         .eq('email', s.email.toLowerCase())
         .order('created_at', { ascending: false });
 
