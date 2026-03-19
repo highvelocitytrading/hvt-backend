@@ -3612,7 +3612,7 @@ loadActivations();
 });
 
 // ─── PROP ACTIVATION API ─────────────────────────────────────────────────────
-app.post('/api/prop-activation', requireSession, frm, express.json(), async (req, res) => {
+app.post('/api/prop-activation', requireSession, express.json(), async (req, res) => {
     try {
         const s                   = req._session;
         const { machineId, firmName } = req.body || {};
@@ -3658,7 +3658,7 @@ app.post('/api/prop-activation', requireSession, frm, express.json(), async (req
         // ── Save machine ID to Supabase — instant authorization ───────────
         const { error: dbErr } = await supabase.from(PROP_FIRM_TABLE).insert({
             email:       cleanEmail,
-            member_name: s.name || '',
+            member_name: s.full_name || s.name || '',
             firm_name:   cleanFirm,
             machine_id:  cleanMachine,
             status:      'active',
@@ -3666,8 +3666,9 @@ app.post('/api/prop-activation', requireSession, frm, express.json(), async (req
             updated_at:  nowISO()
         });
         if (dbErr) {
-            console.error('[PropActivation] DB insert error:', dbErr.message);
-            return res.status(500).json({ ok: false, error: 'Could not save activation. Please try again.' });
+            console.error('[PropActivation] DB insert error:', dbErr.message, dbErr.code, dbErr.details, dbErr.hint);
+            // Common issue: machine_id column missing — run: ALTER TABLE prop_firm_activations ADD COLUMN IF NOT EXISTS machine_id text;
+            return res.status(500).json({ ok: false, error: 'Could not save activation: ' + dbErr.message });
         }
 
         console.log('[PropActivation] ✅ ' + cleanEmail + ' | ' + cleanFirm + ' | machine=' + cleanMachine);
