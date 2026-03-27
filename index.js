@@ -3519,6 +3519,14 @@ select option{background:#0d1117}
   <div class="card" id="activation-form">
     <div class="card-label">Activate your account</div>
     <div id="prop-msg"></div>
+    <div style="background:rgba(34,84,245,0.06);border:1px solid rgba(34,84,245,0.2);border-radius:10px;padding:14px 16px;margin-bottom:20px;">
+      <div style="font-size:13px;color:#94a3b8;line-height:1.6;">&#128274; To verify your purchase, enter the <strong style="color:#e2e8f0;">same email you used when you signed up for HVT</strong> and your <strong style="color:#e2e8f0;">NinjaTrader Machine ID</strong>. Both are required.</div>
+    </div>
+    <div class="form-row">
+      <label>Your HVT Purchase Email</label>
+      <input id="prop-email" type="email" placeholder="email@example.com" value="${s.email || ''}"/>
+      <div style="font-size:12px;color:#475569;margin-top:6px;">This must match the email you used when purchasing HVT access.</div>
+    </div>
     <div class="form-row">
       <label>Your Machine ID</label>
       <input id="prop-machine-id" type="text" placeholder="e.g. A1B2C3D4E5F6..." style="font-family:monospace;"/>
@@ -3590,14 +3598,16 @@ function copyHvtId(){
 }
 
 async function submitPropActivation(){
+  var email=document.getElementById('prop-email').value.trim();
   var machineId=document.getElementById('prop-machine-id').value.trim();
   var firmName=document.getElementById('prop-firm-name').value.trim();
   var btn=document.getElementById('prop-submit');
+  if(!email) return showMsg('Please enter your HVT purchase email.',false);
   if(!machineId) return showMsg('Please enter your Machine ID from NinjaTrader Help → About.',false);
   if(!firmName) return showMsg('Please select your prop firm.',false);
-  btn.disabled=true;btn.textContent='Activating...';
+  btn.disabled=true;btn.textContent='Verifying...';
   try{
-    var r=await fetch('/api/prop-activation',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({machineId:machineId,firmName:firmName})});
+    var r=await fetch('/api/prop-activation',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,machineId:machineId,firmName:firmName})});
     var d=await r.json();
     if(d.ok){
       showActivationSuccess(d.machineId||machineId, d.firmName||firmName);
@@ -3644,16 +3654,20 @@ loadActivations();
 app.post('/api/prop-activation', requireSession, express.json(), async (req, res) => {
     try {
         const s                   = req._session;
-        const { machineId, firmName } = req.body || {};
-        if (!machineId || !firmName)
-            return res.status(400).json({ ok: false, error: 'Machine ID and prop firm are required.' });
+        const { email: bodyEmail, machineId, firmName } = req.body || {};
+        if (!bodyEmail || !machineId || !firmName)
+            return res.status(400).json({ ok: false, error: 'Email, Machine ID and prop firm are all required.' });
         if (machineId.trim().length > 200) return res.status(400).json({ ok: false, error: 'Machine ID too long.' });
         if (firmName.trim().length > 100) return res.status(400).json({ ok: false, error: 'Firm name too long.' });
 
-        // Always use the authenticated session email for membership check
-        const cleanEmail  = s.email.trim().toLowerCase();
+        // Verify submitted email matches authenticated session email
+        const cleanEmail   = s.email.trim().toLowerCase();
+        const submittedEmail = bodyEmail.trim().toLowerCase();
+        if (submittedEmail !== cleanEmail)
+            return res.status(403).json({ ok: false, error: 'The email you entered does not match your HVT account. Please use the email you signed up with.' });
+
         const cleanMachine = machineId.trim();
-        const cleanFirm   = firmName.trim();
+        const cleanFirm    = firmName.trim();
 
         // ── Verify active HVT membership (live check — no cached state) ──
         const [{ data: m1 }, { data: m2 }] = await Promise.all([
@@ -3663,7 +3677,7 @@ app.post('/api/prop-activation', requireSession, express.json(), async (req, res
         const isMonthly  = (m1?.status === 'active' || m1?.status === 'pending_cancel') && new Date(m1.expires_at) > new Date();
         const isLifetime = m2?.status === 'active';
         if (!isMonthly && !isLifetime)
-            return res.status(403).json({ ok: false, error: 'No active HVT membership found. Your subscription may have expired. Please contact support.' });
+            return res.status(403).json({ ok: false, error: 'No active HVT membership found for this email. Please check your email or contact support.' });
 
         // ── Check for existing active activation — return existing HVT ID ──
         // ── Check if this machine ID already activated ──────────────────────
