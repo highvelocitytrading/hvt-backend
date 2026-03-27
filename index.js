@@ -3556,6 +3556,38 @@ select option{background:#0d1117}
     <div class="card-label">Your Activations</div>
     <div id="activations-list"><div style="color:#64748b;font-size:14px;">Loading...</div></div>
   </div>
+
+  <!-- Machine ID Reset Support Section -->
+  <div class="card" style="border-color:rgba(246,173,85,0.2);margin-bottom:20px;">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="width:36px;height:36px;border-radius:50%;background:rgba(246,173,85,0.1);border:1px solid rgba(246,173,85,0.3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">&#9888;</div>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:700;color:#f6ad55;margin-bottom:6px;">Need to Reset Your Machine ID?</div>
+        <p style="font-size:13px;color:#94a3b8;line-height:1.7;margin-bottom:14px;">Your Machine ID can change if you switch to a new computer, reinstall Windows, replace hardware, or move to a different prop firm platform. If your indicators stop loading after a machine change, your old Machine ID needs to be updated.</p>
+        <div style="background:#0d1117;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:16px 18px;margin-bottom:14px;">
+          <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">To reset your Machine ID:</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:flex-start;gap:10px;">
+              <div style="width:20px;height:20px;border-radius:50%;background:#f6ad55;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#000;flex-shrink:0;margin-top:1px;">1</div>
+              <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Open NinjaTrader on your new machine and go to <strong style="color:#e2e8f0;">Help &rarr; About</strong> to get your new Machine ID.</div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:10px;">
+              <div style="width:20px;height:20px;border-radius:50%;background:#f6ad55;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#000;flex-shrink:0;margin-top:1px;">2</div>
+              <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Send a support ticket to <a href="mailto:alerts@highvelocitytrading.com" style="color:#f6ad55;font-weight:700;text-decoration:none;">alerts@highvelocitytrading.com</a> with the subject line <strong style="color:#e2e8f0;">"Machine ID Reset"</strong>.</div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:10px;">
+              <div style="width:20px;height:20px;border-radius:50%;background:#f6ad55;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#000;flex-shrink:0;margin-top:1px;">3</div>
+              <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Include your <strong style="color:#e2e8f0;">HVT account email</strong> and your <strong style="color:#e2e8f0;">new Machine ID</strong> in the email. We will update your authorization within 24 hours.</div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:12px 14px;background:rgba(246,173,85,0.06);border:1px solid rgba(246,173,85,0.2);border-radius:8px;">
+          <div style="font-size:12px;color:#f6ad55;line-height:1.6;">&#128231; <strong>support:</strong> <a href="mailto:alerts@highvelocitytrading.com" style="color:#f6ad55;font-weight:700;text-decoration:none;">alerts@highvelocitytrading.com</a> &nbsp;&mdash;&nbsp; Please allow up to 24 hours for Machine ID resets. Include your account email and new Machine ID in your message.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
