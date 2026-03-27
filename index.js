@@ -3451,7 +3451,7 @@ select option{background:#0d1117}
   <div class="hero">
     <div class="pill">PROP FIRM</div>
     <h1>Activate Prop Account</h1>
-    <p>Authorize your Machine ID to run HVT indicators on any prop firm platform. One-time setup per machine.</p>
+    <p>Running HVT on a prop firm account? Submit your Machine ID below for instant access. Works on Apex, Topstep, Bulenox, and all major prop firms.</p>
     <div class="hero-div"></div>
   </div>
 
@@ -3471,19 +3471,48 @@ select option{background:#0d1117}
       </div>
       <div style="font-size:12px;color:#475569;margin-top:8px;">This machine is now authorized. Your HVT indicators will load automatically on this machine.</div>
     </div>
-    <div style="font-size:12px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;">You're all set</div>
+    <div style="font-size:12px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;">Next Steps</div>
     <div style="display:flex;flex-direction:column;gap:10px;">
       <div style="display:flex;align-items:flex-start;gap:12px;">
-        <div style="width:22px;height:22px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px;">&#10003;</div>
-        <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Your Machine ID has been authorized in our system. Load your HVT indicators on NinjaTrader — they will run automatically.</div>
+        <div style="width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px;">1</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Download the <strong style="color:#e2e8f0;">HVT Prop Firm Indicator Package</strong> from your member portal downloads section.</div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:12px;">
-        <div style="width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px;">&#128161;</div>
-        <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Trading on a new prop firm account or machine? Come back here and submit the new Machine ID — takes 30 seconds.</div>
+        <div style="width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px;">2</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.6;">In NinjaTrader go to <strong style="color:#e2e8f0;">Tools &rarr; Import &rarr; NinjaScript Add-On</strong> and import the package.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="width:22px;height:22px;border-radius:50%;background:#2254F5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px;">3</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Add any HVT indicator to your chart — it will verify your Machine ID automatically and run immediately.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="width:22px;height:22px;border-radius:50%;background:#334155;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px;">&#128161;</div>
+        <div style="font-size:13px;color:#64748b;line-height:1.6;">Trading on a new machine or prop account? Come back here and submit the new Machine ID — takes 30 seconds.</div>
       </div>
     </div>
     <div style="margin-top:16px;padding:12px 14px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:8px;">
-      <div style="font-size:12px;color:#4ade80;line-height:1.6;">&#10003; No 3rd Party Licensing dialog needed. Your machine is authorized directly.</div>
+      <div style="font-size:12px;color:#4ade80;line-height:1.6;">&#10003; Your machine is authorized directly — no NinjaTrader 3rd Party Licensing dialog needed.</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-label">How to find your Machine ID</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h4>Open NinjaTrader</h4>
+        <p>Launch NinjaTrader 8 on your prop firm machine.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h4>Help &rarr; About</h4>
+        <p>Click <strong>Help</strong> in the top menu, then click <strong>About</strong>.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h4>Copy Machine ID</h4>
+        <p>Copy the <strong>Machine ID</strong> shown and paste it below.</p>
+      </div>
     </div>
   </div>
 
@@ -3493,7 +3522,7 @@ select option{background:#0d1117}
     <div class="form-row">
       <label>Your Machine ID</label>
       <input id="prop-machine-id" type="text" placeholder="e.g. A1B2C3D4E5F6..." style="font-family:monospace;"/>
-      <div style="font-size:12px;color:#475569;margin-top:6px;">In NinjaTrader go to <strong style="color:#94a3b8;">Help &rarr; About</strong> and copy the Machine ID shown there.</div>
+      <div style="font-size:12px;color:#475569;margin-top:6px;">In NinjaTrader go to <strong style="color:#94a3b8;">Help &rarr; About</strong> and copy the <strong style="color:#94a3b8;">Machine ID</strong> shown at the bottom of that window.</div>
     </div>
     <div class="form-row">
       <label>Prop Firm</label>
@@ -3568,7 +3597,7 @@ async function submitPropActivation(){
   if(!firmName) return showMsg('Please select your prop firm.',false);
   btn.disabled=true;btn.textContent='Activating...';
   try{
-    var r=await fetch('/api/prop-activation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({machineId:machineId,firmName:firmName})});
+    var r=await fetch('/api/prop-activation',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({machineId:machineId,firmName:firmName})});
     var d=await r.json();
     if(d.ok){
       showActivationSuccess(d.machineId||machineId, d.firmName||firmName);
@@ -3585,7 +3614,7 @@ async function submitPropActivation(){
 
 async function loadActivations(){
   try{
-    var r=await fetch('/api/prop-activations/mine');
+    var r=await fetch('/api/prop-activations/mine',{credentials:'include'});
     var d=await r.json();
     var el=document.getElementById('activations-list');
     if(!d.ok||!d.activations||!d.activations.length){
