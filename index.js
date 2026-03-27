@@ -1014,6 +1014,27 @@ app.get('/downloads/template', frm, async (req, res) => {
     }
 });
 
+// ─── PROP FIRM PACKAGE DOWNLOAD ───────────────────────────────────────────────
+// File must be uploaded to Supabase storage bucket 'uploads' as 'HVTPROPNQ.zip'
+app.get('/downloads/prop-installer', requireSession, async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Supabase not configured.' });
+    try {
+        const { data, error } = await supabase.storage.from('uploads').createSignedUrl('HVTPROPNQ.zip', 300);
+        if (error) {
+            console.error('[DownloadPropInstaller] Signed URL error:', error.message);
+            const { data: pub } = supabase.storage.from('uploads').getPublicUrl('HVTPROPNQ.zip');
+            if (pub?.publicUrl) return res.redirect(302, pub.publicUrl);
+            return res.status(500).json({ error: 'Download unavailable. Please contact support.', detail: error.message });
+        }
+        const url = data.signedUrl + (data.signedUrl.includes('?') ? '&' : '?') + 'download=HVTPROPNQ.zip';
+        console.log('[DownloadPropInstaller] Downloaded by: ' + req._session?.email);
+        return res.redirect(302, url);
+    } catch (e) {
+        console.error('[DownloadPropInstaller] Exception:', e.message);
+        return res.status(500).json({ error: 'Download unavailable. Please contact support.' });
+    }
+});
+
 // ─── TRADING ROOM ─────────────────────────────────────────────────────────────
 app.get('/trading-room', (req, res) => {
     res.send(shell('Get Started', `
@@ -1105,37 +1126,85 @@ app.get('/trading-room', (req, res) => {
       <div class="gs-num">2</div>
       <div class="gs-head-text">
         <div class="gs-title">Download & Install Software</div>
-        <div class="gs-subtitle">Install the HVT indicator package and chart template</div>
+        <div class="gs-subtitle">Choose the correct package for your account type</div>
       </div>
       <div class="gs-check">&#10003;</div>
     </div>
     <div class="gs-body">
       <div class="gs-divider"></div>
-      <div class="gs-dl-row">
-        <a href="/downloads/installer" class="gs-dl-btn" id="dl-software" onclick="markStep2()">
-          <div class="gs-dl-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-          </div>
-          <div class="gs-dl-text">
-            <div class="gs-dl-name">HVT Indicator Package</div>
-            <div class="gs-dl-desc">NinjaTrader 8 indicator suite — install this first</div>
-          </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </a>
-        <a href="/downloads/template" class="gs-dl-btn" id="dl-template" onclick="markStep2()">
-          <div class="gs-dl-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
-          </div>
-          <div class="gs-dl-text">
-            <div class="gs-dl-name">NQ Chart Template</div>
-            <div class="gs-dl-desc">Pre-built chart layout — import after installing indicators</div>
-          </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </a>
+
+      <!-- PERSONAL ACCOUNT PACKAGE -->
+      <div style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <div style="background:rgba(34,84,245,0.12);border:1px solid rgba(34,84,245,0.3);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;color:#2254F5;letter-spacing:1px;text-transform:uppercase;">Personal Account</div>
+          <div style="font-size:12px;color:#64748b;">Trading with your own NinjaTrader account</div>
+        </div>
+        <div class="gs-dl-row">
+          <a href="/downloads/installer" class="gs-dl-btn" id="dl-software" onclick="markStep2()">
+            <div class="gs-dl-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+            </div>
+            <div class="gs-dl-text">
+              <div class="gs-dl-name">HVT Indicator Package</div>
+              <div class="gs-dl-desc">Standard package — for personal NinjaTrader accounts</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="/downloads/template" class="gs-dl-btn" id="dl-template" onclick="markStep2()">
+            <div class="gs-dl-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+            </div>
+            <div class="gs-dl-text">
+              <div class="gs-dl-name">NQ Chart Template</div>
+              <div class="gs-dl-desc">Pre-built chart layout — import after installing indicators</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+        <div class="gs-tip" style="margin-top:10px;">
+          <p>&#128161; <strong style="color:#94a3b8;">Install order:</strong> Install the indicator package first, then import the chart template.</p>
+        </div>
       </div>
-      <div class="gs-tip" style="margin-top:14px;">
-        <p>&#128161; <strong style="color:#94a3b8;">Install order matters:</strong> Install the indicator package first, then import the chart template. Both require NinjaTrader 8 to be installed.</p>
+
+      <!-- DIVIDER -->
+      <div style="height:1px;background:rgba(255,255,255,0.06);margin:4px 0 20px;"></div>
+
+      <!-- PROP FIRM PACKAGE -->
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <div style="background:rgba(246,173,85,0.1);border:1px solid rgba(246,173,85,0.3);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;color:#f6ad55;letter-spacing:1px;text-transform:uppercase;">Prop Firm Account</div>
+          <div style="font-size:12px;color:#64748b;">Trading on Apex, Topstep, Bulenox or any funded account</div>
+        </div>
+        <div style="background:rgba(246,173,85,0.04);border:1px solid rgba(246,173,85,0.15);border-radius:10px;padding:14px 16px;margin-bottom:12px;">
+          <div style="font-size:13px;color:#94a3b8;line-height:1.7;">&#9888; The prop firm package uses a <strong style="color:#e2e8f0;">different licensing system</strong> than the standard package. Before downloading, you must first <a href="/prop-activation" style="color:#f6ad55;font-weight:700;text-decoration:none;">activate your Machine ID</a> in the Prop Firms section. Do not use the standard package on a prop firm account.</div>
+        </div>
+        <div class="gs-dl-row">
+          <a href="/downloads/prop-installer" class="gs-dl-btn" style="border-color:rgba(246,173,85,0.3);" onclick="markStep2()">
+            <div class="gs-dl-icon" style="background:rgba(246,173,85,0.1);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f6ad55" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+            </div>
+            <div class="gs-dl-text">
+              <div class="gs-dl-name" style="color:#f6ad55;">HVT Prop Firm Package</div>
+              <div class="gs-dl-desc">Prop firm version — activate Machine ID first before downloading</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="/downloads/template" class="gs-dl-btn" onclick="markStep2()">
+            <div class="gs-dl-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+            </div>
+            <div class="gs-dl-text">
+              <div class="gs-dl-name">NQ Chart Template</div>
+              <div class="gs-dl-desc">Same template for both packages</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+        <div class="gs-tip" style="margin-top:10px;border-color:rgba(246,173,85,0.2);">
+          <p>&#128161; <strong style="color:#94a3b8;">Prop firm setup order:</strong> 1) <a href="/prop-activation" style="color:#f6ad55;text-decoration:none;font-weight:600;">Activate your Machine ID</a> &rarr; 2) Download prop firm package &rarr; 3) Import into NinjaTrader &rarr; 4) Import chart template.</p>
+        </div>
       </div>
+
     </div>
   </div>
 
