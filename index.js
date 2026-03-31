@@ -1179,8 +1179,9 @@ app.get('/trading-room', (req, res) => {
     </div>
   </div>
 
-  <!-- STEP 2 — DOWNLOADS -->
-  <div class="gs-step" id="step2">
+  <!-- STEP 2 — DOWNLOADS (NQ + ES side by side) -->
+  <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:0;" class="gs-markets-row">
+  <div class="gs-step" id="step2" style="flex:1;min-width:0;margin-bottom:0;">
     <div class="gs-head">
       <div class="gs-num">2</div>
       <div class="gs-head-text">
@@ -1268,7 +1269,7 @@ app.get('/trading-room', (req, res) => {
   </div>
 
   <!-- ═══ ES PACKAGES ═══════════════════════════════════════════════════════ -->
-  <div class="gs-step" id="step2es" style="border-color:rgba(34,197,94,0.15);margin-top:4px;">
+  <div class="gs-step" id="step2es" style="flex:1;min-width:0;margin-bottom:0;border-color:rgba(34,197,94,0.15);">
     <div class="gs-head" style="background:rgba(34,197,94,0.04);">
       <div class="gs-num" style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:#4ade80;font-size:11px;font-weight:800;letter-spacing:1px;">ES</div>
       <div class="gs-head-text">
@@ -1354,6 +1355,14 @@ app.get('/trading-room', (req, res) => {
 
     </div>
   </div>
+  </div><!-- END gs-markets-row -->
+
+  <style>
+  @media (max-width: 700px) {
+    .gs-markets-row { flex-direction: column !important; }
+    .gs-markets-row .gs-step { min-width: 0 !important; }
+  }
+  </style>
 
   <!-- STEP 3 — DISCORD -->
   <div class="gs-step" id="step3">
