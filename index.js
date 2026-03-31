@@ -1099,6 +1099,9 @@ app.get('/trading-room', (req, res) => {
     res.send(shell('Get Started', `
 <style>
 .gs-wrap{width:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px;position:relative;z-index:1;}
+.gs-markets-row{display:flex;flex-direction:row;gap:16px;align-items:stretch;width:100%;max-width:1100px;margin:0 auto;}
+.gs-markets-row .gs-step{flex:1;min-width:0;margin:0;}
+@media(max-width:860px){.gs-markets-row{flex-direction:column;max-width:560px;}}
 .gs-step{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;transition:border-color .2s;}
 .gs-step.done{border-color:rgba(74,222,128,0.35);}
 .gs-head{display:flex;align-items:center;gap:16px;padding:22px 24px;}
@@ -1139,10 +1142,10 @@ app.get('/trading-room', (req, res) => {
 .gs-discord-logo{width:28px;height:28px;object-fit:contain;display:block;flex-shrink:0;}
 </style>
 
-<div class="gs-wrap">
+<div class="gs-wrap" style="max-width:1100px;">
 
   <!-- HEADER -->
-  <div style="text-align:center;margin-bottom:8px;">
+  <div style="text-align:center;margin-bottom:8px;max-width:560px;margin-left:auto;margin-right:auto;">
     <div style="display:inline-block;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.2);border-radius:999px;padding:6px 20px;margin-bottom:14px;">
       <span style="color:#2254F5;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:700;">Get Started</span>
     </div>
@@ -1151,7 +1154,7 @@ app.get('/trading-room', (req, res) => {
   </div>
 
   <!-- STEP 1 — NINJATRADER -->
-  <div class="gs-step" id="step1">
+  <div class="gs-step" id="step1" style="max-width:560px;margin-left:auto;margin-right:auto;width:100%;">
     <div class="gs-head">
       <div class="gs-num">1</div>
       <div class="gs-head-text">
@@ -1179,14 +1182,16 @@ app.get('/trading-room', (req, res) => {
     </div>
   </div>
 
-  <!-- STEP 2 — DOWNLOADS (NQ + ES side by side) -->
-  <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:0;" class="gs-markets-row">
-  <div class="gs-step" id="step2" style="flex:1;min-width:0;margin-bottom:0;">
+  <!-- STEP 2 — DOWNLOADS: NQ + ES side by side -->
+  <div class="gs-markets-row">
+
+  <!-- ── NQ PANEL ── -->
+  <div class="gs-step" id="step2">
     <div class="gs-head">
       <div class="gs-num">2</div>
       <div class="gs-head-text">
-        <div class="gs-title">Download & Install Software</div>
-        <div class="gs-subtitle">Choose the correct package for your account type</div>
+        <div class="gs-title">Download &amp; Install Software</div>
+        <div class="gs-subtitle">NQ — Choose the correct package for your account type</div>
       </div>
       <div class="gs-check">&#10003;</div>
     </div>
@@ -1268,13 +1273,13 @@ app.get('/trading-room', (req, res) => {
     </div>
   </div>
 
-  <!-- ═══ ES PACKAGES ═══════════════════════════════════════════════════════ -->
-  <div class="gs-step" id="step2es" style="flex:1;min-width:0;margin-bottom:0;border-color:rgba(34,197,94,0.15);">
+  <!-- ── ES PANEL ── -->
+  <div class="gs-step" id="step2es" style="border-color:rgba(34,197,94,0.18);">
     <div class="gs-head" style="background:rgba(34,197,94,0.04);">
       <div class="gs-num" style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:#4ade80;font-size:11px;font-weight:800;letter-spacing:1px;">ES</div>
       <div class="gs-head-text">
-        <div class="gs-title" style="color:#4ade80;">E-mini S&P 500 — ES Packages</div>
-        <div class="gs-subtitle">Download the correct ES package based on your account type below</div>
+        <div class="gs-title" style="color:#4ade80;">E-mini S&amp;P 500 — ES Packages</div>
+        <div class="gs-subtitle">ES — Choose the correct package for your account type</div>
       </div>
     </div>
     <div class="gs-body">
@@ -1355,17 +1360,11 @@ app.get('/trading-room', (req, res) => {
 
     </div>
   </div>
-  </div><!-- END gs-markets-row -->
 
-  <style>
-  @media (max-width: 700px) {
-    .gs-markets-row { flex-direction: column !important; }
-    .gs-markets-row .gs-step { min-width: 0 !important; }
-  }
-  </style>
+  </div><!-- /.gs-markets-row -->
 
   <!-- STEP 3 — DISCORD -->
-  <div class="gs-step" id="step3">
+  <div class="gs-step" id="step3" style="max-width:560px;margin-left:auto;margin-right:auto;width:100%;">
     <div class="gs-head">
       <div class="gs-num">3</div>
       <div class="gs-head-text">
