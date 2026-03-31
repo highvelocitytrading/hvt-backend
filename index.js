@@ -1186,16 +1186,20 @@ app.get('/trading-room', (req, res) => {
   <div class="gs-markets-row">
 
   <!-- ── NQ PANEL ── -->
-  <div class="gs-step" id="step2">
-    <div class="gs-head">
-      <div class="gs-num">2</div>
-      <div class="gs-head-text">
-        <div class="gs-title">Download &amp; Install Software</div>
-        <div class="gs-subtitle">NQ — Choose the correct package for your account type</div>
+  <div class="gs-step" id="step2" style="border-color:rgba(34,84,245,0.35);">
+    <div style="background:linear-gradient(135deg,rgba(34,84,245,0.18),rgba(34,84,245,0.08));border-bottom:1px solid rgba(34,84,245,0.25);padding:14px 24px;display:flex;align-items:center;gap:14px;">
+      <div style="background:#2254F5;border-radius:10px;padding:6px 16px;display:flex;align-items:center;justify-content:center;">
+        <span style="font-size:22px;font-weight:900;color:#fff;letter-spacing:2px;font-family:'DM Sans',sans-serif;">NQ</span>
       </div>
-      <div class="gs-check">&#10003;</div>
+      <div>
+        <div style="font-size:15px;font-weight:800;color:#fff;letter-spacing:0.3px;">Nasdaq-100 Futures</div>
+        <div style="font-size:12px;color:#64748b;margin-top:1px;">Download &amp; Install Software</div>
+      </div>
+      <div style="margin-left:auto;">
+        <div class="gs-num" style="width:30px;height:30px;font-size:13px;">2</div>
+      </div>
     </div>
-    <div class="gs-body">
+    <div class="gs-body" style="padding-top:20px;">
       <div class="gs-divider"></div>
 
       <!-- PERSONAL ACCOUNT PACKAGE -->
@@ -1274,15 +1278,17 @@ app.get('/trading-room', (req, res) => {
   </div>
 
   <!-- ── ES PANEL ── -->
-  <div class="gs-step" id="step2es" style="border-color:rgba(34,197,94,0.18);">
-    <div class="gs-head" style="background:rgba(34,197,94,0.04);">
-      <div class="gs-num" style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:#4ade80;font-size:11px;font-weight:800;letter-spacing:1px;">ES</div>
-      <div class="gs-head-text">
-        <div class="gs-title" style="color:#4ade80;">E-mini S&amp;P 500 — ES Packages</div>
-        <div class="gs-subtitle">ES — Choose the correct package for your account type</div>
+  <div class="gs-step" id="step2es" style="border-color:rgba(34,197,94,0.35);">
+    <div style="background:linear-gradient(135deg,rgba(34,197,94,0.14),rgba(34,197,94,0.06));border-bottom:1px solid rgba(34,197,94,0.25);padding:14px 24px;display:flex;align-items:center;gap:14px;">
+      <div style="background:#16a34a;border-radius:10px;padding:6px 16px;display:flex;align-items:center;justify-content:center;">
+        <span style="font-size:22px;font-weight:900;color:#fff;letter-spacing:2px;font-family:'DM Sans',sans-serif;">ES</span>
+      </div>
+      <div>
+        <div style="font-size:15px;font-weight:800;color:#4ade80;letter-spacing:0.3px;">E-mini S&amp;P 500 Futures</div>
+        <div style="font-size:12px;color:#64748b;margin-top:1px;">Download &amp; Install Software</div>
       </div>
     </div>
-    <div class="gs-body">
+    <div class="gs-body" style="padding-top:20px;">
       <div class="gs-divider" style="background:rgba(34,197,94,0.15);"></div>
 
       <!-- ── PERSONAL ACCOUNT ─────────────────────────────────────────── -->
