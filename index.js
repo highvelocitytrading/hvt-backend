@@ -1080,9 +1080,9 @@ app.get('/downloads/es-prop-installer', requireSession, async (req, res) => {
 app.get('/downloads/es-template', frm, async (req, res) => {
     if (!supabase) return res.status(503).json({ error: 'Supabase not configured.' });
     try {
-        const { data, error } = await supabase.storage.from('uploads').createSignedUrl('HVT ES TEMPLATE.xml', 300);
+        const { data, error } = await supabase.storage.from('uploads').createSignedUrl('HVT_ES_TEMPLATE.xml', 300);
         if (error) {
-            const { data: pub } = supabase.storage.from('uploads').getPublicUrl('HVT ES TEMPLATE.xml');
+            const { data: pub } = supabase.storage.from('uploads').getPublicUrl('HVT_ES_TEMPLATE.xml');
             if (pub?.publicUrl) return res.redirect(302, pub.publicUrl + '?download=HVT_ES_TEMPLATE.xml');
             return res.status(500).json({ error: 'Download unavailable. Please contact support.', detail: error.message });
         }
