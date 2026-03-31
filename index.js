@@ -1035,6 +1035,65 @@ app.get('/downloads/prop-installer', requireSession, async (req, res) => {
     }
 });
 
+// ─── ES PERSONAL PACKAGE ──────────────────────────────────────────────────────
+// File: HVTMasterAccessES.zip in Supabase uploads bucket
+app.get('/downloads/es-installer', frm, async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Supabase not configured.' });
+    try {
+        const { data, error } = await supabase.storage.from('uploads').createSignedUrl('HVTMASTERACCESSES.zip', 300);
+        if (error) {
+            const { data: pub } = supabase.storage.from('uploads').getPublicUrl('HVTMASTERACCESSES.zip');
+            if (pub?.publicUrl) return res.redirect(302, pub.publicUrl);
+            return res.status(500).json({ error: 'Download unavailable. Please contact support.', detail: error.message });
+        }
+        const url = data.signedUrl + (data.signedUrl.includes('?') ? '&' : '?') + 'download=HVTMASTERACCESSES.zip';
+        console.log('[DownloadESInstaller] Downloaded by: ' + (req._session?.email || 'guest'));
+        return res.redirect(302, url);
+    } catch (e) {
+        console.error('[DownloadESInstaller] Exception:', e.message);
+        return res.status(500).json({ error: 'Download unavailable. Please contact support.' });
+    }
+});
+
+// ─── ES PROP FIRM PACKAGE ─────────────────────────────────────────────────────
+// File: HVTPROPES.zip in Supabase uploads bucket
+app.get('/downloads/es-prop-installer', requireSession, async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Supabase not configured.' });
+    try {
+        const { data, error } = await supabase.storage.from('uploads').createSignedUrl('HVTPROPES.zip', 300);
+        if (error) {
+            const { data: pub } = supabase.storage.from('uploads').getPublicUrl('HVTPROPES.zip');
+            if (pub?.publicUrl) return res.redirect(302, pub.publicUrl);
+            return res.status(500).json({ error: 'Download unavailable. Please contact support.', detail: error.message });
+        }
+        const url = data.signedUrl + (data.signedUrl.includes('?') ? '&' : '?') + 'download=HVTPROPES.zip';
+        console.log('[DownloadESPropInstaller] Downloaded by: ' + req._session?.email);
+        return res.redirect(302, url);
+    } catch (e) {
+        console.error('[DownloadESPropInstaller] Exception:', e.message);
+        return res.status(500).json({ error: 'Download unavailable. Please contact support.' });
+    }
+});
+
+// ─── ES CHART TEMPLATE ────────────────────────────────────────────────────────
+// File: HVT_ES_TEMPLATE.xml in Supabase uploads bucket
+app.get('/downloads/es-template', frm, async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Supabase not configured.' });
+    try {
+        const { data, error } = await supabase.storage.from('uploads').createSignedUrl('HVT ES TEMPLATE.xml', 300);
+        if (error) {
+            const { data: pub } = supabase.storage.from('uploads').getPublicUrl('HVT ES TEMPLATE.xml');
+            if (pub?.publicUrl) return res.redirect(302, pub.publicUrl + '?download=HVT_ES_TEMPLATE.xml');
+            return res.status(500).json({ error: 'Download unavailable. Please contact support.', detail: error.message });
+        }
+        const url = data.signedUrl + (data.signedUrl.includes('?') ? '&' : '?') + 'download=HVT_ES_TEMPLATE.xml';
+        return res.redirect(302, url);
+    } catch (e) {
+        console.error('[DownloadESTemplate] Exception:', e.message);
+        return res.status(500).json({ error: 'Download unavailable. Please contact support.' });
+    }
+});
+
 // ─── TRADING ROOM ─────────────────────────────────────────────────────────────
 app.get('/trading-room', (req, res) => {
     res.send(shell('Get Started', `
@@ -1202,6 +1261,94 @@ app.get('/trading-room', (req, res) => {
         </div>
         <div class="gs-tip" style="margin-top:10px;border-color:rgba(246,173,85,0.2);">
           <p>&#128161; <strong style="color:#94a3b8;">Prop firm setup order:</strong> 1) <a href="/prop-activation" style="color:#f6ad55;text-decoration:none;font-weight:600;">Activate your Machine ID</a> &rarr; 2) Download prop firm package &rarr; 3) Import into NinjaTrader &rarr; 4) Import chart template.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ ES PACKAGES ═══════════════════════════════════════════════════════ -->
+  <div class="gs-step" id="step2es" style="border-color:rgba(34,197,94,0.15);margin-top:4px;">
+    <div class="gs-head" style="background:rgba(34,197,94,0.04);">
+      <div class="gs-num" style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:#4ade80;font-size:11px;font-weight:800;letter-spacing:1px;">ES</div>
+      <div class="gs-head-text">
+        <div class="gs-title" style="color:#4ade80;">E-mini S&P 500 — ES Packages</div>
+        <div class="gs-subtitle">Download the correct ES package based on your account type below</div>
+      </div>
+    </div>
+    <div class="gs-body">
+      <div class="gs-divider" style="background:rgba(34,197,94,0.15);"></div>
+
+      <!-- ── PERSONAL ACCOUNT ─────────────────────────────────────────── -->
+      <div style="background:rgba(34,84,245,0.04);border:1px solid rgba(34,84,245,0.12);border-radius:14px;padding:20px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <div style="background:rgba(34,84,245,0.15);border:1px solid rgba(34,84,245,0.3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;color:#2254F5;letter-spacing:1.5px;text-transform:uppercase;flex-shrink:0;">Personal Account</div>
+          <div style="font-size:12px;color:#64748b;">Your own NinjaTrader account — licensed through NT ecosystem</div>
+        </div>
+        <div class="gs-dl-row">
+          <a href="/downloads/es-installer" class="gs-dl-btn" onclick="markStep2()">
+            <div class="gs-dl-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+            </div>
+            <div class="gs-dl-text">
+              <div class="gs-dl-name">HVT ES Indicator Package</div>
+              <div class="gs-dl-desc">Full ES indicator suite — NinjaTrader vendor licensed</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="/downloads/es-template" class="gs-dl-btn" onclick="markStep2()">
+            <div class="gs-dl-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+            </div>
+            <div class="gs-dl-text">
+              <div class="gs-dl-name">ES Chart Template</div>
+              <div class="gs-dl-desc">Pre-built ES chart layout — import after indicators</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+        <div style="margin-top:12px;padding:10px 14px;background:rgba(34,84,245,0.06);border-radius:8px;font-size:12px;color:#64748b;line-height:1.6;">
+          &#128161; <strong style="color:#94a3b8;">Install order:</strong> Import the indicator package first, then import the ES chart template.
+        </div>
+      </div>
+
+      <!-- ── PROP FIRM ACCOUNT ────────────────────────────────────────── -->
+      <div style="background:rgba(246,173,85,0.04);border:1px solid rgba(246,173,85,0.15);border-radius:14px;padding:20px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="background:rgba(246,173,85,0.12);border:1px solid rgba(246,173,85,0.3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;color:#f6ad55;letter-spacing:1.5px;text-transform:uppercase;flex-shrink:0;">Prop Firm Account</div>
+          <div style="font-size:12px;color:#64748b;">Apex, Topstep, Bulenox or any ES funded account</div>
+        </div>
+        <div style="padding:12px 14px;background:rgba(246,173,85,0.06);border:1px solid rgba(246,173,85,0.15);border-radius:8px;margin-bottom:14px;">
+          <div style="font-size:13px;color:#94a3b8;line-height:1.7;">&#9888;&nbsp; Before downloading you <strong style="color:#f6ad55;">must activate your Machine ID</strong> first. Go to <a href="/prop-activation" style="color:#f6ad55;font-weight:700;text-decoration:none;">Prop Firms &rarr; Activate</a> and complete the activation. Do <strong style="color:#e2e8f0;">not</strong> use the personal package on a prop firm account.</div>
+        </div>
+        <div class="gs-dl-row">
+          <a href="/downloads/es-prop-installer" class="gs-dl-btn" style="border-color:rgba(246,173,85,0.25);background:rgba(246,173,85,0.04);" onclick="markStep2()">
+            <div class="gs-dl-icon" style="background:rgba(246,173,85,0.12);border-radius:9px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f6ad55" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+            </div>
+            <div class="gs-dl-text">
+              <div class="gs-dl-name" style="color:#f6ad55;">HVT ES Prop Firm Package</div>
+              <div class="gs-dl-desc">Backend Machine ID licensed — activate first</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="/downloads/es-template" class="gs-dl-btn" onclick="markStep2()">
+            <div class="gs-dl-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+            </div>
+            <div class="gs-dl-text">
+              <div class="gs-dl-name">ES Chart Template</div>
+              <div class="gs-dl-desc">Same template used for both ES packages</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+        <div style="margin-top:12px;padding:10px 14px;background:rgba(246,173,85,0.06);border-radius:8px;font-size:12px;color:#64748b;line-height:1.6;">
+          &#128161; <strong style="color:#94a3b8;">ES prop firm setup order:</strong>&nbsp;
+          <a href="/prop-activation" style="color:#f6ad55;text-decoration:none;font-weight:600;">1) Activate Machine ID</a>
+          &nbsp;&rarr;&nbsp; 2) Download ES prop firm package
+          &nbsp;&rarr;&nbsp; 3) Import into NinjaTrader
+          &nbsp;&rarr;&nbsp; 4) Import ES template
         </div>
       </div>
 
