@@ -1151,6 +1151,10 @@ app.get('/trading-room', (req, res) => {
 .gs-nt-signup{display:inline-flex;align-items:center;justify-content:center;gap:8px;margin:12px auto 0 auto;padding:10px 18px;background:#D9452A;color:#fff;border-radius:9px;font-size:13px;font-weight:800;letter-spacing:1px;text-decoration:none;box-shadow:0 4px 14px rgba(217,69,42,0.35);transition:all .2s;}
 .gs-nt-signup:hover{background:#c43d25;transform:translateY(-1px);}
 .gs-discord-logo{width:28px;height:28px;object-fit:contain;display:block;flex-shrink:0;}
+.gs-mkt-btn{flex:1;padding:14px 12px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.03);color:#fff;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;text-align:center;}
+.gs-mkt-btn:hover{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.18);}
+.gs-mkt-btn.active-nq{border-color:rgba(34,84,245,0.5);background:rgba(34,84,245,0.1);}
+.gs-mkt-btn.active-es{border-color:rgba(22,163,74,0.5);background:rgba(22,163,74,0.08);}
 </style>
 
 <div class="gs-wrap" style="max-width:1100px;">
@@ -1193,192 +1197,130 @@ app.get('/trading-room', (req, res) => {
     </div>
   </div>
 
-  <!-- STEP 2 — DOWNLOADS: NQ + ES side by side -->
-  <div class="gs-markets-row">
 
-  <!-- ── NQ PANEL ── -->
-  <div class="gs-step" id="step2" style="border-color:rgba(34,84,245,0.35);">
-    <div style="background:linear-gradient(135deg,rgba(34,84,245,0.18),rgba(34,84,245,0.08));border-bottom:1px solid rgba(34,84,245,0.25);padding:14px 24px;display:flex;align-items:center;gap:14px;">
-      <div style="background:#2254F5;border-radius:10px;padding:6px 16px;display:flex;align-items:center;justify-content:center;">
-        <span style="font-size:22px;font-weight:900;color:#fff;letter-spacing:2px;font-family:'DM Sans',sans-serif;">NQ</span>
+  <!-- STEP 2 — DOWNLOADS -->
+  <div class="gs-step" id="step2" style="max-width:560px;margin-left:auto;margin-right:auto;width:100%;">
+    <div class="gs-head">
+      <div class="gs-num">2</div>
+      <div class="gs-head-text">
+        <div class="gs-title">Download Your Software</div>
+        <div class="gs-subtitle">Select your market, then your account type</div>
       </div>
-      <div>
-        <div style="font-size:15px;font-weight:800;color:#fff;letter-spacing:0.3px;">Nasdaq-100 Futures</div>
-        <div style="font-size:12px;color:#64748b;margin-top:1px;">Download &amp; Install Software</div>
-      </div>
-      <div style="margin-left:auto;">
-        <div class="gs-num" style="width:30px;height:30px;font-size:13px;">2</div>
-      </div>
+      <div class="gs-check">&#10003;</div>
     </div>
-    <div class="gs-body" style="padding-top:20px;">
+    <div class="gs-body">
       <div class="gs-divider"></div>
 
-      <!-- PERSONAL ACCOUNT PACKAGE -->
-      <div style="margin-bottom:20px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-          <div style="background:rgba(34,84,245,0.12);border:1px solid rgba(34,84,245,0.3);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;color:#2254F5;letter-spacing:1px;text-transform:uppercase;">Personal Account</div>
-          <div style="font-size:12px;color:#64748b;">Trading with your own NinjaTrader account</div>
-        </div>
-        <div class="gs-dl-row">
-          <a href="/downloads/installer" class="gs-dl-btn" id="dl-software" onclick="markStep2()">
-            <div class="gs-dl-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-            </div>
-            <div class="gs-dl-text">
-              <div class="gs-dl-name">HVT Indicator Package</div>
-              <div class="gs-dl-desc">Standard package — for personal NinjaTrader accounts</div>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </a>
-          <a href="/downloads/template" class="gs-dl-btn" id="dl-template" onclick="markStep2()">
-            <div class="gs-dl-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
-            </div>
-            <div class="gs-dl-text">
-              <div class="gs-dl-name">NQ Chart Template</div>
-              <div class="gs-dl-desc">Pre-built chart layout — import after installing indicators</div>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </a>
-        </div>
-        <div class="gs-tip" style="margin-top:10px;">
-          <p>&#128161; <strong style="color:#94a3b8;">Install order:</strong> Install the indicator package first, then import the chart template.</p>
-        </div>
+      <!-- Market picker -->
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#475569;margin-bottom:10px;">Select Market</div>
+      <div style="display:flex;gap:10px;margin-bottom:24px;">
+        <button id="mkt-btn-nq" onclick="selectMarket('nq')" class="gs-mkt-btn">
+          <span style="font-size:15px;font-weight:900;color:#2254F5;display:block;margin-bottom:2px;">NQ</span>
+          <span style="font-size:11px;color:#64748b;">Nasdaq-100</span>
+        </button>
+        <button id="mkt-btn-es" onclick="selectMarket('es')" class="gs-mkt-btn">
+          <span style="font-size:15px;font-weight:900;color:#16a34a;display:block;margin-bottom:2px;">ES</span>
+          <span style="font-size:11px;color:#64748b;">E-mini S&amp;P 500</span>
+        </button>
       </div>
 
-      <!-- DIVIDER -->
-      <div style="height:1px;background:rgba(255,255,255,0.06);margin:4px 0 20px;"></div>
+      <!-- Nothing selected yet -->
+      <div id="dl-prompt" style="padding:20px;text-align:center;border:1px dashed rgba(255,255,255,0.07);border-radius:12px;">
+        <div style="font-size:13px;color:#334155;">&#8593; Select a market above to see your downloads</div>
+      </div>
 
-      <!-- PROP FIRM PACKAGE -->
-      <div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-          <div style="background:rgba(246,173,85,0.1);border:1px solid rgba(246,173,85,0.3);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;color:#f6ad55;letter-spacing:1px;text-transform:uppercase;">Prop Firm Account</div>
-          <div style="font-size:12px;color:#64748b;">Trading on Apex, Topstep, Bulenox or any funded account</div>
-        </div>
-        <div style="background:rgba(246,173,85,0.04);border:1px solid rgba(246,173,85,0.15);border-radius:10px;padding:14px 16px;margin-bottom:12px;">
-          <div style="font-size:13px;color:#94a3b8;line-height:1.7;">&#9888; The prop firm package uses a <strong style="color:#e2e8f0;">different licensing system</strong> than the standard package. Before downloading, you must first <a href="/prop-activation" style="color:#f6ad55;font-weight:700;text-decoration:none;">activate your Machine ID</a> in the Prop Firms section. Do not use the standard package on a prop firm account.</div>
-        </div>
-        <div class="gs-dl-row">
-          <a href="/downloads/prop-installer" class="gs-dl-btn" style="border-color:rgba(246,173,85,0.3);" onclick="markStep2()">
-            <div class="gs-dl-icon" style="background:rgba(246,173,85,0.1);">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f6ad55" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-            </div>
-            <div class="gs-dl-text">
-              <div class="gs-dl-name" style="color:#f6ad55;">HVT Prop Firm Package</div>
-              <div class="gs-dl-desc">Prop firm version — activate Machine ID first before downloading</div>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      <!-- NQ panel -->
+      <div id="dl-nq" style="display:none;">
+        <div style="height:1px;background:rgba(255,255,255,0.06);margin-bottom:20px;"></div>
+
+        <!-- Personal -->
+        <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#2254F5;margin-bottom:10px;">Personal Account</div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:12px;">Your own NinjaTrader account — licensed through NT ecosystem</div>
+        <div class="gs-dl-row" style="margin-bottom:10px;">
+          <a href="/downloads/installer" class="gs-dl-btn" onclick="markStep2()">
+            <div class="gs-dl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg></div>
+            <div class="gs-dl-text"><div class="gs-dl-name">NQ Indicator Package</div><div class="gs-dl-desc">Standard — for personal NinjaTrader accounts</div></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </a>
           <a href="/downloads/template" class="gs-dl-btn" onclick="markStep2()">
-            <div class="gs-dl-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
-            </div>
-            <div class="gs-dl-text">
-              <div class="gs-dl-name">NQ Chart Template</div>
-              <div class="gs-dl-desc">Same template for both packages</div>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <div class="gs-dl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg></div>
+            <div class="gs-dl-text"><div class="gs-dl-name">NQ Chart Template</div><div class="gs-dl-desc">Import after installing the indicator package</div></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </a>
         </div>
-        <div class="gs-tip" style="margin-top:10px;border-color:rgba(246,173,85,0.2);">
-          <p>&#128161; <strong style="color:#94a3b8;">Prop firm setup order:</strong> 1) <a href="/prop-activation" style="color:#f6ad55;text-decoration:none;font-weight:600;">Activate your Machine ID</a> &rarr; 2) Download prop firm package &rarr; 3) Import into NinjaTrader &rarr; 4) Import chart template.</p>
+        <div class="gs-tip" style="margin-bottom:24px;"><p>&#128161; <strong style="color:#94a3b8;">Install order:</strong> Indicator package first, then chart template.</p></div>
+
+        <!-- Divider -->
+        <div style="height:1px;background:rgba(255,255,255,0.06);margin-bottom:20px;"></div>
+
+        <!-- Prop Firm -->
+        <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f6ad55;margin-bottom:10px;">Prop Firm Account</div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:12px;">Apex, Topstep, Bulenox or any funded account</div>
+        <div style="padding:12px 14px;background:rgba(246,173,85,0.05);border:1px solid rgba(246,173,85,0.18);border-radius:10px;margin-bottom:12px;">
+          <p style="font-size:13px;color:#94a3b8;margin:0;line-height:1.7;">&#9888;&nbsp; You must <a href="/prop-activation" style="color:#f6ad55;font-weight:700;text-decoration:none;">activate your Machine ID</a> first. Do not use the personal package on a prop firm account.</p>
         </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ── ES PANEL ── -->
-  <div class="gs-step" id="step2es" style="border-color:rgba(34,197,94,0.35);">
-    <div style="background:linear-gradient(135deg,rgba(34,197,94,0.14),rgba(34,197,94,0.06));border-bottom:1px solid rgba(34,197,94,0.25);padding:14px 24px;display:flex;align-items:center;gap:14px;">
-      <div style="background:#16a34a;border-radius:10px;padding:6px 16px;display:flex;align-items:center;justify-content:center;">
-        <span style="font-size:22px;font-weight:900;color:#fff;letter-spacing:2px;font-family:'DM Sans',sans-serif;">ES</span>
-      </div>
-      <div>
-        <div style="font-size:15px;font-weight:800;color:#4ade80;letter-spacing:0.3px;">E-mini S&amp;P 500 Futures</div>
-        <div style="font-size:12px;color:#64748b;margin-top:1px;">Download &amp; Install Software</div>
-      </div>
-    </div>
-    <div class="gs-body" style="padding-top:20px;">
-      <div class="gs-divider" style="background:rgba(34,197,94,0.15);"></div>
-
-      <!-- ── PERSONAL ACCOUNT ─────────────────────────────────────────── -->
-      <div style="background:rgba(34,84,245,0.04);border:1px solid rgba(34,84,245,0.12);border-radius:14px;padding:20px;margin-bottom:16px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-          <div style="background:rgba(34,84,245,0.15);border:1px solid rgba(34,84,245,0.3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;color:#2254F5;letter-spacing:1.5px;text-transform:uppercase;flex-shrink:0;">Personal Account</div>
-          <div style="font-size:12px;color:#64748b;">Your own NinjaTrader account — licensed through NT ecosystem</div>
+        <div class="gs-dl-row" style="margin-bottom:10px;">
+          <a href="/downloads/prop-installer" class="gs-dl-btn" style="border-color:rgba(246,173,85,0.25);background:rgba(246,173,85,0.04);" onclick="markStep2()">
+            <div class="gs-dl-icon" style="background:rgba(246,173,85,0.1);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f6ad55" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg></div>
+            <div class="gs-dl-text"><div class="gs-dl-name" style="color:#f6ad55;">NQ Prop Firm Package</div><div class="gs-dl-desc">Activate Machine ID first — then download</div></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="/downloads/template" class="gs-dl-btn" onclick="markStep2()">
+            <div class="gs-dl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg></div>
+            <div class="gs-dl-text"><div class="gs-dl-name">NQ Chart Template</div><div class="gs-dl-desc">Same template for both NQ packages</div></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
         </div>
-        <div class="gs-dl-row">
+        <div class="gs-tip" style="border-color:rgba(246,173,85,0.15);"><p>&#128161; <strong style="color:#94a3b8;">Setup order:</strong> 1) <a href="/prop-activation" style="color:#f6ad55;text-decoration:none;font-weight:600;">Activate Machine ID</a> &rarr; 2) Download prop package &rarr; 3) Import into NinjaTrader &rarr; 4) Import chart template.</p></div>
+      </div>
+
+      <!-- ES panel -->
+      <div id="dl-es" style="display:none;">
+        <div style="height:1px;background:rgba(255,255,255,0.06);margin-bottom:20px;"></div>
+
+        <!-- Personal -->
+        <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#2254F5;margin-bottom:10px;">Personal Account</div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:12px;">Your own NinjaTrader account — licensed through NT ecosystem</div>
+        <div class="gs-dl-row" style="margin-bottom:10px;">
           <a href="/downloads/es-installer" class="gs-dl-btn" onclick="markStep2()">
-            <div class="gs-dl-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-            </div>
-            <div class="gs-dl-text">
-              <div class="gs-dl-name">HVT ES Indicator Package</div>
-              <div class="gs-dl-desc">Full ES indicator suite — NinjaTrader vendor licensed</div>
-            </div>
+            <div class="gs-dl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg></div>
+            <div class="gs-dl-text"><div class="gs-dl-name">ES Indicator Package</div><div class="gs-dl-desc">Full ES suite — NinjaTrader vendor licensed</div></div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </a>
           <a href="/downloads/es-template" class="gs-dl-btn" onclick="markStep2()">
-            <div class="gs-dl-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
-            </div>
-            <div class="gs-dl-text">
-              <div class="gs-dl-name">ES Chart Template</div>
-              <div class="gs-dl-desc">Pre-built ES chart layout — import after indicators</div>
-            </div>
+            <div class="gs-dl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg></div>
+            <div class="gs-dl-text"><div class="gs-dl-name">ES Chart Template</div><div class="gs-dl-desc">Import after installing the indicator package</div></div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </a>
         </div>
-        <div style="margin-top:12px;padding:10px 14px;background:rgba(34,84,245,0.06);border-radius:8px;font-size:12px;color:#64748b;line-height:1.6;">
-          &#128161; <strong style="color:#94a3b8;">Install order:</strong> Import the indicator package first, then import the ES chart template.
-        </div>
-      </div>
+        <div class="gs-tip" style="margin-bottom:24px;"><p>&#128161; <strong style="color:#94a3b8;">Install order:</strong> Indicator package first, then chart template.</p></div>
 
-      <!-- ── PROP FIRM ACCOUNT ────────────────────────────────────────── -->
-      <div style="background:rgba(246,173,85,0.04);border:1px solid rgba(246,173,85,0.15);border-radius:14px;padding:20px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-          <div style="background:rgba(246,173,85,0.12);border:1px solid rgba(246,173,85,0.3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;color:#f6ad55;letter-spacing:1.5px;text-transform:uppercase;flex-shrink:0;">Prop Firm Account</div>
-          <div style="font-size:12px;color:#64748b;">Apex, Topstep, Bulenox or any ES funded account</div>
+        <!-- Divider -->
+        <div style="height:1px;background:rgba(255,255,255,0.06);margin-bottom:20px;"></div>
+
+        <!-- Prop Firm -->
+        <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f6ad55;margin-bottom:10px;">Prop Firm Account</div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:12px;">Apex, Topstep, Bulenox or any funded account</div>
+        <div style="padding:12px 14px;background:rgba(246,173,85,0.05);border:1px solid rgba(246,173,85,0.18);border-radius:10px;margin-bottom:12px;">
+          <p style="font-size:13px;color:#94a3b8;margin:0;line-height:1.7;">&#9888;&nbsp; You must <a href="/prop-activation" style="color:#f6ad55;font-weight:700;text-decoration:none;">activate your Machine ID</a> first. Do not use the personal package on a prop firm account.</p>
         </div>
-        <div style="padding:12px 14px;background:rgba(246,173,85,0.06);border:1px solid rgba(246,173,85,0.15);border-radius:8px;margin-bottom:14px;">
-          <div style="font-size:13px;color:#94a3b8;line-height:1.7;">&#9888;&nbsp; Before downloading you <strong style="color:#f6ad55;">must activate your Machine ID</strong> first. Go to <a href="/prop-activation" style="color:#f6ad55;font-weight:700;text-decoration:none;">Prop Firms &rarr; Activate</a> and complete the activation. Do <strong style="color:#e2e8f0;">not</strong> use the personal package on a prop firm account.</div>
-        </div>
-        <div class="gs-dl-row">
+        <div class="gs-dl-row" style="margin-bottom:10px;">
           <a href="/downloads/es-prop-installer" class="gs-dl-btn" style="border-color:rgba(246,173,85,0.25);background:rgba(246,173,85,0.04);" onclick="markStep2()">
-            <div class="gs-dl-icon" style="background:rgba(246,173,85,0.12);border-radius:9px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f6ad55" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-            </div>
-            <div class="gs-dl-text">
-              <div class="gs-dl-name" style="color:#f6ad55;">HVT ES Prop Firm Package</div>
-              <div class="gs-dl-desc">Backend Machine ID licensed — activate first</div>
-            </div>
+            <div class="gs-dl-icon" style="background:rgba(246,173,85,0.1);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f6ad55" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg></div>
+            <div class="gs-dl-text"><div class="gs-dl-name" style="color:#f6ad55;">ES Prop Firm Package</div><div class="gs-dl-desc">Activate Machine ID first — then download</div></div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </a>
           <a href="/downloads/es-template" class="gs-dl-btn" onclick="markStep2()">
-            <div class="gs-dl-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
-            </div>
-            <div class="gs-dl-text">
-              <div class="gs-dl-name">ES Chart Template</div>
-              <div class="gs-dl-desc">Same template used for both ES packages</div>
-            </div>
+            <div class="gs-dl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg></div>
+            <div class="gs-dl-text"><div class="gs-dl-name">ES Chart Template</div><div class="gs-dl-desc">Same template for both ES packages</div></div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </a>
         </div>
-        <div style="margin-top:12px;padding:10px 14px;background:rgba(246,173,85,0.06);border-radius:8px;font-size:12px;color:#64748b;line-height:1.6;">
-          &#128161; <strong style="color:#94a3b8;">ES prop firm setup order:</strong>&nbsp;
-          <a href="/prop-activation" style="color:#f6ad55;text-decoration:none;font-weight:600;">1) Activate Machine ID</a>
-          &nbsp;&rarr;&nbsp; 2) Download ES prop firm package
-          &nbsp;&rarr;&nbsp; 3) Import into NinjaTrader
-          &nbsp;&rarr;&nbsp; 4) Import ES template
-        </div>
+        <div class="gs-tip" style="border-color:rgba(246,173,85,0.15);"><p>&#128161; <strong style="color:#94a3b8;">Setup order:</strong> 1) <a href="/prop-activation" style="color:#f6ad55;text-decoration:none;font-weight:600;">Activate Machine ID</a> &rarr; 2) Download prop package &rarr; 3) Import into NinjaTrader &rarr; 4) Import ES template.</p></div>
       </div>
 
     </div>
   </div>
-
-  </div><!-- /.gs-markets-row -->
 
   <!-- STEP 3 — DISCORD -->
   <div class="gs-step" id="step3" style="max-width:560px;margin-left:auto;margin-right:auto;width:100%;">
@@ -1449,7 +1391,23 @@ async function activateNT() {
   } catch { msg.className='gs-msg er show'; msg.textContent='Network error. Please try again.'; btn.disabled=false; btn.textContent='Activate Software'; }
 }
 
-// ── STEP 2: Mark downloads done ───────────────────────────────────────────────
+// ── STEP 2: Market selector ───────────────────────────────────────────────────
+function selectMarket(market) {
+  var nqBtn = document.getElementById('mkt-btn-nq');
+  var esBtn = document.getElementById('mkt-btn-es');
+  var nqDl  = document.getElementById('dl-nq');
+  var esDl  = document.getElementById('dl-es');
+  var prompt = document.getElementById('dl-prompt');
+  nqBtn.className = 'gs-mkt-btn'; esBtn.className = 'gs-mkt-btn';
+  if (market === 'nq') {
+    nqBtn.className = 'gs-mkt-btn active-nq';
+    nqDl.style.display = 'block'; esDl.style.display = 'none';
+  } else {
+    esBtn.className = 'gs-mkt-btn active-es';
+    esDl.style.display = 'block'; nqDl.style.display = 'none';
+  }
+  if (prompt) prompt.style.display = 'none';
+}
 function markStep2() {
   setTimeout(function(){ document.getElementById('step2').classList.add('done'); }, 1500);
 }
