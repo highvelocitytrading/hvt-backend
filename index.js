@@ -319,13 +319,19 @@ function verifyJF(req) {
 }
 
 // ─── DISCORD API ─────────────────────────────────────────────────────────────
-async function dc(method, path, body) {
+async function dc(method, path, body, _retry = 0) {
     const ctrl = new AbortController(); const _t = setTimeout(() => ctrl.abort(), 8000);
     const r = await fetchFn(`https://discord.com/api/v10${path}`, {
         method, signal: ctrl.signal,
         headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
         body: body ? JSON.stringify(body) : undefined
     }); clearTimeout(_t);
+    if (r.status === 429 && _retry < 3) {
+        const retryAfter = parseFloat(r.headers.get('retry-after') || '1');
+        console.warn(`[DC] Rate limited on ${method} ${path} — retrying in ${retryAfter}s (attempt ${_retry + 1})`);
+        await new Promise(res => setTimeout(res, retryAfter * 1000));
+        return dc(method, path, body, _retry + 1);
+    }
     if (r.status === 204) return null;
     const d = await r.json();
     if (!r.ok) throw new Error(`Discord ${r.status}: ${JSON.stringify(d)}`);
@@ -333,12 +339,17 @@ async function dc(method, path, body) {
 }
 async function findUser(username) {
     try {
-        const list = await dc('GET', `/guilds/${DISCORD_GUILD_ID}/members/search?query=${encodeURIComponent(username)}&limit=5`);
+        const list = await dc('GET', `/guilds/${DISCORD_GUILD_ID}/members/search?query=${encodeURIComponent(username)}&limit=10`);
         if (!list?.length) return null;
-        return list.find(m => m.user.username.toLowerCase() === username.toLowerCase() || m.nick?.toLowerCase() === username.toLowerCase()) || list[0];
+        const exact = list.find(m => m.user.username.toLowerCase() === username.toLowerCase());
+        if (!exact) { console.warn(`[DC findUser] No exact match for username "${username}" in ${list.length} results`); return null; }
+        return exact;
     } catch (e) { console.error('[DC findUser]', e.message); return null; }
 }
-async function addRole(uid, rid)    { await dc('PUT',    `/guilds/${DISCORD_GUILD_ID}/members/${uid}/roles/${rid}`); }
+async function addRole(uid, rid) {
+    if (!rid) throw new Error('addRole: role ID is empty — check DISCORD_ROOM_ROLE_ID / DISCORD_MONTHLY_ROLE_ID env vars');
+    await dc('PUT', `/guilds/${DISCORD_GUILD_ID}/members/${uid}/roles/${rid}`);
+}
 async function stripRole(uid, rid)  { await dc('DELETE', `/guilds/${DISCORD_GUILD_ID}/members/${uid}/roles/${rid}`); }
 async function getGuildAll() {
     try { return await dc('GET', `/guilds/${DISCORD_GUILD_ID}/members?limit=1000`) || []; }
@@ -1514,7 +1525,7 @@ app.post('/trading-room/activate', frm, express.json(), async (req, res) => {
         const rid  = isLifetime ? DISCORD_LIFETIME_ROLE_ID : (isDiscord ? (DISCORD_ROOM_ROLE_ID || DISCORD_MONTHLY_ROLE_ID) : DISCORD_MONTHLY_ROLE_ID);
         await addRole(uid, rid);
 
-        if (isMonthly) await supabase.from(MEMBERSHIP_TABLE).update({ discord_user_id: uid, updated_at: nowISO() }).eq('email', email);
+        if (isMonthly) await supabase.from(MEMBERSHIP_TABLE).update({ discord_user_id: uid, discord_username: discUser, updated_at: nowISO() }).eq('email', email);
         if (isDiscord) await supabase.from(DISCORD_TABLE).update({ discord_user_id: uid, discord_username: discUser, updated_at: nowISO() }).eq('email', email);
 
         // Create NT license using the NinjaTrader email they provided
@@ -1617,7 +1628,7 @@ app.post('/trading-room/activate-discord', frm, express.json(), async (req, res)
 
         if (isMonthly) await supabase.from(MEMBERSHIP_TABLE).update({ discord_user_id: uid, discord_username: discUser, updated_at: nowISO() }).eq('email', email);
         if (isDiscord) await supabase.from(DISCORD_TABLE).update({ discord_user_id: uid, discord_username: discUser, updated_at: nowISO() }).eq('email', email);
-        if (isLifetime) await supabase.from(LICENSE_TABLE).update({ discord_user_id: uid, updated_at: nowISO() }).eq('email', email).catch(e => console.error('[Discord] LIC update:', e.message));
+        if (isLifetime) await supabase.from(LICENSE_TABLE).update({ discord_user_id: uid, discord_username: discUser, updated_at: nowISO() }).eq('email', email).catch(e => console.error('[Discord] LIC update:', e.message));
 
         console.log(`✅ Discord-only: @${discUser} (${uid}) → ${email}`);
         res.json({ ok: true });
