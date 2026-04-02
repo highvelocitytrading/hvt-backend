@@ -1154,7 +1154,9 @@ app.get('/trading-room', (req, res) => {
 .gs-mkt-btn{flex:1;padding:14px 12px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.03);color:#fff;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;text-align:center;}
 .gs-mkt-btn:hover{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.18);}
 .gs-mkt-btn.active-nq{border-color:rgba(34,84,245,0.5);background:rgba(34,84,245,0.1);}
+.gs-mkt-btn.active-nq span:first-child{color:#2254F5 !important;}
 .gs-mkt-btn.active-es{border-color:rgba(255,255,255,0.55);background:rgba(255,255,255,0.07);box-shadow:0 0 18px rgba(255,255,255,0.1),inset 0 0 12px rgba(255,255,255,0.03);}
+.gs-mkt-btn.active-es span:first-child{color:#ffffff !important;}
 </style>
 
 <div class="gs-wrap" style="max-width:1100px;">
@@ -1215,7 +1217,7 @@ app.get('/trading-room', (req, res) => {
       <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#475569;margin-bottom:10px;">Select Market</div>
       <div style="display:flex;gap:10px;margin-bottom:24px;">
         <button id="mkt-btn-nq" onclick="selectMarket('nq')" class="gs-mkt-btn">
-          <span style="font-size:15px;font-weight:900;color:#2254F5;display:block;margin-bottom:2px;">NQ</span>
+          <span style="font-size:15px;font-weight:900;color:#2254F5;display:block;margin-bottom:2px;letter-spacing:1px;">NQ</span>
           <span style="font-size:11px;color:#64748b;">Nasdaq-100</span>
         </button>
         <button id="mkt-btn-es" onclick="selectMarket('es')" class="gs-mkt-btn">
