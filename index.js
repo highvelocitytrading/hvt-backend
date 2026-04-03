@@ -4186,4 +4186,564 @@ app.use((err, req, res, next) => {
     res.status(500).json({ ok: false, error: 'Internal server error.' });
 });
 
+// ═══════════════════════════════════════════════════════════════════════════════
+//  HVT ECHO — Copy Trader Licensing System
+//  Add this entire block to index.js before app.listen()
+//  High Velocity Trading © 2025
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const ECHO_TABLE = 'hvt_echo_licenses';
+
+// ─── ECHO: GENERATE LICENSE KEY ───────────────────────────────────────────────
+function genEchoKey() {
+    return `ECHO-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+}
+
+// ─── ECHO: WELCOME EMAIL ──────────────────────────────────────────────────────
+async function sendEchoWelcome(email, fullName, licenseKey) {
+    const name    = fullName?.split(' ')[0] || 'Trader';
+    const subject = `Your HVT Echo License is Ready — ${name}`;
+
+    const html = wrap(`
+      <div style="text-align:center;padding-bottom:8px;">
+        <div style="display:inline-block;background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.25);border-radius:20px;padding:5px 18px;margin-bottom:22px;">
+          <span style="color:#00D4AA;font-size:10px;letter-spacing:3px;text-transform:uppercase;font-weight:700;">HVT Echo — Active</span>
+        </div>
+        <h1 style="color:#ffffff;font-size:26px;font-weight:800;margin:0 0 10px;letter-spacing:-0.5px;">You're in, ${name}.</h1>
+        <p style="color:#64748b;font-size:14px;margin:0;">Your HVT Echo copy trader is ready to install.</p>
+      </div>
+
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,170,0.2),transparent);margin:28px 0;"></div>
+
+      <p style="color:#94a3b8;font-size:14px;line-height:1.9;margin:0 0 28px;">One execution. Five accounts hit. Your license key is below — keep it safe. You will need it to activate HVT Echo inside NinjaTrader 8. This key is locked to one machine.</p>
+
+      <div style="background:#0d1117;border:1px solid rgba(0,212,170,0.3);border-radius:12px;padding:24px;margin-bottom:28px;text-align:center;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#64748b;margin-bottom:12px;">Your License Key</div>
+        <div style="font-family:monospace;font-size:22px;font-weight:800;color:#00D4AA;letter-spacing:3px;word-break:break-all;">${esc(licenseKey)}</div>
+        <div style="font-size:11px;color:#334155;margin-top:10px;">One machine. One license. Do not share this key.</div>
+      </div>
+
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);margin:0 0 28px;"></div>
+
+      <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#475569;font-weight:700;margin-bottom:18px;">How to Activate</div>
+
+      <div style="border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;margin-bottom:28px;">
+
+        <div style="padding:20px 22px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(0,212,170,0.1);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#00D4AA;margin-top:1px;">1</div>
+            <div>
+              <div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Download HVT Echo</div>
+              <div style="color:#64748b;font-size:13px;line-height:1.7;">Download the HVT Echo installer from your member portal at <a href="${APP_URL}/member" style="color:#00D4AA;text-decoration:none;font-weight:600;">highvelocitytrading.com</a>.</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:20px 22px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(0,212,170,0.1);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#00D4AA;margin-top:1px;">2</div>
+            <div>
+              <div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Install in NinjaTrader 8</div>
+              <div style="color:#64748b;font-size:13px;line-height:1.7;">In NinjaTrader go to <strong style="color:#e2e8f0;">Tools → Import → NinjaScript Add-On</strong> and import the HVT Echo package.</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:20px 22px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(0,212,170,0.1);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#00D4AA;margin-top:1px;">3</div>
+            <div>
+              <div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Enter Your License Key</div>
+              <div style="color:#64748b;font-size:13px;line-height:1.7;">When HVT Echo opens for the first time paste your license key above into the activation screen. Your machine will be registered automatically.</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:20px 22px;">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(0,212,170,0.1);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#00D4AA;margin-top:1px;">4</div>
+            <div>
+              <div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Connect Your Accounts and Trade</div>
+              <div style="color:#64748b;font-size:13px;line-height:1.7;">Select your master account, add your follower prop firm accounts, hit Start. One execution hits all of them in under 100ms.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="background:rgba(0,212,170,0.04);border:1px solid rgba(0,212,170,0.12);border-radius:10px;padding:14px 18px;margin-bottom:28px;">
+        <p style="color:#00D4AA;font-size:12px;line-height:1.7;margin:0;"><strong>Important:</strong> Your license is locked to one computer. If you switch machines contact us and we will transfer it. Do not share your key — it will deactivate your own access.</p>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:16px 20px;text-align:center;">
+        <p style="color:#475569;font-size:13px;margin:0 0 4px;">Questions? We are here.</p>
+        <p style="color:#94a3b8;font-size:15px;font-weight:700;margin:0;">&#128222;&nbsp; 786-461-4235</p>
+      </div>
+
+      <div style="text-align:center;margin-top:24px;">
+        <p style="color:#1e293b;font-size:11px;letter-spacing:2px;text-transform:uppercase;">Trade With Structure. No Emotion.</p>
+      </div>
+    `);
+
+    await sendEmail(email, subject, html);
+    console.log(`[EchoEmail] Welcome → ${email} | key: ${licenseKey}`);
+}
+
+// ─── ECHO: JOTFORM WEBHOOK ────────────────────────────────────────────────────
+// Configure in Jotform: Settings → Integrations → Webhooks
+// URL: https://hvt-backend-production-ec41.up.railway.app/webhooks/echo-jotform
+// Add ?secret=YOUR_JOTFORM_SECRET to the URL for security
+app.post('/webhooks/echo-jotform', wh, (req, res) => {
+    if (!verifyJF(req)) return res.status(401).send('Unauthorized');
+
+    const bb = Busboy({ headers: req.headers, limits: { fieldSize: 5 * 1024 * 1024 } });
+    const fields = {};
+    let raw = '';
+
+    bb.on('field', (n, v) => { fields[n] = v; raw += `\n[${n}]=${v}`; });
+    bb.on('error', e => { console.error('[EchoJF busboy]', e); res.status(400).send('Bad request'); });
+
+    bb.on('finish', async () => {
+        try {
+            // Parse Jotform submission
+            let rr = {};
+            try { rr = fields.rawRequest ? JSON.parse(fields.rawRequest) : {}; } catch {}
+
+            // Extract fields — adjust q numbers to match your actual Jotform field IDs
+            const { email, full_name } = huntData(raw);
+            const submissionId = fields.submissionID || fields.submission_id || null;
+            const txId = pickFirst(rr?.transactionId) || pickFirst(rr?.transaction_id) || null;
+
+            if (!email) {
+                console.error('[EchoJF] No email in submission');
+                return res.status(400).send('No email');
+            }
+
+            // Check if license already exists for this email
+            const { data: existing } = await supabase
+                .from(ECHO_TABLE)
+                .select('id, license_key, status')
+                .eq('email', email.toLowerCase().trim())
+                .maybeSingle();
+
+            let licenseKey;
+            let record;
+
+            if (existing && existing.status === 'active') {
+                // Already has an active license — resend welcome email
+                licenseKey = existing.license_key;
+                record = existing;
+                console.log(`[EchoJF] Existing license found for ${email} — resending welcome`);
+            } else {
+                // Generate new license key and save to Supabase
+                licenseKey = genEchoKey();
+
+                const { data: newRecord, error: insertErr } = await supabase
+                    .from(ECHO_TABLE)
+                    .upsert({
+                        email:                email.toLowerCase().trim(),
+                        full_name:            full_name || null,
+                        license_key:          licenseKey,
+                        status:               'active',
+                        jotform_submission_id: submissionId,
+                        transaction_id:       txId,
+                        machine_id:           null,
+                        purchase_date:        nowISO(),
+                        updated_at:           nowISO()
+                    }, { onConflict: 'email' })
+                    .select()
+                    .single();
+
+                if (insertErr) {
+                    console.error('[EchoJF] DB error:', insertErr.message);
+                    return res.status(500).send('DB error');
+                }
+
+                record = newRecord;
+                console.log(`[EchoJF] ✅ New Echo license created: ${email} | ${licenseKey}`);
+            }
+
+            // Send welcome email with license key
+            try {
+                await sendEchoWelcome(email, full_name, licenseKey);
+            } catch (e) {
+                console.error('[EchoJF] Email error:', e.message);
+            }
+
+            res.status(200).send('OK');
+
+        } catch (e) {
+            console.error('[EchoJF] Fatal error:', e.message);
+            res.status(500).send('Error');
+        }
+    });
+
+    req.pipe(bb);
+});
+
+// ─── ECHO: AUTHORIZE.NET WEBHOOK ──────────────────────────────────────────────
+// Configure in Authorize.net: Account → Webhooks
+// URL: https://hvt-backend-production-ec41.up.railway.app/webhooks/echo-authnet
+// Events: payment.capture.created, subscription.cancelled, subscription.expired
+app.post('/webhooks/echo-authnet', wh, express.json(), async (req, res) => {
+    // Always 200 immediately — Authnet deactivates on repeated failures
+    res.status(200).send('OK');
+
+    try {
+        const { eventType = '', payload = {} } = req.body || {};
+        const email = (payload?.customerDetails?.email || '').toLowerCase().trim();
+        const subId = pickFirst(payload?.id);
+
+        const CANCEL_EVENTS = [
+            'net.authorize.customer.subscription.cancelled',
+            'net.authorize.customer.subscription.expired',
+            'net.authorize.customer.subscription.suspended',
+            'net.authorize.customer.subscription.terminated',
+            'net.authorize.customer.subscription.failed'
+        ];
+
+        if (
+            eventType === 'net.authorize.customer.subscription.created' ||
+            eventType === 'net.authorize.payment.capture.created'
+        ) {
+            if (!email) { console.warn('[EchoAN] No email in payload'); return; }
+
+            // Check if already has a license
+            const { data: existing } = await supabase
+                .from(ECHO_TABLE)
+                .select('id, license_key, status')
+                .eq('email', email)
+                .maybeSingle();
+
+            if (existing && existing.status === 'active') {
+                console.log(`[EchoAN] Already active for ${email} — skipping`);
+                return;
+            }
+
+            // Generate key and save
+            const licenseKey = genEchoKey();
+            const { data: newRecord, error } = await supabase
+                .from(ECHO_TABLE)
+                .upsert({
+                    email,
+                    license_key:   licenseKey,
+                    status:        'active',
+                    transaction_id: subId,
+                    machine_id:    null,
+                    purchase_date: nowISO(),
+                    updated_at:    nowISO()
+                }, { onConflict: 'email' })
+                .select()
+                .single();
+
+            if (error) { console.error('[EchoAN] DB error:', error.message); return; }
+
+            // Send welcome email
+            try { await sendEchoWelcome(email, null, licenseKey); }
+            catch (e) { console.error('[EchoAN] Email error:', e.message); }
+
+            console.log(`[EchoAN] ✅ Echo license created: ${email} | ${licenseKey}`);
+
+        } else if (CANCEL_EVENTS.includes(eventType)) {
+            if (!email && !subId) { console.warn('[EchoAN] No identifier for cancel'); return; }
+
+            const lookupKey = subId ? 'transaction_id' : 'email';
+            const lookupVal = subId || email;
+
+            await supabase
+                .from(ECHO_TABLE)
+                .update({ status: 'cancelled', updated_at: nowISO() })
+                .eq(lookupKey, lookupVal);
+
+            console.log(`[EchoAN] Echo license cancelled: ${lookupVal}`);
+        }
+
+    } catch (e) {
+        console.error('[EchoAN] Error:', e.message);
+    }
+});
+
+// ─── ECHO: LICENSE VALIDATION (called by NinjaScript add-on) ─────────────────
+// NinjaScript calls: POST /api/echo/validate
+// Body: { license_key, machine_id, version }
+// Returns: { valid: true/false, message, plan }
+app.post('/api/echo/validate', rateLimit({ windowMs: 60000, max: 30 }), express.json(), async (req, res) => {
+    try {
+        const { license_key, machine_id, version = '1.0.0' } = req.body || {};
+
+        if (!license_key || !machine_id) {
+            return res.status(400).json({
+                valid:   false,
+                message: 'License key and machine ID are required.'
+            });
+        }
+
+        // Look up the license key
+        const { data: license, error } = await supabase
+            .from(ECHO_TABLE)
+            .select('id, email, status, machine_id, license_key')
+            .eq('license_key', license_key.trim().toUpperCase())
+            .maybeSingle();
+
+        if (error) {
+            console.error('[EchoValidate] DB error:', error.message);
+            return res.status(500).json({ valid: false, message: 'Server error. Please try again.' });
+        }
+
+        // Key not found
+        if (!license) {
+            console.log(`[EchoValidate] Key not found: ${license_key}`);
+            return res.json({
+                valid:   false,
+                message: 'License key not found. Please check your key or contact support at 786-461-4235.'
+            });
+        }
+
+        // Licence cancelled
+        if (license.status === 'cancelled') {
+            console.log(`[EchoValidate] Cancelled key: ${license_key}`);
+            return res.json({
+                valid:   false,
+                message: 'This license has been cancelled. Visit highvelocitytrading.com to reactivate.'
+            });
+        }
+
+        // First activation — register machine ID
+        if (!license.machine_id) {
+            const { error: updateErr } = await supabase
+                .from(ECHO_TABLE)
+                .update({ machine_id: machine_id.trim(), updated_at: nowISO() })
+                .eq('id', license.id);
+
+            if (updateErr) {
+                console.error('[EchoValidate] Machine ID save error:', updateErr.message);
+                return res.status(500).json({ valid: false, message: 'Server error. Please try again.' });
+            }
+
+            console.log(`[EchoValidate] ✅ First activation — machine registered: ${license.email} | ${machine_id.substring(0, 12)}...`);
+            return res.json({
+                valid:   true,
+                message: 'License activated successfully. Welcome to HVT Echo.',
+                plan:    'one_time'
+            });
+        }
+
+        // Machine ID mismatch — already registered to a different machine
+        if (license.machine_id.trim() !== machine_id.trim()) {
+            console.log(`[EchoValidate] Machine ID mismatch for ${license.email}`);
+            return res.json({
+                valid:   false,
+                message: 'This license is registered to a different machine. Contact support at 786-461-4235 to transfer your license.'
+            });
+        }
+
+        // All good — valid key on registered machine
+        console.log(`[EchoValidate] ✅ Valid: ${license.email} | machine match`);
+        return res.json({
+            valid:   true,
+            message: 'License active.',
+            plan:    'one_time'
+        });
+
+    } catch (e) {
+        console.error('[EchoValidate] Fatal:', e.message);
+        res.status(500).json({ valid: false, message: 'Server error. Please try again.' });
+    }
+});
+
+// ─── ECHO: ADMIN — VIEW ALL ECHO LICENSES ────────────────────────────────────
+// GET /admin/echo-licenses?key=YOUR_ADMIN_SECRET
+app.get('/admin/echo-licenses', adm, adminGuard, async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from(ECHO_TABLE)
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) return res.status(500).json({ error: error.message });
+
+        const total    = (data || []).length;
+        const active   = (data || []).filter(r => r.status === 'active').length;
+        const activated = (data || []).filter(r => r.machine_id).length;
+
+        const rows = (data || []).map(r => `
+            <tr>
+              <td>${esc(r.full_name || '—')}</td>
+              <td style="color:#64748b;">${esc(r.email)}</td>
+              <td style="font-family:monospace;color:#00D4AA;font-size:12px;font-weight:700;">${esc(r.license_key)}</td>
+              <td>
+                <span style="padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+                  background:${r.status === 'active' ? 'rgba(0,212,170,0.1)' : 'rgba(239,68,68,0.1)'};
+                  color:${r.status === 'active' ? '#00D4AA' : '#f87171'};">
+                  ${r.status}
+                </span>
+              </td>
+              <td style="font-family:monospace;font-size:11px;color:${r.machine_id ? '#60a5fa' : '#334155'};">
+                ${r.machine_id ? r.machine_id.substring(0, 16) + '...' : 'Not yet activated'}
+              </td>
+              <td style="color:#475569;font-size:12px;">${new Date(r.created_at).toLocaleDateString()}</td>
+              <td>
+                ${r.status === 'active'
+                    ? `<button onclick="cancelEcho('${r.id}', this)" style="background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600;">Cancel</button>`
+                    : '<span style="color:#334155;font-size:12px;">—</span>'
+                }
+                ${r.machine_id
+                    ? `<button onclick="resetMachine('${r.id}', this)" style="background:rgba(96,165,250,0.1);color:#60a5fa;border:1px solid rgba(96,165,250,0.25);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600;margin-left:6px;">Reset Machine</button>`
+                    : ''
+                }
+              </td>
+            </tr>`).join('');
+
+        res.send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<title>HVT Echo — Licenses</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#000;color:#fff;padding:36px 28px;min-height:100vh}
+h1{font-size:22px;font-weight:700;margin-bottom:4px}
+.sub{color:#64748b;font-size:14px;margin-bottom:28px}
+.stats{display:flex;gap:16px;margin-bottom:24px}
+.stat{background:#0d1117;border:1px solid #1e293b;border-radius:10px;padding:16px 22px}
+.stat-val{font-size:28px;font-weight:700}
+.stat-lbl{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.search{background:#0d1117;border:1px solid #1e293b;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;width:320px;outline:none;margin-bottom:16px}
+table{width:100%;border-collapse:collapse;background:#0d1117;border-radius:12px;overflow:hidden;border:1px solid #1e293b}
+th{padding:11px 14px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;background:#111827;border-bottom:1px solid #1e293b}
+td{padding:11px 14px;border-bottom:1px solid #0f172a;font-size:13px}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,0.015)}
+</style></head><body>
+<a href="/admin?key=${req.query.key}" style="color:#2254F5;font-size:13px;text-decoration:none;">&larr; Back to Admin</a>
+<h1 style="margin-top:20px;">HVT Echo Licenses</h1>
+<div class="sub">All HVT Echo copy trader licenses</div>
+<div class="stats">
+  <div class="stat"><div class="stat-val" style="color:#00D4AA;">${total}</div><div class="stat-lbl">Total</div></div>
+  <div class="stat"><div class="stat-val" style="color:#4ade80;">${active}</div><div class="stat-lbl">Active</div></div>
+  <div class="stat"><div class="stat-val" style="color:#60a5fa;">${activated}</div><div class="stat-lbl">Machines Registered</div></div>
+  <div class="stat"><div class="stat-val" style="color:#94a3b8;">${active - activated}</div><div class="stat-lbl">Not Yet Installed</div></div>
+</div>
+<input class="search" type="text" placeholder="Search email or license key..." oninput="filter(this.value)" />
+<table>
+  <thead><tr>
+    <th>Name</th><th>Email</th><th>License Key</th><th>Status</th><th>Machine ID</th><th>Date</th><th>Actions</th>
+  </tr></thead>
+  <tbody id="tbody">${rows}</tbody>
+</table>
+<script>
+var K = '${req.query.key}';
+function filter(q){q=q.toLowerCase();document.querySelectorAll('#tbody tr').forEach(function(tr){tr.style.display=tr.textContent.toLowerCase().includes(q)?'':'none';});}
+async function cancelEcho(id,btn){
+  if(!confirm('Cancel this Echo license? The customer will lose access.')) return;
+  btn.disabled=true;btn.textContent='Cancelling...';
+  var r=await fetch('/admin/echo-licenses/'+id+'/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:K})});
+  var d=await r.json();
+  if(d.ok){btn.closest('tr').querySelectorAll('td')[3].innerHTML='<span style="padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;background:rgba(239,68,68,0.1);color:#f87171;">cancelled</span>';btn.style.display='none';}
+  else{alert(d.error||'Error');btn.disabled=false;btn.textContent='Cancel';}
+}
+async function resetMachine(id,btn){
+  if(!confirm('Reset this machine ID? The customer can activate on a new machine.')) return;
+  btn.disabled=true;btn.textContent='Resetting...';
+  var r=await fetch('/admin/echo-licenses/'+id+'/reset-machine',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:K})});
+  var d=await r.json();
+  if(d.ok){btn.closest('tr').querySelectorAll('td')[4].innerHTML='<span style="color:#334155;font-size:12px;">Not yet activated</span>';btn.style.display='none';}
+  else{alert(d.error||'Error');btn.disabled=false;btn.textContent='Reset Machine';}
+}
+</script>
+</body></html>`);
+
+    } catch (e) {
+        console.error('[EchoAdmin]', e.message);
+        res.status(500).send('Error: ' + e.message);
+    }
+});
+
+// ─── ECHO: ADMIN — CANCEL A LICENSE ──────────────────────────────────────────
+app.post('/admin/echo-licenses/:id/cancel', adm, express.json(), async (req, res) => {
+    if (req.body?.key !== ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
+    try {
+        const { id } = req.params;
+        const { error } = await supabase
+            .from(ECHO_TABLE)
+            .update({ status: 'cancelled', updated_at: nowISO() })
+            .eq('id', id);
+        if (error) return res.status(500).json({ ok: false, error: error.message });
+        console.log(`[EchoAdmin] License cancelled: ${id}`);
+        res.json({ ok: true });
+    } catch (e) {
+        console.error('[EchoAdmin cancel]', e.message);
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
+// ─── ECHO: ADMIN — RESET MACHINE ID (for transfers) ──────────────────────────
+app.post('/admin/echo-licenses/:id/reset-machine', adm, express.json(), async (req, res) => {
+    if (req.body?.key !== ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
+    try {
+        const { id } = req.params;
+        const { error } = await supabase
+            .from(ECHO_TABLE)
+            .update({ machine_id: null, updated_at: nowISO() })
+            .eq('id', id);
+        if (error) return res.status(500).json({ ok: false, error: error.message });
+        console.log(`[EchoAdmin] Machine ID reset: ${id}`);
+        res.json({ ok: true });
+    } catch (e) {
+        console.error('[EchoAdmin reset]', e.message);
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
+// ─── ECHO: ADMIN — GRANT ACCESS MANUALLY ─────────────────────────────────────
+app.post('/admin/echo-grant', adm, express.json(), async (req, res) => {
+    if (req.body?.key !== ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
+    try {
+        const email    = (req.body.email || '').toLowerCase().trim();
+        const fullName = (req.body.full_name || '').trim();
+        const sendMail = req.body.send_email !== false;
+
+        if (!email) return res.status(400).json({ error: 'Email required' });
+
+        // Check if already has a key
+        const { data: existing } = await supabase
+            .from(ECHO_TABLE)
+            .select('license_key, status')
+            .eq('email', email)
+            .maybeSingle();
+
+        let licenseKey;
+        if (existing) {
+            licenseKey = existing.license_key;
+            await supabase.from(ECHO_TABLE)
+                .update({ status: 'active', updated_at: nowISO() })
+                .eq('email', email);
+        } else {
+            licenseKey = genEchoKey();
+            await supabase.from(ECHO_TABLE).insert({
+                email,
+                full_name:    fullName || null,
+                license_key:  licenseKey,
+                status:       'active',
+                machine_id:   null,
+                purchase_date: nowISO(),
+                updated_at:   nowISO()
+            });
+        }
+
+        if (sendMail) {
+            try { await sendEchoWelcome(email, fullName, licenseKey); }
+            catch (e) { console.error('[EchoGrant] Email error:', e.message); }
+        }
+
+        console.log(`[EchoGrant] ✅ Granted to ${email} | ${licenseKey}`);
+        res.json({ ok: true, license_key: licenseKey, email });
+
+    } catch (e) {
+        console.error('[EchoGrant]', e.message);
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  END HVT ECHO
+// ═══════════════════════════════════════════════════════════════════════════════
 app.listen(PORT, () => console.log(`🚀 HVT Backend on port ${PORT}`));
