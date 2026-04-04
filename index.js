@@ -4177,15 +4177,6 @@ app.get('/', (req, res) => {
     res.redirect(302, '/login');
 });
 
-// ─── 404 ──────────────────────────────────────────────────────────────────────
-app.use((req, res) => res.status(404).json({ ok: false, error: 'not_found' }));
-
-// ─── GLOBAL ERROR HANDLER ────────────────────────────────────────────────────
-app.use((err, req, res, next) => {
-    console.error('[UnhandledError]', err.message, err.stack);
-    res.status(500).json({ ok: false, error: 'Internal server error.' });
-});
-
 // ═══════════════════════════════════════════════════════════════════════════════
 //  HVT ECHO — Copy Trader Licensing System
 //  Add this entire block to index.js before app.listen()
@@ -4747,3 +4738,12 @@ app.post('/admin/echo-grant', adm, express.json(), async (req, res) => {
 //  END HVT ECHO
 // ═══════════════════════════════════════════════════════════════════════════════
 app.listen(PORT, () => console.log(`🚀 HVT Backend on port ${PORT}`));
+
+// ─── 404 ──────────────────────────────────────────────────────────────────────
+app.use((req, res) => res.status(404).json({ ok: false, error: 'not_found' }));
+
+// ─── GLOBAL ERROR HANDLER ────────────────────────────────────────────────────
+app.use((err, req, res, next) => {
+    console.error('[UnhandledError]', err.message, err.stack);
+    res.status(500).json({ ok: false, error: 'Internal server error.' });
+});
