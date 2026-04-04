@@ -1839,6 +1839,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 .carousel-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:3px}
 .pcard{display:block;text-decoration:none;border-radius:20px;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.03);overflow:hidden;transition:all .25s;position:relative;flex:0 0 300px;scroll-snap-align:start;min-height:260px;--c:#2254F5;--c2:#2254F5;--cb:rgba(34,84,245,0.12)}
 .pcard:hover{transform:translateY(-4px);border-color:rgba(34,84,245,0.6);box-shadow:0 16px 48px rgba(34,84,245,0.25)}
+.pcard.pcard-gold:hover{border-color:rgba(212,168,83,0.55);box-shadow:0 16px 48px rgba(212,168,83,0.28)}
 .pcard .bar{height:3px;background:linear-gradient(90deg,var(--c2),var(--c),var(--c2))}
 .pcard .inner{padding:28px;display:flex;flex-direction:column;height:100%;box-sizing:border-box}
 .pcard .icon{width:48px;height:48px;border-radius:12px;background:var(--cb);display:flex;align-items:center;justify-content:center;margin-bottom:18px;flex-shrink:0;color:#2254F5}
@@ -1849,6 +1850,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 @media(max-width:640px){.pcard{flex:0 0 260px}}
 .help{text-align:center;margin-top:48px;padding-top:28px;border-top:1px solid rgba(255,255,255,0.06);color:#64748b;font-size:13px}
 .help a{color:#94a3b8;text-decoration:none}
+.echo-shop-cta:hover{opacity:0.98;transform:translateY(-1px);box-shadow:0 8px 36px rgba(212,168,83,0.55);}
 </style></head><body>
 <div class="member-bg" aria-hidden="true"></div>
 <div class="topnav-wrap">
@@ -1909,29 +1911,29 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
         <div class="arrow">Open Journal <span class="arr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
       </div>
     </a>
-    <a class="pcard" href="/shop" style="--c:#00D4AA;--c2:#00D4AA;--cb:rgba(0,212,170,0.1);">
-      <div class="bar" style="background:linear-gradient(90deg,#00D4AA,#00b894,#00D4AA);"></div>
+    <a class="pcard pcard-gold" href="/shop" style="--c:#e8c878;--c2:#d4a853;--cb:rgba(212,168,83,0.16);">
+      <div class="bar" style="background:linear-gradient(90deg,#e8c878,#d4a853,#c9a227);"></div>
       <div class="inner">
-        <div class="icon" style="background:rgba(0,212,170,0.1);color:#00D4AA;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016 2.993 2.993 0 0 0 2.25-1.016 3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z"/></svg></div>
+        <div class="icon" style="background:rgba(212,168,83,0.14);color:#f0d78c;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016 2.993 2.993 0 0 0 2.25-1.016 3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z"/></svg></div>
         <h3>Member Shop</h3>
         <p>Exclusive tools available only to HVT members. HVT Echo and future releases.</p>
-        <div class="arrow" style="color:#00D4AA;">Shop Now <span class="arr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
+        <div class="arrow" style="color:#e8c878;">Shop Now <span class="arr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
       </div>
     </a>
 
   </div>
   </div>
-  <div style="margin-bottom:40px;background:#0a0a0e;border:1px solid rgba(0,212,170,0.25);border-radius:20px;overflow:hidden;position:relative;">
-    <div style="height:3px;background:linear-gradient(90deg,#00D4AA,#00b894,#00D4AA);"></div>
+  <div style="margin-bottom:40px;background:#0a0a0e;border:1px solid rgba(212,168,83,0.35);border-radius:20px;overflow:hidden;position:relative;box-shadow:0 0 0 1px rgba(212,168,83,0.12),0 20px 50px rgba(0,0,0,0.35),0 0 40px rgba(212,168,83,0.08);">
+    <div style="height:3px;background:linear-gradient(90deg,#e8c878,#d4a853,#c9a227);"></div>
     <div style="padding:32px 36px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;">
       <div style="flex:1;min-width:220px;">
-        <div style="display:inline-block;background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.2);border-radius:999px;padding:3px 14px;font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#00D4AA;margin-bottom:14px;">Members Only</div>
+        <div style="display:inline-block;background:rgba(212,168,83,0.12);border:1px solid rgba(232,200,120,0.35);border-radius:999px;padding:3px 14px;font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#e8c878;margin-bottom:14px;">Members Only</div>
         <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.3px;margin-bottom:6px;">HVT Echo is Live</div>
         <div style="font-size:13px;color:#64748b;line-height:1.6;max-width:420px;">Copy your trades to up to 5 prop firm accounts simultaneously. One execution. Five accounts hit. Exclusive to HVT members.</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex-shrink:0;">
         <div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-1px;line-height:1;">$97 <span style="font-size:13px;color:#475569;font-weight:400;">one-time</span></div>
-        <a href="/shop" style="display:inline-block;background:#00D4AA;color:#000;text-decoration:none;padding:13px 32px;border-radius:999px;font-size:14px;font-weight:800;letter-spacing:0.5px;white-space:nowrap;box-shadow:0 4px 20px rgba(0,212,170,0.35);transition:background .2s;" onmouseover="this.style.background='#00e6b8'" onmouseout="this.style.background='#00D4AA'">Shop Now &rarr;</a>
+        <a href="/shop" class="echo-shop-cta" style="display:inline-block;background:linear-gradient(135deg,#c9a227,#d4a853,#e5c76b);color:#0f0f0f;text-decoration:none;padding:13px 32px;border-radius:999px;font-size:14px;font-weight:800;letter-spacing:0.5px;white-space:nowrap;box-shadow:0 4px 28px rgba(212,168,83,0.5);border:1px solid rgba(255,236,180,0.45);transition:opacity .2s,transform .15s;">Shop Now &rarr;</a>
       </div>
     </div>
   </div>
@@ -1978,29 +1980,29 @@ body{font-family:"DM Sans",sans-serif;background:#000;min-height:100vh;color:#ff
 .back-btn:hover{color:#fff}
 .wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:100px 24px 80px}
 .hero{text-align:center;margin-bottom:56px}
-.pill{display:inline-block;background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.25);border-radius:999px;color:#00D4AA;font-size:10px;letter-spacing:3px;text-transform:uppercase;padding:5px 16px;margin-bottom:16px}
+.pill{display:inline-block;background:rgba(212,168,83,0.12);border:1px solid rgba(232,200,120,0.35);border-radius:999px;color:#e8c878;font-size:10px;letter-spacing:3px;text-transform:uppercase;padding:5px 16px;margin-bottom:16px}
 .hero h1{font-size:36px;font-weight:800;letter-spacing:-0.5px;color:#fff;margin-bottom:10px}
 .hero p{color:#64748b;font-size:15px;line-height:1.6;max-width:480px;margin:0 auto}
-.hero-div{height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,170,0.2),transparent);margin:20px auto 0;max-width:160px}
+.hero-div{height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,83,0.45),transparent);margin:20px auto 0;max-width:160px}
 .section-lbl{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#475569;margin-bottom:24px;font-weight:700}
 .products{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:24px;margin-bottom:48px}
 .product-card{background:#0a0a0e;border:1px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden;transition:border-color .25s,transform .25s,box-shadow .25s;display:flex;flex-direction:column}
-.product-card:hover{border-color:rgba(0,212,170,0.3);transform:translateY(-4px);box-shadow:0 16px 48px rgba(0,212,170,0.1)}
-.product-card .top-bar{height:3px;background:linear-gradient(90deg,#00D4AA,#00b894,#00D4AA)}
+.product-card:hover{border-color:rgba(212,168,83,0.4);transform:translateY(-4px);box-shadow:0 16px 48px rgba(212,168,83,0.2)}
+.product-card .top-bar{height:3px;background:linear-gradient(90deg,#e8c878,#d4a853,#c9a227)}
 .product-card .body{padding:28px;display:flex;flex-direction:column;flex:1}
-.product-badge{display:inline-block;background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.2);border-radius:999px;color:#00D4AA;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:3px 12px;margin-bottom:18px;font-weight:700}
+.product-badge{display:inline-block;background:rgba(212,168,83,0.12);border:1px solid rgba(232,200,120,0.35);border-radius:999px;color:#e8c878;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:3px 12px;margin-bottom:18px;font-weight:700}
 .product-name{font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.3px;margin-bottom:6px}
 .product-tag{font-size:12px;color:#475569;margin-bottom:20px;letter-spacing:0.3px}
 .product-features{list-style:none;margin-bottom:24px;flex:1}
 .product-features li{display:flex;align-items:center;gap:10px;font-size:13px;color:#94a3b8;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
 .product-features li:last-child{border-bottom:none}
-.feat-check{width:18px;height:18px;border-radius:50%;background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.feat-check{width:18px;height:18px;border-radius:50%;background:rgba(212,168,83,0.14);border:1px solid rgba(232,200,120,0.35);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .feat-check svg{width:9px;height:9px}
 .price-row{display:flex;align-items:baseline;gap:8px;margin-bottom:20px}
 .price{font-size:36px;font-weight:800;color:#fff;letter-spacing:-1px;line-height:1}
 .price-note{font-size:12px;color:#475569}
-.buy-btn{display:block;width:100%;padding:14px;background:#00D4AA;color:#000;border:none;border-radius:999px;font-family:"DM Sans",sans-serif;font-size:14px;font-weight:800;letter-spacing:0.5px;text-align:center;text-decoration:none;cursor:pointer;transition:background .2s,transform .1s;box-shadow:0 4px 20px rgba(0,212,170,0.3)}
-.buy-btn:hover{background:#00e6b8;transform:translateY(-1px)}
+.buy-btn{display:block;width:100%;padding:14px;background:linear-gradient(135deg,#c9a227,#d4a853,#e5c76b);color:#0f0f0f;border:1px solid rgba(255,236,180,0.45);border-radius:999px;font-family:"DM Sans",sans-serif;font-size:14px;font-weight:800;letter-spacing:0.5px;text-align:center;text-decoration:none;cursor:pointer;transition:opacity .2s,transform .1s,box-shadow .2s;box-shadow:0 4px 28px rgba(212,168,83,0.45)}
+.buy-btn:hover{opacity:0.98;transform:translateY(-1px);box-shadow:0 8px 36px rgba(212,168,83,0.55)}
 .buy-btn:active{transform:translateY(0)}
 .coming-soon{display:block;width:100%;padding:14px;background:rgba(255,255,255,0.04);color:#334155;border:1px solid rgba(255,255,255,0.07);border-radius:999px;font-size:13px;font-weight:600;text-align:center;cursor:default;letter-spacing:0.5px}
 .footer-note{text-align:center;color:#334155;font-size:12px;padding-top:32px;border-top:1px solid rgba(255,255,255,0.05)}
@@ -2033,11 +2035,11 @@ body{font-family:"DM Sans",sans-serif;background:#000;min-height:100vh;color:#ff
         <div class="product-name">HVT Echo</div>
         <div class="product-tag">NinjaTrader 8 &bull; One-time license</div>
         <ul class="product-features">
-          <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#00D4AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Copy to up to 5 prop firm accounts</li>
-          <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#00D4AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Sub-100ms execution</li>
-          <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#00D4AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Machine ID locked license</li>
-          <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#00D4AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Works with all major prop firms</li>
-          <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#00D4AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>License key delivered instantly</li>
+          <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#a67c2e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Copy to up to 5 prop firm accounts</li>
+          <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#a67c2e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Sub-100ms execution</li>
+          <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#a67c2e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Machine ID locked license</li>
+          <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#a67c2e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Works with all major prop firms</li>
+          <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#a67c2e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>License key delivered instantly</li>
         </ul>
         <div class="price-row"><div class="price">$97</div><div class="price-note">one-time &bull; no subscription</div></div>
         <a href="https://highvelocitytrading.com/checkout-echo" class="buy-btn">Get HVT Echo &rarr;</a>
@@ -4322,20 +4324,20 @@ async function sendEchoWelcome(email, fullName, licenseKey) {
 
     const html = wrap(`
       <div style="text-align:center;padding-bottom:8px;">
-        <div style="display:inline-block;background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.25);border-radius:20px;padding:5px 18px;margin-bottom:22px;">
-          <span style="color:#00D4AA;font-size:10px;letter-spacing:3px;text-transform:uppercase;font-weight:700;">HVT Echo — Active</span>
+        <div style="display:inline-block;background:rgba(212,168,83,0.12);border:1px solid rgba(232,200,120,0.35);border-radius:20px;padding:5px 18px;margin-bottom:22px;">
+          <span style="color:#e8c878;font-size:10px;letter-spacing:3px;text-transform:uppercase;font-weight:700;">HVT Echo — Active</span>
         </div>
         <h1 style="color:#ffffff;font-size:26px;font-weight:800;margin:0 0 10px;letter-spacing:-0.5px;">You're in, ${name}.</h1>
         <p style="color:#64748b;font-size:14px;margin:0;">Your HVT Echo copy trader is ready to install.</p>
       </div>
 
-      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,170,0.2),transparent);margin:28px 0;"></div>
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,83,0.45),transparent);margin:28px 0;"></div>
 
       <p style="color:#94a3b8;font-size:14px;line-height:1.9;margin:0 0 28px;">One execution. Five accounts hit. Your license key is below — keep it safe. You will need it to activate HVT Echo inside NinjaTrader 8. This key is locked to one machine.</p>
 
-      <div style="background:#0d1117;border:1px solid rgba(0,212,170,0.3);border-radius:12px;padding:24px;margin-bottom:28px;text-align:center;">
+      <div style="background:#0d1117;border:1px solid rgba(212,168,83,0.4);border-radius:12px;padding:24px;margin-bottom:28px;text-align:center;">
         <div style="font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#64748b;margin-bottom:12px;">Your License Key</div>
-        <div style="font-family:monospace;font-size:22px;font-weight:800;color:#00D4AA;letter-spacing:3px;word-break:break-all;">${esc(licenseKey)}</div>
+        <div style="font-family:monospace;font-size:22px;font-weight:800;color:#e8c878;letter-spacing:3px;word-break:break-all;">${esc(licenseKey)}</div>
         <div style="font-size:11px;color:#334155;margin-top:10px;">One machine. One license. Do not share this key.</div>
       </div>
 
@@ -4347,17 +4349,17 @@ async function sendEchoWelcome(email, fullName, licenseKey) {
 
         <div style="padding:20px 22px;border-bottom:1px solid rgba(255,255,255,0.06);">
           <div style="display:flex;align-items:flex-start;gap:14px;">
-            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(0,212,170,0.1);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#00D4AA;margin-top:1px;">1</div>
+            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(212,168,83,0.14);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#e8c878;margin-top:1px;">1</div>
             <div>
               <div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Download HVT Echo</div>
-              <div style="color:#64748b;font-size:13px;line-height:1.7;">Download the HVT Echo installer from your member portal at <a href="${APP_URL}/member" style="color:#00D4AA;text-decoration:none;font-weight:600;">highvelocitytrading.com</a>.</div>
+              <div style="color:#64748b;font-size:13px;line-height:1.7;">Download the HVT Echo installer from your member portal at <a href="${APP_URL}/member" style="color:#d4a853;text-decoration:none;font-weight:600;">highvelocitytrading.com</a>.</div>
             </div>
           </div>
         </div>
 
         <div style="padding:20px 22px;border-bottom:1px solid rgba(255,255,255,0.06);">
           <div style="display:flex;align-items:flex-start;gap:14px;">
-            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(0,212,170,0.1);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#00D4AA;margin-top:1px;">2</div>
+            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(212,168,83,0.14);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#e8c878;margin-top:1px;">2</div>
             <div>
               <div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Install in NinjaTrader 8</div>
               <div style="color:#64748b;font-size:13px;line-height:1.7;">In NinjaTrader go to <strong style="color:#e2e8f0;">Tools → Import → NinjaScript Add-On</strong> and import the HVT Echo package.</div>
@@ -4367,7 +4369,7 @@ async function sendEchoWelcome(email, fullName, licenseKey) {
 
         <div style="padding:20px 22px;border-bottom:1px solid rgba(255,255,255,0.06);">
           <div style="display:flex;align-items:flex-start;gap:14px;">
-            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(0,212,170,0.1);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#00D4AA;margin-top:1px;">3</div>
+            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(212,168,83,0.14);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#e8c878;margin-top:1px;">3</div>
             <div>
               <div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Enter Your License Key</div>
               <div style="color:#64748b;font-size:13px;line-height:1.7;">When HVT Echo opens for the first time paste your license key above into the activation screen. Your machine will be registered automatically.</div>
@@ -4377,7 +4379,7 @@ async function sendEchoWelcome(email, fullName, licenseKey) {
 
         <div style="padding:20px 22px;">
           <div style="display:flex;align-items:flex-start;gap:14px;">
-            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(0,212,170,0.1);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#00D4AA;margin-top:1px;">4</div>
+            <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(212,168,83,0.14);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#e8c878;margin-top:1px;">4</div>
             <div>
               <div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Connect Your Accounts and Trade</div>
               <div style="color:#64748b;font-size:13px;line-height:1.7;">Select your master account, add your follower prop firm accounts, hit Start. One execution hits all of them in under 100ms.</div>
@@ -4387,8 +4389,8 @@ async function sendEchoWelcome(email, fullName, licenseKey) {
 
       </div>
 
-      <div style="background:rgba(0,212,170,0.04);border:1px solid rgba(0,212,170,0.12);border-radius:10px;padding:14px 18px;margin-bottom:28px;">
-        <p style="color:#00D4AA;font-size:12px;line-height:1.7;margin:0;"><strong>Important:</strong> Your license is locked to one computer. If you switch machines contact us and we will transfer it. Do not share your key — it will deactivate your own access.</p>
+      <div style="background:rgba(212,168,83,0.08);border:1px solid rgba(232,200,120,0.25);border-radius:10px;padding:14px 18px;margin-bottom:28px;">
+        <p style="color:#fde9a9;font-size:12px;line-height:1.7;margin:0;"><strong>Important:</strong> Your license is locked to one computer. If you switch machines contact us and we will transfer it. Do not share your key — it will deactivate your own access.</p>
       </div>
 
       <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:16px 20px;text-align:center;">
@@ -4686,11 +4688,11 @@ app.get('/admin/echo-licenses', adm, adminGuard, async (req, res) => {
             <tr>
               <td>${esc(r.full_name || '—')}</td>
               <td style="color:#64748b;">${esc(r.email)}</td>
-              <td style="font-family:monospace;color:#00D4AA;font-size:12px;font-weight:700;">${esc(r.license_key)}</td>
+              <td style="font-family:monospace;color:#e8c878;font-size:12px;font-weight:700;">${esc(r.license_key)}</td>
               <td>
                 <span style="padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
-                  background:${r.status === 'active' ? 'rgba(0,212,170,0.1)' : 'rgba(239,68,68,0.1)'};
-                  color:${r.status === 'active' ? '#00D4AA' : '#f87171'};">
+                  background:${r.status === 'active' ? 'rgba(212,168,83,0.14)' : 'rgba(239,68,68,0.1)'};
+                  color:${r.status === 'active' ? '#e8c878' : '#f87171'};">
                   ${r.status}
                 </span>
               </td>
@@ -4733,7 +4735,7 @@ tr:hover td{background:rgba(255,255,255,0.015)}
 <h1 style="margin-top:20px;">HVT Echo Licenses</h1>
 <div class="sub">All HVT Echo copy trader licenses</div>
 <div class="stats">
-  <div class="stat"><div class="stat-val" style="color:#00D4AA;">${total}</div><div class="stat-lbl">Total</div></div>
+  <div class="stat"><div class="stat-val" style="color:#e8c878;">${total}</div><div class="stat-lbl">Total</div></div>
   <div class="stat"><div class="stat-val" style="color:#4ade80;">${active}</div><div class="stat-lbl">Active</div></div>
   <div class="stat"><div class="stat-val" style="color:#60a5fa;">${activated}</div><div class="stat-lbl">Machines Registered</div></div>
   <div class="stat"><div class="stat-val" style="color:#94a3b8;">${active - activated}</div><div class="stat-lbl">Not Yet Installed</div></div>
