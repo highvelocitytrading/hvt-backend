@@ -1909,6 +1909,15 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
         <div class="arrow">Open Journal <span class="arr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
       </div>
     </a>
+    <a class="pcard" href="/shop" style="--c:#00D4AA;--c2:#00D4AA;--cb:rgba(0,212,170,0.1);">
+      <div class="bar" style="background:linear-gradient(90deg,#00D4AA,#00b894,#00D4AA);"></div>
+      <div class="inner">
+        <div class="icon" style="background:rgba(0,212,170,0.1);color:#00D4AA;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016 2.993 2.993 0 0 0 2.25-1.016 3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z"/></svg></div>
+        <h3>Member Shop</h3>
+        <p>Exclusive tools available only to HVT members. HVT Echo and future releases.</p>
+        <div class="arrow" style="color:#00D4AA;">Shop Now <span class="arr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
+      </div>
+    </a>
 
   </div>
   </div>
@@ -1934,6 +1943,108 @@ app.get('/member', requireSession, (req, res) => {
     res.send(memberPortalHtml(s));
 });
 
+
+// ─── MEMBER SHOP (session-gated) ─────────────────────────────────────────────
+app.get("/shop", requireSession, (req, res) => {
+    const s = req._session;
+    res.send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Member Shop — HVT</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800\&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"DM Sans",sans-serif;background:#000;min-height:100vh;color:#fff;overflow-x:hidden}
+.bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:#000}
+.bg::before{content:"";position:absolute;top:0;left:0;width:70%;height:60%;background:radial-gradient(ellipse at 20% 20%,#00001C 0%,transparent 60%);pointer-events:none}
+.topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;width:100%;background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.08)}
+.topnav-logo img{height:29px;width:auto;object-fit:contain;display:block}
+.topnav-right{display:flex;align-items:center;gap:12px}
+.topnav-out{color:rgba(255,255,255,0.82);font-size:13px;font-weight:600;text-decoration:none;padding:8px 0;transition:color .2s}
+.topnav-out:hover{color:#fff}
+.back-btn{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,0.5);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;transition:color .2s}
+.back-btn:hover{color:#fff}
+.wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:100px 24px 80px}
+.hero{text-align:center;margin-bottom:56px}
+.pill{display:inline-block;background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.25);border-radius:999px;color:#00D4AA;font-size:10px;letter-spacing:3px;text-transform:uppercase;padding:5px 16px;margin-bottom:16px}
+.hero h1{font-size:36px;font-weight:800;letter-spacing:-0.5px;color:#fff;margin-bottom:10px}
+.hero p{color:#64748b;font-size:15px;line-height:1.6;max-width:480px;margin:0 auto}
+.hero-div{height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,170,0.2),transparent);margin:20px auto 0;max-width:160px}
+.section-lbl{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#475569;margin-bottom:24px;font-weight:700}
+.products{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:24px;margin-bottom:48px}
+.product-card{background:#0a0a0e;border:1px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden;transition:border-color .25s,transform .25s,box-shadow .25s;display:flex;flex-direction:column}
+.product-card:hover{border-color:rgba(0,212,170,0.3);transform:translateY(-4px);box-shadow:0 16px 48px rgba(0,212,170,0.1)}
+.product-card .top-bar{height:3px;background:linear-gradient(90deg,#00D4AA,#00b894,#00D4AA)}
+.product-card .body{padding:28px;display:flex;flex-direction:column;flex:1}
+.product-badge{display:inline-block;background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.2);border-radius:999px;color:#00D4AA;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:3px 12px;margin-bottom:18px;font-weight:700}
+.product-name{font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.3px;margin-bottom:6px}
+.product-tag{font-size:12px;color:#475569;margin-bottom:20px;letter-spacing:0.3px}
+.product-features{list-style:none;margin-bottom:24px;flex:1}
+.product-features li{display:flex;align-items:center;gap:10px;font-size:13px;color:#94a3b8;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.product-features li:last-child{border-bottom:none}
+.feat-check{width:18px;height:18px;border-radius:50%;background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.feat-check svg{width:9px;height:9px}
+.price-row{display:flex;align-items:baseline;gap:8px;margin-bottom:20px}
+.price{font-size:36px;font-weight:800;color:#fff;letter-spacing:-1px;line-height:1}
+.price-note{font-size:12px;color:#475569}
+.buy-btn{display:block;width:100%;padding:14px;background:#00D4AA;color:#000;border:none;border-radius:999px;font-family:"DM Sans",sans-serif;font-size:14px;font-weight:800;letter-spacing:0.5px;text-align:center;text-decoration:none;cursor:pointer;transition:background .2s,transform .1s;box-shadow:0 4px 20px rgba(0,212,170,0.3)}
+.buy-btn:hover{background:#00e6b8;transform:translateY(-1px)}
+.buy-btn:active{transform:translateY(0)}
+.coming-soon{display:block;width:100%;padding:14px;background:rgba(255,255,255,0.04);color:#334155;border:1px solid rgba(255,255,255,0.07);border-radius:999px;font-size:13px;font-weight:600;text-align:center;cursor:default;letter-spacing:0.5px}
+.footer-note{text-align:center;color:#334155;font-size:12px;padding-top:32px;border-top:1px solid rgba(255,255,255,0.05)}
+.footer-note a{color:#475569;text-decoration:none}
+@media(max-width:600px){.topnav{padding:0 12px}.hero h1{font-size:26px}}
+</style></head><body>
+<div class="bg" aria-hidden="true"></div>
+<div class="topnav-wrap"><nav class="topnav">
+  <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer"><img src="/hvt-logo.cropped.png" alt="HVT" style="height:29px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display=none" /></a>
+  <div class="topnav-right">
+    <a href="/member" class="topnav-out">Portal</a>
+    <a href="/billing/confirm-session" class="topnav-out">Billing</a>
+    <a href="/logout" class="topnav-out">Log out</a>
+  </div>
+</nav></div>
+<div class="wrap">
+  <a href="/member" class="back-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back to Portal</a>
+  <div class="hero" style="margin-top:24px;">
+    <div class="pill">Members Only</div>
+    <h1>Member Shop</h1>
+    <p>Exclusive tools built for serious traders. Available only to active HVT members.</p>
+    <div class="hero-div"></div>
+  </div>
+  <div class="section-lbl">Available Now</div>
+  <div class="products">
+    <div class="product-card">
+      <div class="top-bar"></div>
+      <div class="body">
+        <div class="product-badge">Copy Trader</div>
+        <div class="product-name">HVT Echo</div>
+        <div class="product-tag">NinjaTrader 8 &bull; One-time license</div>
+        <ul class="product-features">
+          <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#00D4AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Copy to up to 5 prop firm accounts</li>
+          <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#00D4AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Sub-100ms execution</li>
+          <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#00D4AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Machine ID locked license</li>
+          <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#00D4AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Works with all major prop firms</li>
+          <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#00D4AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>License key delivered instantly</li>
+        </ul>
+        <div class="price-row"><div class="price">$97</div><div class="price-note">one-time &bull; no subscription</div></div>
+        <a href="https://highvelocitytrading.com/checkout-echo" class="buy-btn">Get HVT Echo &rarr;</a>
+      </div>
+    </div>
+    <div class="product-card" style="opacity:0.5;pointer-events:none;">
+      <div class="top-bar" style="background:rgba(255,255,255,0.1);"></div>
+      <div class="body">
+        <div class="product-badge" style="background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.1);color:#334155;">Coming Soon</div>
+        <div class="product-name" style="color:#475569;">More Tools</div>
+        <div class="product-tag">Future releases</div>
+        <ul class="product-features" style="flex:1;"><li><span class="feat-check" style="background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.08);"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#334155" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>New tools added regularly</li></ul>
+        <div class="price-row"><div class="price" style="color:#334155;">—</div></div>
+        <span class="coming-soon">Coming Soon</span>
+      </div>
+    </div>
+  </div>
+  <div class="footer-note">Questions? Call <a href="tel:7864614235">786-461-4235</a> or email <a href="mailto:alerts@highvelocitytrading.com">alerts@highvelocitytrading.com</a></div>
+</div>
+</body></html>`);
+});
 // ─── TRADING JOURNAL (session-gated) ──────────────────────────────────────────
 app.get('/trading-journal', requireSession, (req, res) => {
     const s = req._session;
