@@ -1921,6 +1921,20 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 
   </div>
   </div>
+  <div style="margin-bottom:40px;background:#0a0a0e;border:1px solid rgba(0,212,170,0.25);border-radius:20px;overflow:hidden;position:relative;">
+    <div style="height:3px;background:linear-gradient(90deg,#00D4AA,#00b894,#00D4AA);"></div>
+    <div style="padding:32px 36px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:220px;">
+        <div style="display:inline-block;background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.2);border-radius:999px;padding:3px 14px;font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#00D4AA;margin-bottom:14px;">Members Only</div>
+        <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.3px;margin-bottom:6px;">HVT Echo is Live</div>
+        <div style="font-size:13px;color:#64748b;line-height:1.6;max-width:420px;">Copy your trades to up to 5 prop firm accounts simultaneously. One execution. Five accounts hit. Exclusive to HVT members.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex-shrink:0;">
+        <div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-1px;line-height:1;">$97 <span style="font-size:13px;color:#475569;font-weight:400;">one-time</span></div>
+        <a href="/shop" style="display:inline-block;background:#00D4AA;color:#000;text-decoration:none;padding:13px 32px;border-radius:999px;font-size:14px;font-weight:800;letter-spacing:0.5px;white-space:nowrap;box-shadow:0 4px 20px rgba(0,212,170,0.35);transition:background .2s;" onmouseover="this.style.background='#00e6b8'" onmouseout="this.style.background='#00D4AA'">Shop Now &rarr;</a>
+      </div>
+    </div>
+  </div>
   <div class="help">Need help? Call <a href="tel:7864614235">786-461-4235</a> or email <a href="mailto:alerts@highvelocitytrading.com">alerts@highvelocitytrading.com</a></div>
 </div>
 <script>
