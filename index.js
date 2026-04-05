@@ -1990,7 +1990,7 @@ body{font-family:"DM Sans",sans-serif;background:#000;min-height:100vh;color:#ff
 .product-card:hover{border-color:rgba(212,168,83,0.4);transform:translateY(-4px);box-shadow:0 16px 48px rgba(212,168,83,0.2)}
 .product-card .top-bar{height:3px;background:linear-gradient(90deg,#e8c878,#d4a853,#c9a227)}
 .product-card .body{padding:28px;display:flex;flex-direction:column;flex:1}
-.product-badge{display:inline-block;background:rgba(212,168,83,0.12);border:1px solid rgba(232,200,120,0.35);border-radius:999px;color:#e8c878;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:3px 12px;margin-bottom:18px;font-weight:700}
+.product-badge{display:inline-block;width:fit-content;max-width:100%;align-self:flex-start;text-align:center;background:rgba(212,168,83,0.12);border:1px solid rgba(232,200,120,0.35);border-radius:999px;color:#e8c878;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:5px 14px;margin-bottom:18px;font-weight:700}
 .product-name{font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.3px;margin-bottom:6px}
 .product-tag{font-size:12px;color:#475569;margin-bottom:20px;letter-spacing:0.3px}
 .product-features{list-style:none;margin-bottom:24px;flex:1}
