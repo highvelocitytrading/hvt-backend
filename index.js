@@ -100,6 +100,8 @@ const DISCORD_MONTHLY_ROLE_ID  = process.env.DISCORD_MONTHLY_ROLE_ID  || '147663
 const DISCORD_LIFETIME_ROLE_ID = process.env.DISCORD_LIFETIME_ROLE_ID || '1476634362811384001';
 const DISCORD_ROOM_ROLE_ID     = process.env.DISCORD_ROOM_ROLE_ID     || '';
 const DISCORD_INVITE_URL       = process.env.DISCORD_INVITE_URL       || 'https://discord.gg/2xG96nV4Hn';
+/** Public checkout page for $37/mo Trading Room (member portal shop). */
+const DISCORD_ROOM_CHECKOUT_URL = process.env.DISCORD_ROOM_CHECKOUT_URL || 'https://highvelocitytrading.com/checkout-discord';
 
 const MEMBERSHIP_TABLE = process.env.SUPABASE_TABLE || 'membershipstab';
 const LICENSE_TABLE    = 'license_keys';
@@ -1781,7 +1783,8 @@ function memberPortalHtml(s) {
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:#fff;position:relative;overflow-x:hidden}
+html{width:100%;overflow-x:hidden}
+body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;width:100%;margin:0;color:#fff;position:relative;overflow-x:hidden}
 .member-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:#000000}
 .member-bg::before{content:'';position:absolute;top:0;left:0;width:70%;height:60%;background:radial-gradient(ellipse at 20% 20%,#00001C 0%,transparent 60%);pointer-events:none}
 .topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
@@ -1806,8 +1809,8 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
   .topnav-right a.topnav-cta{display:inline-block;}
   .topnav-logo img{height:21px;}
 }
-.portal-wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:100px 24px 64px}
-.hero-section{position:relative;text-align:center;margin-bottom:32px}
+.portal-wrap{position:relative;z-index:1;width:100%;max-width:900px;margin-left:auto;margin-right:auto;margin-inline:auto;padding:100px 24px 64px;box-sizing:border-box}
+.hero-section{position:relative;text-align:center;margin-bottom:32px;width:100%}
 .hero-section-inner{display:inline-block;padding:8px 0 20px 0;border-radius:0;border:none;background:transparent;opacity:0;animation:heroLoadIn 0.55s cubic-bezier(0.22,1,0.36,1) forwards}
 @keyframes heroLoadIn{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
 .hero-section .pill{display:inline-block;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.25);border-radius:999px;color:#2254F5;font-size:11px;letter-spacing:3px;text-transform:uppercase;padding:6px 18px;margin-bottom:12px}
@@ -1826,14 +1829,14 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
 .hero-section p{color:#94a3b8;font-size:16px;line-height:1.5}
 .hero-div{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent);margin:16px auto 0;max-width:200px}
 .section-label{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#64748b;margin:0 0 16px;text-align:center}
-.carousel-section{margin-bottom:40px}
+.carousel-section{margin-bottom:40px;width:100%;min-width:0}
 .carousel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:16px;flex-wrap:wrap}
 .carousel-heading{font-size:22px;font-weight:700;letter-spacing:-0.3px;color:#fff;line-height:1.3;max-width:480px}
 .carousel-nav{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .carousel-btn{width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.7);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
 .carousel-btn:hover{background:rgba(255,255,255,0.08);color:#fff;border-color:rgba(255,255,255,0.2)}
 .carousel-btn svg{width:20px;height:20px}
-.carousel-scroll{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding:12px 0 8px;-webkit-overflow-scrolling:touch}
+.carousel-scroll{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding:12px 0 8px;-webkit-overflow-scrolling:touch;width:100%;max-width:100%;min-width:0;direction:ltr}
 .carousel-scroll::-webkit-scrollbar{height:6px}
 .carousel-scroll::-webkit-scrollbar-track{background:rgba(255,255,255,0.04);border-radius:3px}
 .carousel-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:3px}
@@ -1945,6 +1948,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;color:
   var prev=document.getElementById('carousel-prev');
   var next=document.getElementById('carousel-next');
   if(!el||!prev||!next)return;
+  el.scrollLeft=0;
   var cardWidth=320;
   prev.onclick=function(){ el.scrollBy({left:-cardWidth,behavior:'smooth'}); };
   next.onclick=function(){ el.scrollBy({left:cardWidth,behavior:'smooth'}); };
@@ -2004,6 +2008,15 @@ body{font-family:"DM Sans",sans-serif;background:#000;min-height:100vh;color:#ff
 .buy-btn{display:block;width:100%;padding:14px;background:linear-gradient(135deg,#c9a227,#d4a853,#e5c76b);color:#0f0f0f;border:1px solid rgba(255,236,180,0.45);border-radius:999px;font-family:"DM Sans",sans-serif;font-size:14px;font-weight:800;letter-spacing:0.5px;text-align:center;text-decoration:none;cursor:pointer;transition:opacity .2s,transform .1s,box-shadow .2s;box-shadow:0 4px 28px rgba(212,168,83,0.45)}
 .buy-btn:hover{opacity:0.98;transform:translateY(-1px);box-shadow:0 8px 36px rgba(212,168,83,0.55)}
 .buy-btn:active{transform:translateY(0)}
+.product-card.card-room:hover{border-color:rgba(96,165,250,0.45);transform:translateY(-4px);box-shadow:0 16px 48px rgba(34,84,245,0.22)}
+.product-card.card-room .top-bar{background:linear-gradient(90deg,#60a5fa,#2254F5,#3b82f6)}
+.product-card.card-room .product-badge{background:rgba(34,84,245,0.12);border-color:rgba(96,165,250,0.35);color:#93c5fd}
+.product-card.card-room .feat-check{background:rgba(34,84,245,0.12);border-color:rgba(96,165,250,0.28)}
+.room-price{color:#60a5fa !important}
+.price-was{font-size:15px;font-weight:600;color:#64748b;text-decoration:line-through;letter-spacing:-0.3px;margin-left:4px}
+.buy-btn-blue{display:block;width:100%;padding:14px;background:linear-gradient(135deg,#2254F5,#3b82f6);color:#fff;border:1px solid rgba(147,197,253,0.25);border-radius:999px;font-family:"DM Sans",sans-serif;font-size:14px;font-weight:800;letter-spacing:0.5px;text-align:center;text-decoration:none;cursor:pointer;transition:opacity .2s,transform .1s,box-shadow .2s;box-shadow:0 4px 24px rgba(34,84,245,0.4)}
+.buy-btn-blue:hover{opacity:0.96;transform:translateY(-1px);box-shadow:0 8px 32px rgba(34,84,245,0.5)}
+.buy-btn-blue:active{transform:translateY(0)}
 .coming-soon{display:block;width:100%;padding:14px;background:rgba(255,255,255,0.04);color:#334155;border:1px solid rgba(255,255,255,0.07);border-radius:999px;font-size:13px;font-weight:600;text-align:center;cursor:default;letter-spacing:0.5px}
 .footer-note{text-align:center;color:#334155;font-size:12px;padding-top:32px;border-top:1px solid rgba(255,255,255,0.05)}
 .footer-note a{color:#475569;text-decoration:none}
@@ -2028,6 +2041,25 @@ body{font-family:"DM Sans",sans-serif;background:#000;min-height:100vh;color:#ff
   </div>
   <div class="section-lbl">Available Now</div>
   <div class="products">
+    <div class="product-card card-room">
+      <div class="top-bar"></div>
+      <div class="body">
+        <div class="product-badge">Trading Room</div>
+        <div class="product-name">HVT Discord Monthly Access</div>
+        <div class="product-tag">Discord &bull; Monthly subscription</div>
+        <ul class="product-features">
+          <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Trading Room Discord access each month</li>
+          <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Direct access to our private community</li>
+          <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Trade in real time with our professional team</li>
+        </ul>
+        <div class="price-row" style="flex-wrap:wrap;align-items:baseline;gap:4px 8px;">
+          <div class="price room-price">$37</div>
+          <span class="price-was">$77</span>
+          <div class="price-note">per month &bull; cancel anytime</div>
+        </div>
+        <a href="${DISCORD_ROOM_CHECKOUT_URL}" class="buy-btn-blue" target="_blank" rel="noopener noreferrer">Join the Room &rarr;</a>
+      </div>
+    </div>
     <div class="product-card">
       <div class="top-bar"></div>
       <div class="body">
@@ -2041,7 +2073,7 @@ body{font-family:"DM Sans",sans-serif;background:#000;min-height:100vh;color:#ff
           <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#a67c2e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Works with all major prop firms</li>
           <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#a67c2e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>License key delivered instantly</li>
         </ul>
-        <div class="price-row"><div class="price">$97</div><div class="price-note">one-time &bull; no subscription</div></div>
+        <div class="price-row" style="flex-wrap:wrap;align-items:baseline;gap:4px 8px;"><div class="price">$97</div><span class="price-was">$130</span><div class="price-note">one-time &bull; no subscription</div></div>
         <a href="https://highvelocitytrading.com/checkout-echo" class="buy-btn">Get HVT Echo &rarr;</a>
       </div>
     </div>
