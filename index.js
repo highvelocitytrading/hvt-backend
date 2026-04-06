@@ -1088,6 +1088,51 @@ app.get('/downloads/es-prop-installer', requireSession, async (req, res) => {
     }
 });
 
+// ─── HVT ECHO COPY TRADER ─────────────────────────────────────────────────────
+// File: HVTECHO.zip in Supabase uploads bucket
+// Requires valid Echo license to download
+app.get('/downloads/echo', async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Supabase not configured.' });
+    
+    // Check if user has valid Echo license
+    const email = req.query.email?.toLowerCase()?.trim();
+    const license = req.query.license?.toUpperCase()?.trim();
+    
+    if (!email || !license) {
+        return res.status(400).json({ error: 'Email and license key required. Use: /downloads/echo?email=your@email.com&license=ECHO-XXXX-XXXX-XXXX' });
+    }
+    
+    try {
+        // Verify license
+        const { data: echoLicense } = await supabase
+            .from(ECHO_TABLE)
+            .select('status, license_key')
+            .eq('email', email)
+            .eq('license_key', license)
+            .maybeSingle();
+            
+        if (!echoLicense || echoLicense.status !== 'active') {
+            return res.status(403).json({ error: 'Invalid or inactive Echo license. Purchase at highvelocitytrading.com' });
+        }
+        
+        // Valid license - provide download
+        const { data, error } = await supabase.storage.from('uploads').createSignedUrl('HVTECHO.zip', 300);
+        if (error) {
+            const { data: pub } = supabase.storage.from('uploads').getPublicUrl('HVTECHO.zip');
+            if (pub?.publicUrl) return res.redirect(302, pub.publicUrl + '?download=HVTECHO.zip');
+            return res.status(500).json({ error: 'Download unavailable. Please contact support.', detail: error.message });
+        }
+        
+        const url = data.signedUrl + (data.signedUrl.includes('?') ? '&' : '?') + 'download=HVTECHO.zip';
+        console.log(`[DownloadEcho] Downloaded by: ${email} | License: ${license}`);
+        return res.redirect(302, url);
+        
+    } catch (e) {
+        console.error('[DownloadEcho] Exception:', e.message);
+        return res.status(500).json({ error: 'Download unavailable. Please contact support.' });
+    }
+});
+
 // ─── ES CHART TEMPLATE ────────────────────────────────────────────────────────
 // File: HVT_ES_TEMPLATE.xml in Supabase uploads bucket
 app.get('/downloads/es-template', frm, async (req, res) => {
@@ -4384,7 +4429,8 @@ async function sendEchoWelcome(email, fullName, licenseKey) {
             <div style="min-width:32px;height:32px;border-radius:8px;background:rgba(212,168,83,0.14);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#e8c878;margin-top:1px;">1</div>
             <div>
               <div style="color:#ffffff;font-size:14px;font-weight:700;margin-bottom:5px;">Download HVT Echo</div>
-              <div style="color:#64748b;font-size:13px;line-height:1.7;">Download the HVT Echo installer from your member portal at <a href="${APP_URL}/member" style="color:#d4a853;text-decoration:none;font-weight:600;">highvelocitytrading.com</a>.</div>
+              <div style="color:#64748b;font-size:13px;line-height:1.7;margin-bottom:12px;">Click the link below to download your HVT Echo copy trader:</div>
+              <div style="text-align:left;"><a href="${APP_URL}/downloads/echo?email=${encodeURIComponent(email)}&license=${licenseKey}" style="background:#00D4AA;color:#000000;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:13px;display:inline-block;">Download HVT Echo</a></div>
             </div>
           </div>
         </div>
