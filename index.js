@@ -6,7 +6,6 @@ const express = require('express');
 const crypto  = require('crypto');
 const Busboy  = require('busboy');
 const multer  = require('multer');
-// Install multer dependency: npm install multer
 const { createClient } = require('@supabase/supabase-js');
 
 const fetchFn = global.fetch
