@@ -116,7 +116,7 @@ const COURSE_LESSONS_TABLE = 'course_lessons';
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: { 
-        fileSize: 2 * 1024 * 1024 * 1024, // 2GB max file size
+        fileSize: 10 * 1024 * 1024 * 1024, // 10GB max file size
         files: 1 // One file at a time
     },
     fileFilter: (req, file, cb) => {
@@ -5172,7 +5172,7 @@ app.get('/admin/videos', adm, adminGuard, async (req, res) => {
             </div>
             <div class="file-upload" onclick="document.getElementById('videoFile').click()">
                 <input type="file" id="videoFile" accept="video/*" style="display: none;" required>
-                <div>Click to select video file (Max: 2GB)</div>
+                <div>Click to select video file (Max: 10GB)</div>
             </div>
             <button type="submit" class="upload-btn">Attach Video to Lesson</button>
         </form>
