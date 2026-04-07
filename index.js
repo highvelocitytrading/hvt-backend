@@ -108,6 +108,11 @@ const LICENSE_TABLE    = 'license_keys';
 const DISCORD_TABLE    = 'discord_members';
 const JOURNAL_TABLE    = 'journal_trades';
 const PROP_FIRM_TABLE  = 'prop_firm_activations';
+const ECHO_TABLE       = 'hvt_echo_licenses';
+
+function genEchoKey() {
+    return `ECHO-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+}
 
 // ─── NINJATRADER ECOSYSTEM API ────────────────────────────────────────────────
 const NT_PRODUCT_ID = process.env.NT_PRODUCT_ID || '1212';
@@ -4367,7 +4372,7 @@ async function revokeRow(id, btn) {
   try {
     var r = await fetch('/admin/prop-activations/' + id + '/revoke', {
       method: 'POST',
-      headers: { 'x-admin-secret': '${ADMIN_SECRET}' }
+      headers: { 'x-admin-secret': new URLSearchParams(location.search).get('key') || '' }
     });
     var d = await r.json();
     if (d.ok) {
@@ -4440,13 +4445,6 @@ app.get('/', (req, res) => {
 //  Add this entire block to index.js before app.listen()
 //  High Velocity Trading © 2025
 // ═══════════════════════════════════════════════════════════════════════════════
-
-const ECHO_TABLE = 'hvt_echo_licenses';
-
-// ─── ECHO: GENERATE LICENSE KEY ───────────────────────────────────────────────
-function genEchoKey() {
-    return `ECHO-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-}
 
 // ─── ECHO: WELCOME EMAIL ──────────────────────────────────────────────────────
 async function sendEchoWelcome(email, fullName, licenseKey) {
@@ -5014,66 +5012,6 @@ app.post('/admin/echo-licenses/:id/resend-email', adm, express.json(), async (re
     }
 });
 
-// ─── ECHO: SECURE DOWNLOAD ENDPOINT ───────────────────────────────────────────
-app.get('/downloads/echo', rateLimit({ max: 10 }), async (req, res) => {
-    if (!supabase) return res.status(503).json({ error: 'Service temporarily unavailable.' });
-    
-    const email = req.query.email?.toLowerCase()?.trim();
-    const license = req.query.license?.toUpperCase()?.trim();
-    
-    if (!email || !license) {
-        return res.status(400).json({ 
-            error: 'Email and license key required.',
-            usage: 'GET /downloads/echo?email=your@email.com&license=ECHO-XXXX-XXXX-XXXX'
-        });
-    }
-    
-    try {
-        const { data: echoLicense } = await supabase
-            .from(ECHO_TABLE)
-            .select('status, license_key, email')
-            .eq('email', email)
-            .eq('license_key', license)
-            .eq('status', 'active')
-            .maybeSingle();
-            
-        if (!echoLicense) {
-            console.log(`[EchoDownload] ❌ Invalid credentials: ${email} / ${license}`);
-            return res.status(403).json({ 
-                error: 'Invalid or inactive Echo license. Contact support if you believe this is an error.',
-                support: 'support@hvt-mail.com'
-            });
-        }
-        
-        const { data, error } = await supabase.storage
-            .from('uploads')
-            .createSignedUrl('HVTECHO.zip', 300);
-            
-        if (error) {
-            console.error('[EchoDownload] Storage error:', error.message);
-            const { data: pub } = supabase.storage.from('uploads').getPublicUrl('HVTECHO.zip');
-            if (pub?.publicUrl) {
-                console.log('[EchoDownload] Using public URL fallback');
-                return res.redirect(302, pub.publicUrl + '?download=HVTECHO.zip');
-            }
-            return res.status(500).json({ 
-                error: 'Download temporarily unavailable. Please contact support.',
-                support: 'support@hvt-mail.com'
-            });
-        }
-        
-        const downloadUrl = data.signedUrl + (data.signedUrl.includes('?') ? '&' : '?') + 'download=HVTECHO.zip';
-        console.log(`[EchoDownload] ✅ Download: ${email} | License: ${license}`);
-        return res.redirect(302, downloadUrl);
-        
-    } catch (e) {
-        console.error('[EchoDownload] Exception:', e.message);
-        return res.status(500).json({ 
-            error: 'Download failed. Please contact support.',
-            support: 'support@hvt-mail.com'
-        });
-    }
-});
 
 // ─── ECHO: ADMIN — GRANT ACCESS MANUALLY ─────────────────────────────────────
 app.post('/admin/echo-grant', adm, express.json(), async (req, res) => {
