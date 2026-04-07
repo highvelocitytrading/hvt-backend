@@ -116,7 +116,7 @@ const COURSE_LESSONS_TABLE = 'course_lessons';
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: { 
-        fileSize: 500 * 1024 * 1024, // 500MB max file size
+        fileSize: 2 * 1024 * 1024 * 1024, // 2GB max file size
         files: 1 // One file at a time
     },
     fileFilter: (req, file, cb) => {
@@ -2691,7 +2691,7 @@ app.get('/billing/confirm-session', async (req, res, next) => {
 });
 
 // ─── COURSE PLAYER (cookie-gated) ─────────────────────────────────────────────
-app.get('/course', requireSession, (req, res) => {
+app.get('/course', requireSession, async (req, res) => {
     // Always enter through the portal — /course is accessed via the portal card
     // If someone hits /course directly (bookmark, stale link), send to portal first
     if (!req.headers.referer || !req.headers.referer.includes('/member')) {
@@ -2702,9 +2702,65 @@ app.get('/course', requireSession, (req, res) => {
             return res.redirect(302, '/member');
         }
     }
-    const s = req._session;
-    const LOGO_URL = '/hvt-logo.cropped.png';
-    res.send(`<!DOCTYPE html><html lang="en"><head>
+    
+    try {
+        // Get lessons from database
+        const { data: lessons, error } = await supabase
+            .from(COURSE_LESSONS_TABLE)
+            .select('*')
+            .eq('is_active', true)
+            .order('section_order', { ascending: true })
+            .order('lesson_order', { ascending: true });
+
+        if (error) throw error;
+
+        // Group lessons by section
+        const sections = {};
+        (lessons || []).forEach(lesson => {
+            if (!sections[lesson.section]) {
+                sections[lesson.section] = [];
+            }
+            sections[lesson.section].push(lesson);
+        });
+
+        // Build course data for JavaScript
+        const courseData = [
+            { title: 'Introduction', videos: sections['introduction'] || [] },
+            { title: 'Indicators', videos: sections['indicators'] || [] },
+            { title: 'Risk Management', videos: sections['risk-management'] || [] },
+            { title: 'Psychology', videos: sections['psychology'] || [] }
+        ].filter(section => section.videos.length > 0);
+
+        // If no lessons, show placeholder structure
+        const fallbackCourse = [
+            { title: 'Introduction', videos: [
+                { title: 'Welcome to the HVT Portal', dur: '2m', video_path: null },
+                { title: 'How This Course Is Structured', dur: '3m', video_path: null },
+                { title: 'Getting the Most Out of HVT', dur: '3m', video_path: null }
+            ]},
+            { title: 'Indicators', videos: [
+                { title: 'Overview of HVT Indicators', dur: '4m', video_path: null },
+                { title: 'Reading Momentum & Trend', dur: '5m', video_path: null },
+                { title: 'Combining Signals for Entries', dur: '6m', video_path: null }
+            ]},
+            { title: 'Risk Management', videos: [
+                { title: 'Position Sizing & Daily Loss Limits', dur: '5m', video_path: null },
+                { title: 'Stop Placement & Trade Invalidation', dur: '4m', video_path: null },
+                { title: 'Building a Risk Plan You Keep', dur: '4m', video_path: null }
+            ]},
+            { title: 'Psychology', videos: [
+                { title: 'Welcome to HVT Psychology', dur: '3m', video_path: null },
+                { title: 'Why Traders Fail in the Long Run', dur: '4m', video_path: null },
+                { title: 'Discipline, FOMO, and Tilt', dur: '5m', video_path: null },
+                { title: 'Creating a Professional Routine', dur: '4m', video_path: null }
+            ]}
+        ];
+
+        const finalCourse = courseData.length > 0 ? courseData : fallbackCourse;
+
+        const s = req._session;
+        const LOGO_URL = '/hvt-logo.cropped.png';
+        res.send(`<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Course Library — HVT</title>
@@ -2776,7 +2832,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 /* ── MAIN CONTENT ── */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#060810;min-width:0}
 .player-wrap{flex:1;display:flex;align-items:center;justify-content:center;background:#000;position:relative;min-height:0}
-.player-wrap iframe{width:100%;height:100%;border:none;display:block}
+.player-wrap video{width:100%;height:100%;border:none;display:block}
 .player-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#64748b;text-align:center;padding:40px;width:100%;height:100%}
 .player-placeholder svg{opacity:0.35;color:#2254F5}
 .player-placeholder h3{font-size:18px;font-weight:700;color:#94a3b8;letter-spacing:-0.3px}
@@ -2842,7 +2898,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
         <h3 style="font-size:18px;font-weight:700;color:#94a3b8;letter-spacing:-0.3px;">HVT Masterclass</h3>
         <p style="font-size:13px;color:#334155;max-width:300px;line-height:1.6;">Select a lesson from the menu to begin. Your progress is saved automatically.</p>
       </div>
-      <iframe id="player" style="display:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;web-share" allowfullscreen></iframe>
+      <video id="player" style="display:none" controls></video>
     </div>
     <div class="video-meta" id="videoMeta">
       <h2 id="videoTitle"></h2>
@@ -2856,36 +2912,8 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 
 <script>
 (function(){
-// ── COURSE DATA ──────────────────────────────────────────────────────────────
-// To add a video: add ytId: 'YOUTUBE_VIDEO_ID' to any video object
-// To add a section: copy the section block pattern below
-var COURSE = [
-  { title: 'Introduction', videos: [
-    { title: 'Welcome to the HVT Portal',           dur: '2m',  ytId: '' },
-    { title: 'How This Course Is Structured',       dur: '3m',  ytId: '' },
-    { title: 'Getting the Most Out of HVT',         dur: '3m',  ytId: '' }
-  ]},
-  { title: 'Indicators', videos: [
-    { title: 'Overview of HVT Indicators',          dur: '4m',  ytId: '' },
-    { title: 'Reading Momentum & Trend',            dur: '5m',  ytId: '' },
-    { title: 'Combining Signals for Entries',       dur: '6m',  ytId: '' }
-  ]},
-  { title: 'Risk Management', videos: [
-    { title: 'Position Sizing & Daily Loss Limits', dur: '5m',  ytId: '' },
-    { title: 'Stop Placement & Trade Invalidation', dur: '4m',  ytId: '' },
-    { title: 'Building a Risk Plan You Keep',       dur: '4m',  ytId: '' }
-  ]},
-  { title: 'Psychology', videos: [
-    { title: 'Welcome to HVT Psychology',           dur: '3m',  ytId: '' },
-    { title: 'Why Traders Fail in the Long Run',    dur: '4m',  ytId: '' },
-    { title: 'Discipline, FOMO, and Tilt',          dur: '5m',  ytId: '' },
-    { title: 'Creating a Professional Routine',     dur: '4m',  ytId: '' }
-  ]}
-  // ADD MORE SECTIONS HERE:
-  // ,{ title: 'Section Name', videos: [
-  //   { title: 'Video Title', dur: '5m', ytId: 'YOUTUBE_ID' }
-  // ]}
-];
+// ── COURSE DATA FROM DATABASE ───────────────────────────────────────────────
+var COURSE = ${JSON.stringify(finalCourse)};
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 var activeSec = 0, activeVid = 0;
@@ -2930,14 +2958,12 @@ function buildSidebar(){
     sec.videos.forEach(function(v, vi){
       var item = document.createElement('div');
       item.className = 'video-item' + (si===activeSec && vi===activeVid ? ' active' : '');
-      var thumb = v.ytId
-        ? '<img src="https://img.youtube.com/vi/' + v.ytId + '/mqdefault.jpg" alt="" loading="lazy">'
-        : '<svg class="play-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg>';
+      var thumb = '<svg class="play-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg>';
       item.innerHTML =
         '<div class="video-thumb">' + thumb + '</div>' +
         '<div class="video-info">' +
           '<div class="video-title">' + esc(v.title) + '</div>' +
-          '<div class="video-dur">' + esc(v.dur) + '</div>' +
+          '<div class="video-dur">' + esc(v.duration || v.dur || '...') + '</div>' +
         '</div>';
       item.addEventListener('click', function(){ playVideo(si, vi); });
       vids.appendChild(item);
@@ -2956,14 +2982,35 @@ function toggleSection(si){
 }
 
 // ── PLAY VIDEO ───────────────────────────────────────────────────────────────
-function playVideo(si, vi){
+async function playVideo(si, vi){
   activeSec = si; activeVid = vi;
   buildSidebar();
   var v = COURSE[si].videos[vi];
-  if(v.ytId){
-    playerEl.src = 'https://www.youtube.com/embed/' + v.ytId + '?autoplay=1&rel=0&modestbranding=1';
-    playerEl.style.display = 'block';
-    placeholderEl.style.display = 'none';
+  
+  if(v.video_path){
+    try {
+      // Get signed URL for video
+      const response = await fetch('/api/course/video/' + encodeURIComponent(v.video_path));
+      const data = await response.json();
+      
+      if (data.success && data.signedUrl) {
+        playerEl.src = data.signedUrl;
+        playerEl.style.display = 'block';
+        placeholderEl.style.display = 'none';
+      } else {
+        throw new Error('Failed to load video');
+      }
+    } catch (error) {
+      playerEl.style.display = 'none';
+      playerEl.src = '';
+      placeholderEl.style.display = 'flex';
+      placeholderEl.innerHTML =
+        '<div style="width:64px;height:64px;border-radius:50%;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:4px;">' +
+        '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.5" style="opacity:0.7"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>' +
+        '</div>' +
+        '<h3 style="color:#f87171;font-size:17px;font-weight:700;letter-spacing:-0.3px;">Video Unavailable</h3>' +
+        '<p style="color:#64748b;font-size:13px;max-width:280px;line-height:1.6;">Unable to load this video. Please try again or contact support.</p>';
+    }
   } else {
     playerEl.style.display = 'none';
     playerEl.src = '';
@@ -2975,10 +3022,12 @@ function playVideo(si, vi){
       '<h3 style="color:#94a3b8;font-size:17px;font-weight:700;letter-spacing:-0.3px;">' + esc(v.title) + '</h3>' +
       '<p style="color:#334155;font-size:13px;max-width:280px;line-height:1.6;">This lesson is part of the HVT Masterclass. Video content loads here automatically once published.</p>';
   }
+  
   titleEl.textContent   = v.title;
   sectionEl.textContent = COURSE[si].title;
-  durEl.textContent     = v.dur;
+  durEl.textContent     = v.duration || v.dur || '...';
   metaEl.style.display  = 'flex';
+  
   // Close mobile sidebar after selection
   if(window.innerWidth < 769){
     sidebarEl.classList.remove('open');
@@ -2994,6 +3043,11 @@ buildSidebar();
 })();
 </script>
 </body></html>`);
+
+    } catch (e) {
+        console.error('[Course]', e.message);
+        res.status(500).send('<h1>Error loading course</h1>');
+    }
 });
 
 // ─── BILLING PORTAL ───────────────────────────────────────────────────────────
@@ -5167,7 +5221,7 @@ app.get('/admin/videos', adm, adminGuard, async (req, res) => {
             </div>
             <div class="file-upload" onclick="document.getElementById('videoFile').click()">
                 <input type="file" id="videoFile" accept="video/*" style="display: none;" required>
-                <div>Click to select video file (Max: 500MB)</div>
+                <div>Click to select video file (Max: 2GB)</div>
             </div>
             <button type="submit" class="upload-btn">Upload Video</button>
         </form>
@@ -5275,6 +5329,26 @@ app.post('/admin/videos/upload', adm, upload.single('video'), async (req, res) =
     } catch (e) {
         console.error('[VideoUpload]', e.message);
         res.status(500).json({ error: e.message });
+    }
+});
+
+// API endpoint for getting video signed URLs
+app.get('/api/course/video/:path(*)', requireSession, async (req, res) => {
+    try {
+        const videoPath = req.params.path;
+        
+        // Get signed URL for video (expires in 1 hour)
+        const { data, error } = await supabase.storage
+            .from('course-videos')
+            .createSignedUrl(videoPath, 3600); // 1 hour expiry
+            
+        if (error) throw error;
+        
+        res.json({ success: true, signedUrl: data.signedUrl });
+        
+    } catch (e) {
+        console.error('[VideoAPI]', e.message);
+        res.status(500).json({ error: 'Failed to load video' });
     }
 });
 
