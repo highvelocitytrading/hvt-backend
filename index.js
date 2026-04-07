@@ -2691,7 +2691,7 @@ app.get('/billing/confirm-session', async (req, res, next) => {
 });
 
 // ─── COURSE PLAYER (cookie-gated) ─────────────────────────────────────────────
-app.get('/course', requireSession, async (req, res) => {
+app.get('/course', requireSession, (req, res) => {
     // Always enter through the portal — /course is accessed via the portal card
     // If someone hits /course directly (bookmark, stale link), send to portal first
     if (!req.headers.referer || !req.headers.referer.includes('/member')) {
@@ -2702,65 +2702,9 @@ app.get('/course', requireSession, async (req, res) => {
             return res.redirect(302, '/member');
         }
     }
-    
-    try {
-        // Get lessons from database
-        const { data: lessons, error } = await supabase
-            .from(COURSE_LESSONS_TABLE)
-            .select('*')
-            .eq('is_active', true)
-            .order('section_order', { ascending: true })
-            .order('lesson_order', { ascending: true });
-
-        if (error) throw error;
-
-        // Group lessons by section
-        const sections = {};
-        (lessons || []).forEach(lesson => {
-            if (!sections[lesson.section]) {
-                sections[lesson.section] = [];
-            }
-            sections[lesson.section].push(lesson);
-        });
-
-        // Build course data for JavaScript
-        const courseData = [
-            { title: 'Introduction', videos: sections['introduction'] || [] },
-            { title: 'Indicators', videos: sections['indicators'] || [] },
-            { title: 'Risk Management', videos: sections['risk-management'] || [] },
-            { title: 'Psychology', videos: sections['psychology'] || [] }
-        ].filter(section => section.videos.length > 0);
-
-        // If no lessons, show placeholder structure
-        const fallbackCourse = [
-            { title: 'Introduction', videos: [
-                { title: 'Welcome to the HVT Portal', dur: '2m', video_path: null },
-                { title: 'How This Course Is Structured', dur: '3m', video_path: null },
-                { title: 'Getting the Most Out of HVT', dur: '3m', video_path: null }
-            ]},
-            { title: 'Indicators', videos: [
-                { title: 'Overview of HVT Indicators', dur: '4m', video_path: null },
-                { title: 'Reading Momentum & Trend', dur: '5m', video_path: null },
-                { title: 'Combining Signals for Entries', dur: '6m', video_path: null }
-            ]},
-            { title: 'Risk Management', videos: [
-                { title: 'Position Sizing & Daily Loss Limits', dur: '5m', video_path: null },
-                { title: 'Stop Placement & Trade Invalidation', dur: '4m', video_path: null },
-                { title: 'Building a Risk Plan You Keep', dur: '4m', video_path: null }
-            ]},
-            { title: 'Psychology', videos: [
-                { title: 'Welcome to HVT Psychology', dur: '3m', video_path: null },
-                { title: 'Why Traders Fail in the Long Run', dur: '4m', video_path: null },
-                { title: 'Discipline, FOMO, and Tilt', dur: '5m', video_path: null },
-                { title: 'Creating a Professional Routine', dur: '4m', video_path: null }
-            ]}
-        ];
-
-        const finalCourse = courseData.length > 0 ? courseData : fallbackCourse;
-
-        const s = req._session;
-        const LOGO_URL = '/hvt-logo.cropped.png';
-        res.send(`<!DOCTYPE html><html lang="en"><head>
+    const s = req._session;
+    const LOGO_URL = '/hvt-logo.cropped.png';
+    res.send(`<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Course Library — HVT</title>
@@ -2832,7 +2776,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 /* ── MAIN CONTENT ── */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#060810;min-width:0}
 .player-wrap{flex:1;display:flex;align-items:center;justify-content:center;background:#000;position:relative;min-height:0}
-.player-wrap video{width:100%;height:100%;border:none;display:block}
+.player-wrap iframe{width:100%;height:100%;border:none;display:block}
 .player-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#64748b;text-align:center;padding:40px;width:100%;height:100%}
 .player-placeholder svg{opacity:0.35;color:#2254F5}
 .player-placeholder h3{font-size:18px;font-weight:700;color:#94a3b8;letter-spacing:-0.3px}
@@ -2898,7 +2842,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
         <h3 style="font-size:18px;font-weight:700;color:#94a3b8;letter-spacing:-0.3px;">HVT Masterclass</h3>
         <p style="font-size:13px;color:#334155;max-width:300px;line-height:1.6;">Select a lesson from the menu to begin. Your progress is saved automatically.</p>
       </div>
-      <video id="player" style="display:none" controls></video>
+      <iframe id="player" style="display:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;web-share" allowfullscreen></iframe>
     </div>
     <div class="video-meta" id="videoMeta">
       <h2 id="videoTitle"></h2>
@@ -2912,8 +2856,36 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 
 <script>
 (function(){
-// ── COURSE DATA FROM DATABASE ───────────────────────────────────────────────
-var COURSE = ${JSON.stringify(finalCourse)};
+// ── COURSE DATA ──────────────────────────────────────────────────────────────
+// To add a video: add ytId: 'YOUTUBE_VIDEO_ID' to any video object
+// To add a section: copy the section block pattern below
+var COURSE = [
+  { title: 'Introduction', videos: [
+    { title: 'Welcome to the HVT Portal',           dur: '2m',  ytId: '' },
+    { title: 'How This Course Is Structured',       dur: '3m',  ytId: '' },
+    { title: 'Getting the Most Out of HVT',         dur: '3m',  ytId: '' }
+  ]},
+  { title: 'Indicators', videos: [
+    { title: 'Overview of HVT Indicators',          dur: '4m',  ytId: '' },
+    { title: 'Reading Momentum & Trend',            dur: '5m',  ytId: '' },
+    { title: 'Combining Signals for Entries',       dur: '6m',  ytId: '' }
+  ]},
+  { title: 'Risk Management', videos: [
+    { title: 'Position Sizing & Daily Loss Limits', dur: '5m',  ytId: '' },
+    { title: 'Stop Placement & Trade Invalidation', dur: '4m',  ytId: '' },
+    { title: 'Building a Risk Plan You Keep',       dur: '4m',  ytId: '' }
+  ]},
+  { title: 'Psychology', videos: [
+    { title: 'Welcome to HVT Psychology',           dur: '3m',  ytId: '' },
+    { title: 'Why Traders Fail in the Long Run',    dur: '4m',  ytId: '' },
+    { title: 'Discipline, FOMO, and Tilt',          dur: '5m',  ytId: '' },
+    { title: 'Creating a Professional Routine',     dur: '4m',  ytId: '' }
+  ]}
+  // ADD MORE SECTIONS HERE:
+  // ,{ title: 'Section Name', videos: [
+  //   { title: 'Video Title', dur: '5m', ytId: 'YOUTUBE_ID' }
+  // ]}
+];
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 var activeSec = 0, activeVid = 0;
@@ -2958,12 +2930,14 @@ function buildSidebar(){
     sec.videos.forEach(function(v, vi){
       var item = document.createElement('div');
       item.className = 'video-item' + (si===activeSec && vi===activeVid ? ' active' : '');
-      var thumb = '<svg class="play-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg>';
+      var thumb = v.ytId
+        ? '<img src="https://img.youtube.com/vi/' + v.ytId + '/mqdefault.jpg" alt="" loading="lazy">'
+        : '<svg class="play-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg>';
       item.innerHTML =
         '<div class="video-thumb">' + thumb + '</div>' +
         '<div class="video-info">' +
           '<div class="video-title">' + esc(v.title) + '</div>' +
-          '<div class="video-dur">' + esc(v.duration || v.dur || '...') + '</div>' +
+          '<div class="video-dur">' + esc(v.dur) + '</div>' +
         '</div>';
       item.addEventListener('click', function(){ playVideo(si, vi); });
       vids.appendChild(item);
@@ -2982,35 +2956,14 @@ function toggleSection(si){
 }
 
 // ── PLAY VIDEO ───────────────────────────────────────────────────────────────
-async function playVideo(si, vi){
+function playVideo(si, vi){
   activeSec = si; activeVid = vi;
   buildSidebar();
   var v = COURSE[si].videos[vi];
-  
-  if(v.video_path){
-    try {
-      // Get signed URL for video
-      const response = await fetch('/api/course/video/' + encodeURIComponent(v.video_path));
-      const data = await response.json();
-      
-      if (data.success && data.signedUrl) {
-        playerEl.src = data.signedUrl;
-        playerEl.style.display = 'block';
-        placeholderEl.style.display = 'none';
-      } else {
-        throw new Error('Failed to load video');
-      }
-    } catch (error) {
-      playerEl.style.display = 'none';
-      playerEl.src = '';
-      placeholderEl.style.display = 'flex';
-      placeholderEl.innerHTML =
-        '<div style="width:64px;height:64px;border-radius:50%;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:4px;">' +
-        '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.5" style="opacity:0.7"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>' +
-        '</div>' +
-        '<h3 style="color:#f87171;font-size:17px;font-weight:700;letter-spacing:-0.3px;">Video Unavailable</h3>' +
-        '<p style="color:#64748b;font-size:13px;max-width:280px;line-height:1.6;">Unable to load this video. Please try again or contact support.</p>';
-    }
+  if(v.ytId){
+    playerEl.src = 'https://www.youtube.com/embed/' + v.ytId + '?autoplay=1&rel=0&modestbranding=1';
+    playerEl.style.display = 'block';
+    placeholderEl.style.display = 'none';
   } else {
     playerEl.style.display = 'none';
     playerEl.src = '';
@@ -3022,12 +2975,10 @@ async function playVideo(si, vi){
       '<h3 style="color:#94a3b8;font-size:17px;font-weight:700;letter-spacing:-0.3px;">' + esc(v.title) + '</h3>' +
       '<p style="color:#334155;font-size:13px;max-width:280px;line-height:1.6;">This lesson is part of the HVT Masterclass. Video content loads here automatically once published.</p>';
   }
-  
   titleEl.textContent   = v.title;
   sectionEl.textContent = COURSE[si].title;
-  durEl.textContent     = v.duration || v.dur || '...';
+  durEl.textContent     = v.dur;
   metaEl.style.display  = 'flex';
-  
   // Close mobile sidebar after selection
   if(window.innerWidth < 769){
     sidebarEl.classList.remove('open');
@@ -3043,11 +2994,6 @@ buildSidebar();
 })();
 </script>
 </body></html>`);
-
-    } catch (e) {
-        console.error('[Course]', e.message);
-        res.status(500).send('<h1>Error loading course</h1>');
-    }
 });
 
 // ─── BILLING PORTAL ───────────────────────────────────────────────────────────
@@ -3812,7 +3758,7 @@ td.empty{padding:20px;text-align:center;color:#334155}
 .abtn:disabled{opacity:.4;cursor:not-allowed}
 .ntbadge{display:inline-flex;align-items:center;gap:8px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);border-radius:20px;padding:5px 14px;font-size:13px;font-weight:700}`;
 
-    const html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1.0">\n<title>HVT Admin</title>\n<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">\n<style>\n' + css + '\n</style>\n</head>\n<body>\n\n<div class="hdr">\n  <div>\n    <div class="brand">High Velocity Trading</div>\n    <div style="font-size:10px;color:#334155;letter-spacing:3px;text-transform:uppercase;margin-top:2px;">Admin Control Panel &mdash; ' + BUILD_TS + '</div>\n  </div>\n  <div style="display:flex;align-items:center;gap:12px;">\n    <span style="font-size:12px;color:' + ntColor + ';font-weight:600;">NT ' + ntStatus + '</span>\n    <div class="restricted">&#9888; RESTRICTED</div>\n  </div>\n</div>\n\n<div class="stats">\n  <div class="sc sc-b"><div class="snum">' + totalActive + '</div><div class="slbl">Total Active</div></div>\n  <div class="sc sc-b"><div class="snum">' + activeMonthly + '</div><div class="slbl">Monthly Active</div></div>\n  <div class="sc sc-g"><div class="snum">' + activeLifetime + '</div><div class="slbl">Lifetime Active</div></div>\n  <div class="sc sc-p"><div class="snum">' + activeDiscord + '</div><div class="slbl">Discord $37</div></div>\n  <div class="sc sc-gr"><div class="snum">' + lvCount + '</div><div class="slbl">Live on Discord</div></div>\n  <div class="sc sc-c"><div class="snum" style="color:' + ntColor + ';">' + (ntToken ? '&#10003;' : '&#10007;') + '</div><div class="slbl">NT API Status</div></div>\n  <div class="sc sc-c"><div class="snum" style="color:#e8c878;">' + echoCount + '</div><div class="slbl">Echo Active</div></div>\n</div>\n\n<div class="sec">\n  <div class="sec-ttl">🎥 Video Course Management</div>\n  <div class="box" style="background:rgba(34,84,245,0.04);border:1px solid rgba(34,84,245,0.2);">\n    <div class="bbar" style="background:linear-gradient(90deg,#1d4ed8,#2254F5,#1d4ed8);"></div>\n    <div class="boxtitle" style="color:#2254F5;">Course Video Management</div>\n    <div class="boxsub">Upload and manage course videos. Organize lessons by section and order for members.</div>\n    <a href="/admin/videos?key=' + key + '" class="btn" style="display:inline-block;text-decoration:none;background:linear-gradient(135deg,#1d4ed8,#2254F5);color:#fff;">🎬 MANAGE COURSE VIDEOS</a>\n  </div>\n</div>\n\n<div class="sec">\n  <div class="sec-ttl">&#9670; NinjaTrader API</div>\n  <div class="box box-nt">\n    <div class="bbar bbar-cy"></div>\n    <div class="boxtitle" style="color:#67e8f9;">NT Ecosystem API</div>\n    <div class="boxsub">Auto-authenticates every 45 min. Auth failures: ' + ntAuthFails + '</div>\n    <div style="margin-bottom:16px;"><span class="ntbadge" style="color:' + ntColor + ';">' + ntStatus + '</span></div>\n    <button class="btn btn-cy" id="btnRefreshNT">&#8635; FORCE RE-LOGIN</button>\n    <div class="msg" id="ntMsg"></div>\n  </div>\n  <div class="box box-gr">\n    <div class="bbar bbar-gr"></div>\n    <div class="boxtitle" style="color:#4ade80;">Supabase Storage</div>\n    <div class="boxsub">Test bucket access and file paths for downloads.</div>\n    <button class="btn btn-gr" id="btnTestStorage">&#128196; TEST STORAGE</button>\n    <div class="msg" id="storageMsg"></div>\n  </div>\n  <div class="box" style="background:rgba(212,168,83,0.04);border:1px solid rgba(212,168,83,0.2);">\n    <div class="bbar" style="background:linear-gradient(90deg,#92610a,#e8c878,#92610a);"></div>\n    <div class="boxtitle" style="color:#e8c878;">HVT Echo Control Panel</div>\n    <div class="boxsub">Full Echo license management — view all licenses, cancel, reset machine IDs, resend emails.</div>\n    <a href="/admin/echo-licenses?key=' + key + '" class="btn" style="display:inline-block;text-decoration:none;background:linear-gradient(135deg,#92610a,#e8c878);color:#000;">&#128640; OPEN ECHO CONTROL PANEL</a>\n  </div>\n</div>\n\n<div class="sec">\n  <div class="sec-ttl">&#9889; God Mode \u2014 Grant Access</div>\n  <div class="box box-pu">\n    <div class="bbar bbar-pu"></div>\n    <div class="boxtitle" style="color:#c4b5fd;">Grant Full Access Instantly</div>\n    <div class="boxsub">Creates Supabase record, NT license, Discord role, sends magic login link.</div>\n    <div class="row2">\n      <div><label>Email *</label><input type="text" id="godEmail" placeholder="their@email.com"></div>\n      <div><label>Access Type</label><select id="godRole"><option value="monthly">Monthly Member</option><option value="lifetime">Lifetime Member</option><option value="discord">Discord Room ($37)</option></select></div>\n    </div>\n    <div class="row2">\n      <div><label>Full Name</label><input type="text" id="godName" placeholder="John Smith"></div>\n      <div><label>Discord Username</label><input type="text" id="godUser" placeholder="username"></div>\n    </div>\n    <div class="chks">\n      <label class="chk"><input type="checkbox" id="godSendEmail" checked> Send login email</label>\n      <label class="chk"><input type="checkbox" id="godNT" checked> Create NT license</label>\n      <label class="chk"><input type="checkbox" id="godDiscord"> Assign Discord role</label>\n    </div>\n    <button class="btn btn-pu" id="btnGodMode">&#9889; GRANT ACCESS NOW</button>\n    <div class="msg" id="godMsg"></div>\n  </div>\n</div>\n\n<div class="sec">\n  <div class="sec-ttl">Manual Access Removal</div>\n  <div class="box box-re">\n    <div class="bbar bbar-re"></div>\n    <div class="boxtitle">Cancel / Revoke by Email</div>\n    <div class="boxsub">Cancels Authnet sub, removes Discord role, revokes NT license, marks cancelled in Supabase.</div>\n    <label>Member Email</label>\n    <input type="email" id="manualEmail" placeholder="member@email.com">\n    <label>Membership Type</label>\n    <select id="manualType"><option value="monthly">Monthly Membership</option><option value="lifetime">Lifetime License</option><option value="discord">Discord Room ($37)</option></select>\n    <button class="btn btn-re" id="btnCancel">&#128293; CANCEL ACCESS</button>\n    <div class="msg" id="cancelMsg"></div>\n  </div>\n</div>\n\n<div class="sec">\n  <div class="sec-ttl">Member Management</div>\n  <div class="tabs">\n    <button class="tab on" data-tab="monthly">Monthly (' + mCount + ')</button>\n    <button class="tab" data-tab="lifetime">Lifetime (' + lCount + ')</button>\n    <button class="tab" data-tab="discord37">Discord $37 (' + dCount + ')</button>\n    <button class="tab" data-tab="live">Live on Discord (' + lvCount + ')</button>\n    <button class="tab" data-tab="echo">Echo (' + echoTotal + ')</button>\n  </div>\n  <div id="tp-monthly" class="tp"><div class="pt pt-b"></div><div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Expires</th><th>NT</th><th>Action</th></tr></thead><tbody>' + memberRows + '</tbody></table></div></div>\n  <div id="tp-lifetime" class="tp" style="display:none"><div class="pt pt-g"></div><div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>License Key</th><th>NT</th><th>Action</th></tr></thead><tbody>' + licenseRows + '</tbody></table></div></div>\n  <div id="tp-discord37" class="tp" style="display:none"><div class="pt pt-p"></div><div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Expires</th><th>Discord</th><th>Action</th></tr></thead><tbody>' + discordRows + '</tbody></table></div></div>\n  <div id="tp-live" class="tp" style="display:none"><div class="pt pt-gr"></div><div style="overflow-x:auto"><table><thead><tr><th>Display Name</th><th>Username</th><th>Discord ID</th><th>Action</th></tr></thead><tbody>' + liveRows + '</tbody></table></div></div>\n  <div id="tp-echo" class="tp" style="display:none"><div class="pt" style="background:linear-gradient(90deg,#92610a,#e8c878,#92610a);height:3px;"></div><div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Email</th><th>License Key</th><th>Status</th><th>Machine ID</th><th>Date</th><th>Actions</th></tr></thead><tbody>' + echoRows + '</tbody></table></div></div>\n</div>\n\n<script>\n' + adminJS + '\n</script>\n</body>\n</html>';
+    const html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1.0">\n<title>HVT Admin</title>\n<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">\n<style>\n' + css + '\n</style>\n</head>\n<body>\n\n<div class="hdr">\n  <div>\n    <div class="brand">High Velocity Trading</div>\n    <div style="font-size:10px;color:#334155;letter-spacing:3px;text-transform:uppercase;margin-top:2px;">Admin Control Panel &mdash; ' + BUILD_TS + '</div>\n  </div>\n  <div style="display:flex;align-items:center;gap:12px;">\n    <span style="font-size:12px;color:' + ntColor + ';font-weight:600;">NT ' + ntStatus + '</span>\n    <div class="restricted">&#9888; RESTRICTED</div>\n  </div>\n</div>\n\n<div class="stats">\n  <div class="sc sc-b"><div class="snum">' + totalActive + '</div><div class="slbl">Total Active</div></div>\n  <div class="sc sc-b"><div class="snum">' + activeMonthly + '</div><div class="slbl">Monthly Active</div></div>\n  <div class="sc sc-g"><div class="snum">' + activeLifetime + '</div><div class="slbl">Lifetime Active</div></div>\n  <div class="sc sc-p"><div class="snum">' + activeDiscord + '</div><div class="slbl">Discord $37</div></div>\n  <div class="sc sc-gr"><div class="snum">' + lvCount + '</div><div class="slbl">Live on Discord</div></div>\n  <div class="sc sc-c"><div class="snum" style="color:' + ntColor + ';">' + (ntToken ? '&#10003;' : '&#10007;') + '</div><div class="slbl">NT API Status</div></div>\n  <div class="sc sc-c"><div class="snum" style="color:#e8c878;">' + echoCount + '</div><div class="slbl">Echo Active</div></div>\n</div>\n\n<div class="sec">\n  <div class="sec-ttl">&#9670; NinjaTrader API</div>\n  <div class="box box-nt">\n    <div class="bbar bbar-cy"></div>\n    <div class="boxtitle" style="color:#67e8f9;">NT Ecosystem API</div>\n    <div class="boxsub">Auto-authenticates every 45 min. Auth failures: ' + ntAuthFails + '</div>\n    <div style="margin-bottom:16px;"><span class="ntbadge" style="color:' + ntColor + ';">' + ntStatus + '</span></div>\n    <button class="btn btn-cy" id="btnRefreshNT">&#8635; FORCE RE-LOGIN</button>\n    <div class="msg" id="ntMsg"></div>\n  </div>\n  <div class="box box-gr">\n    <div class="bbar bbar-gr"></div>\n    <div class="boxtitle" style="color:#4ade80;">Supabase Storage</div>\n    <div class="boxsub">Test bucket access and file paths for downloads.</div>\n    <button class="btn btn-gr" id="btnTestStorage">&#128196; TEST STORAGE</button>\n    <div class="msg" id="storageMsg"></div>\n  </div>\n  <div class="box" style="background:rgba(212,168,83,0.04);border:1px solid rgba(212,168,83,0.2);">\n    <div class="bbar" style="background:linear-gradient(90deg,#92610a,#e8c878,#92610a);"></div>\n    <div class="boxtitle" style="color:#e8c878;">HVT Echo Control Panel</div>\n    <div class="boxsub">Full Echo license management — view all licenses, cancel, reset machine IDs, resend emails.</div>\n    <a href="/admin/echo-licenses?key=' + key + '" class="btn" style="display:inline-block;text-decoration:none;background:linear-gradient(135deg,#92610a,#e8c878);color:#000;">&#128640; OPEN ECHO CONTROL PANEL</a>\n  </div>\n</div>\n\n<div class="sec">\n  <div class="sec-ttl">&#9889; God Mode \u2014 Grant Access</div>\n  <div class="box box-pu">\n    <div class="bbar bbar-pu"></div>\n    <div class="boxtitle" style="color:#c4b5fd;">Grant Full Access Instantly</div>\n    <div class="boxsub">Creates Supabase record, NT license, Discord role, sends magic login link.</div>\n    <div class="row2">\n      <div><label>Email *</label><input type="text" id="godEmail" placeholder="their@email.com"></div>\n      <div><label>Access Type</label><select id="godRole"><option value="monthly">Monthly Member</option><option value="lifetime">Lifetime Member</option><option value="discord">Discord Room ($37)</option></select></div>\n    </div>\n    <div class="row2">\n      <div><label>Full Name</label><input type="text" id="godName" placeholder="John Smith"></div>\n      <div><label>Discord Username</label><input type="text" id="godUser" placeholder="username"></div>\n    </div>\n    <div class="chks">\n      <label class="chk"><input type="checkbox" id="godSendEmail" checked> Send login email</label>\n      <label class="chk"><input type="checkbox" id="godNT" checked> Create NT license</label>\n      <label class="chk"><input type="checkbox" id="godDiscord"> Assign Discord role</label>\n    </div>\n    <button class="btn btn-pu" id="btnGodMode">&#9889; GRANT ACCESS NOW</button>\n    <div class="msg" id="godMsg"></div>\n  </div>\n</div>\n\n<div class="sec">\n  <div class="sec-ttl">Manual Access Removal</div>\n  <div class="box box-re">\n    <div class="bbar bbar-re"></div>\n    <div class="boxtitle">Cancel / Revoke by Email</div>\n    <div class="boxsub">Cancels Authnet sub, removes Discord role, revokes NT license, marks cancelled in Supabase.</div>\n    <label>Member Email</label>\n    <input type="email" id="manualEmail" placeholder="member@email.com">\n    <label>Membership Type</label>\n    <select id="manualType"><option value="monthly">Monthly Membership</option><option value="lifetime">Lifetime License</option><option value="discord">Discord Room ($37)</option></select>\n    <button class="btn btn-re" id="btnCancel">&#128293; CANCEL ACCESS</button>\n    <div class="msg" id="cancelMsg"></div>\n  </div>\n</div>\n\n<div class="sec">\n  <div class="sec-ttl">Member Management</div>\n  <div class="tabs">\n    <button class="tab on" data-tab="monthly">Monthly (' + mCount + ')</button>\n    <button class="tab" data-tab="lifetime">Lifetime (' + lCount + ')</button>\n    <button class="tab" data-tab="discord37">Discord $37 (' + dCount + ')</button>\n    <button class="tab" data-tab="live">Live on Discord (' + lvCount + ')</button>\n    <button class="tab" data-tab="echo">Echo (' + echoTotal + ')</button>\n  </div>\n  <div id="tp-monthly" class="tp"><div class="pt pt-b"></div><div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Expires</th><th>NT</th><th>Action</th></tr></thead><tbody>' + memberRows + '</tbody></table></div></div>\n  <div id="tp-lifetime" class="tp" style="display:none"><div class="pt pt-g"></div><div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>License Key</th><th>NT</th><th>Action</th></tr></thead><tbody>' + licenseRows + '</tbody></table></div></div>\n  <div id="tp-discord37" class="tp" style="display:none"><div class="pt pt-p"></div><div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Expires</th><th>Discord</th><th>Action</th></tr></thead><tbody>' + discordRows + '</tbody></table></div></div>\n  <div id="tp-live" class="tp" style="display:none"><div class="pt pt-gr"></div><div style="overflow-x:auto"><table><thead><tr><th>Display Name</th><th>Username</th><th>Discord ID</th><th>Action</th></tr></thead><tbody>' + liveRows + '</tbody></table></div></div>\n  <div id="tp-echo" class="tp" style="display:none"><div class="pt" style="background:linear-gradient(90deg,#92610a,#e8c878,#92610a);height:3px;"></div><div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Email</th><th>License Key</th><th>Status</th><th>Machine ID</th><th>Date</th><th>Actions</th></tr></thead><tbody>' + echoRows + '</tbody></table></div></div>\n</div>\n\n<script>\n' + adminJS + '\n</script>\n</body>\n</html>';
 
     res.send(html);
     } catch (e) { console.error('[AdminPanel]', e.message, e.stack); res.status(500).send('<h1 style="color:red">Admin panel error: ' + e.message + '</h1>'); }
@@ -5228,27 +5174,11 @@ app.get('/admin/videos', adm, adminGuard, async (req, res) => {
                 <input type="file" id="videoFile" accept="video/*" style="display: none;" required>
                 <div>Click to select video file (Max: 2GB)</div>
             </div>
-            <button type="submit" class="upload-btn" id="uploadBtn">Attach Video to Lesson</button>
+            <button type="submit" class="upload-btn">Attach Video to Lesson</button>
         </form>
-        
-        <!-- Upload Progress -->
-        <div id="uploadProgress" style="display:none;margin-top:16px;">
-            <div style="background:#222;border-radius:4px;overflow:hidden;">
-                <div id="progressBar" style="background:#2254F5;height:6px;width:0%;transition:width 0.3s;"></div>
-            </div>
-            <div style="font-size:12px;color:#64748b;margin-top:4px;" id="progressText">Uploading...</div>
-        </div>
         
         <!-- Success Notification -->
         <div id="successNotification" style="display:none;margin-top:16px;padding:12px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:6px;color:#22c55e;">
-            <strong>✅ Video Successfully Uploaded!</strong>
-            <div style="font-size:12px;margin-top:4px;" id="successDetails"></div>
-        </div>
-        
-        <!-- Error Notification -->
-        <div id="errorNotification" style="display:none;margin-top:16px;padding:12px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;color:#ef4444;">
-            <strong>❌ Upload Failed</strong>
-            <div style="font-size:12px;margin-top:4px;" id="errorDetails"></div>
         </div>
     </div>
 
@@ -5266,18 +5196,17 @@ app.get('/admin/videos', adm, adminGuard, async (req, res) => {
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            // Hide previous notifications
-            document.getElementById('successNotification').style.display = 'none';
-            document.getElementById('errorNotification').style.display = 'none';
-            
-            const lessonSelect = document.getElementById('lessonSelect').value;
-            if (!lessonSelect) {
-                showError('Please select a lesson');
+            const lessonSelect = document.getElementById('lessonSelect');
+            const lessonValue = lessonSelect.value;
+            if (!lessonValue) {
+                alert('Please select a lesson');
                 return;
             }
             
-            const [section, lesson_order] = lessonSelect.split('|');
-            const selectedOption = document.getElementById('lessonSelect').selectedOptions[0];
+            const parts = lessonValue.split('|');
+            const section = parts[0];
+            const lesson_order = parts[1];
+            const selectedOption = lessonSelect.selectedOptions[0];
             const lessonTitle = selectedOption.text;
             
             const formData = new FormData();
@@ -5288,90 +5217,29 @@ app.get('/admin/videos', adm, adminGuard, async (req, res) => {
             formData.append('duration', document.getElementById('lessonDuration').value);
             formData.append('key', '${req.query.key}');
             
-            // Show progress
-            const progressDiv = document.getElementById('uploadProgress');
-            const progressBar = document.getElementById('progressBar');
-            const progressText = document.getElementById('progressText');
-            const uploadBtn = document.getElementById('uploadBtn');
-            
-            progressDiv.style.display = 'block';
-            uploadBtn.disabled = true;
-            uploadBtn.textContent = 'Uploading...';
-            
             try {
-                // Create XMLHttpRequest to track upload progress
-                const xhr = new XMLHttpRequest();
-                
-                xhr.upload.addEventListener('progress', (e) => {
-                    if (e.lengthComputable) {
-                        const percentComplete = (e.loaded / e.total) * 100;
-                        progressBar.style.width = percentComplete + '%';
-                        progressText.textContent = `Uploading... ${Math.round(percentComplete)}%`;
-                    }
+                const response = await fetch('/admin/videos/upload', {
+                    method: 'POST',
+                    body: formData
                 });
-                
-                xhr.addEventListener('load', () => {
-                    progressDiv.style.display = 'none';
-                    uploadBtn.disabled = false;
-                    uploadBtn.textContent = 'Attach Video to Lesson';
+                const result = await response.json();
+                if (result.success) {
+                    const notification = document.getElementById('successNotification');
+                    const sectionName = section.replace('-', ' ');
+                    notification.innerHTML = '<strong>✅ Video Successfully Uploaded!</strong><div style="font-size:12px;margin-top:4px;">"' + lessonTitle + '" in ' + sectionName + ' section<br>Video is now available to members on the course page.</div>';
+                    notification.style.display = 'block';
+                    document.getElementById('uploadForm').reset();
                     
-                    if (xhr.status === 200) {
-                        const result = JSON.parse(xhr.responseText);
-                        if (result.success) {
-                            showSuccess(lessonTitle, section);
-                            document.getElementById('uploadForm').reset();
-                        } else {
-                            showError(result.error || 'Upload failed');
-                        }
-                    } else {
-                        showError('Upload failed. Please try again.');
-                    }
-                });
-                
-                xhr.addEventListener('error', () => {
-                    progressDiv.style.display = 'none';
-                    uploadBtn.disabled = false;
-                    uploadBtn.textContent = 'Attach Video to Lesson';
-                    showError('Network error. Please check your connection.');
-                });
-                
-                xhr.open('POST', '/admin/videos/upload');
-                xhr.send(formData);
-                
+                    setTimeout(function() { 
+                        notification.style.display = 'none'; 
+                    }, 5000);
+                } else {
+                    alert('Upload failed: ' + (result.error || 'Unknown error'));
+                }
             } catch (error) {
-                progressDiv.style.display = 'none';
-                uploadBtn.disabled = false;
-                uploadBtn.textContent = 'Attach Video to Lesson';
-                showError('Upload failed: ' + error.message);
+                alert('Upload failed: ' + error.message);
             }
         });
-        
-        function showSuccess(lessonTitle, section) {
-            const notification = document.getElementById('successNotification');
-            const details = document.getElementById('successDetails');
-            details.innerHTML = `
-                <strong>"${lessonTitle}"</strong> in <em>${section.replace('-', ' ')}</em> section<br>
-                Video is now available to members on the course page.
-            `;
-            notification.style.display = 'block';
-            
-            // Auto-hide after 5 seconds
-            setTimeout(() => {
-                notification.style.display = 'none';
-            }, 5000);
-        }
-        
-        function showError(message) {
-            const notification = document.getElementById('errorNotification');
-            const details = document.getElementById('errorDetails');
-            details.textContent = message;
-            notification.style.display = 'block';
-            
-            // Auto-hide after 8 seconds
-            setTimeout(() => {
-                notification.style.display = 'none';
-            }, 8000);
-        }
     </script>
 </body>
 </html>`;
@@ -5436,26 +5304,6 @@ app.post('/admin/videos/upload', adm, upload.single('video'), async (req, res) =
     } catch (e) {
         console.error('[VideoUpload]', e.message);
         res.status(500).json({ error: e.message });
-    }
-});
-
-// API endpoint for getting video signed URLs
-app.get('/api/course/video/:path(*)', requireSession, async (req, res) => {
-    try {
-        const videoPath = req.params.path;
-        
-        // Get signed URL for video (expires in 1 hour)
-        const { data, error } = await supabase.storage
-            .from('course-videos')
-            .createSignedUrl(videoPath, 3600); // 1 hour expiry
-            
-        if (error) throw error;
-        
-        res.json({ success: true, signedUrl: data.signedUrl });
-        
-    } catch (e) {
-        console.error('[VideoAPI]', e.message);
-        res.status(500).json({ error: 'Failed to load video' });
     }
 });
 
