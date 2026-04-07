@@ -89,7 +89,7 @@ const AUTHORIZE_SIGNATURE_KEY   = process.env.AUTHORIZE_SIGNATURE_KEY || null;
 const AUTHNET_API_LOGIN_ID      = process.env.AUTHNET_API_LOGIN_ID;
 const AUTHNET_TRANSACTION_KEY   = process.env.AUTHNET_TRANSACTION_KEY;
 const RESEND_API_KEY            = process.env.RESEND_API_KEY;
-const FROM_EMAIL                = 'alerts@hvt-mail.com';
+const FROM_EMAIL                = 'support@hvt-mail.com';
 const APP_URL                   = process.env.APP_URL    || 'https://hvt-backend-production-ec41.up.railway.app';
 const JOTFORM_SECRET            = process.env.JOTFORM_SECRET || null;
 const ADMIN_SECRET              = process.env.ADMIN_SECRET   || 'HVT-ADMIN-FADBC551B512718D76F4B8744E54B621';
@@ -1991,7 +1991,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;width:
       </div>
     </div>
   </div>
-  <div class="help">Need help? Call <a href="tel:7864614235">786-461-4235</a> or email <a href="mailto:alerts@hvt-mail.com">alerts@hvt-mail.com</a></div>
+  <div class="help">Need help? Call <a href="tel:7864614235">786-461-4235</a> or email <a href="mailto:support@hvt-mail.com">support@hvt-mail.com</a></div>
 </div>
 <script>
 (function(){
@@ -2140,7 +2140,7 @@ body{font-family:"DM Sans",sans-serif;background:#000;min-height:100vh;color:#ff
       </div>
     </div>
   </div>
-  <div class="footer-note">Questions? Call <a href="tel:7864614235">786-461-4235</a> or email <a href="mailto:alerts@hvt-mail.com">alerts@hvt-mail.com</a></div>
+  <div class="footer-note">Questions? Call <a href="tel:7864614235">786-461-4235</a> or email <a href="mailto:support@hvt-mail.com">support@hvt-mail.com</a></div>
 </div>
 </body></html>`);
 });
@@ -3984,7 +3984,7 @@ select option{background:#0d1117}
             </div>
             <div style="display:flex;align-items:flex-start;gap:10px;">
               <div style="width:20px;height:20px;border-radius:50%;background:#f6ad55;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#000;flex-shrink:0;margin-top:1px;">2</div>
-              <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Send a support ticket to <a href="mailto:alerts@hvt-mail.com" style="color:#f6ad55;font-weight:700;text-decoration:none;">alerts@hvt-mail.com</a> with the subject line <strong style="color:#e2e8f0;">"Machine ID Reset"</strong>.</div>
+              <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Send a support ticket to <a href="mailto:support@hvt-mail.com" style="color:#f6ad55;font-weight:700;text-decoration:none;">support@hvt-mail.com</a> with the subject line <strong style="color:#e2e8f0;">"Machine ID Reset"</strong>.</div>
             </div>
             <div style="display:flex;align-items:flex-start;gap:10px;">
               <div style="width:20px;height:20px;border-radius:50%;background:#f6ad55;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#000;flex-shrink:0;margin-top:1px;">3</div>
@@ -3993,7 +3993,7 @@ select option{background:#0d1117}
           </div>
         </div>
         <div style="padding:12px 14px;background:rgba(246,173,85,0.06);border:1px solid rgba(246,173,85,0.2);border-radius:8px;">
-          <div style="font-size:12px;color:#f6ad55;line-height:1.6;">&#128231; <strong>support:</strong> <a href="mailto:alerts@hvt-mail.com" style="color:#f6ad55;font-weight:700;text-decoration:none;">alerts@hvt-mail.com</a> &nbsp;&mdash;&nbsp; Please allow up to 24 hours for Machine ID resets. Include your account email and new Machine ID in your message.</div>
+          <div style="font-size:12px;color:#f6ad55;line-height:1.6;">&#128231; <strong>support:</strong> <a href="mailto:support@hvt-mail.com" style="color:#f6ad55;font-weight:700;text-decoration:none;">support@hvt-mail.com</a> &nbsp;&mdash;&nbsp; Please allow up to 24 hours for Machine ID resets. Include your account email and new Machine ID in your message.</div>
         </div>
       </div>
     </div>
@@ -4993,7 +4993,7 @@ app.get('/downloads/echo', rateLimit({ max: 10 }), async (req, res) => {
             console.log(`[EchoDownload] ❌ Invalid credentials: ${email} / ${license}`);
             return res.status(403).json({ 
                 error: 'Invalid or inactive Echo license. Contact support if you believe this is an error.',
-                support: 'alerts@hvt-mail.com'
+                support: 'support@hvt-mail.com'
             });
         }
         
@@ -5010,7 +5010,7 @@ app.get('/downloads/echo', rateLimit({ max: 10 }), async (req, res) => {
             }
             return res.status(500).json({ 
                 error: 'Download temporarily unavailable. Please contact support.',
-                support: 'alerts@hvt-mail.com'
+                support: 'support@hvt-mail.com'
             });
         }
         
@@ -5022,7 +5022,7 @@ app.get('/downloads/echo', rateLimit({ max: 10 }), async (req, res) => {
         console.error('[EchoDownload] Exception:', e.message);
         return res.status(500).json({ 
             error: 'Download failed. Please contact support.',
-            support: 'alerts@hvt-mail.com'
+            support: 'support@hvt-mail.com'
         });
     }
 });
