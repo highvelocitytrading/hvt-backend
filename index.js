@@ -70,6 +70,7 @@ console.log('[INIT] DEMO_MODE =', DEMO_MODE);
 const requiredEnv = [
     'SUPABASE_URL',
     'SUPABASE_SERVICE_ROLE_KEY',
+    'SUPABASE_ANON_KEY',
     'APP_URL',
     'RESEND_API_KEY',
     'ADMIN_SECRET'
@@ -87,6 +88,7 @@ if (missing.length) {
 
 const SUPABASE_URL              = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_ANON_KEY         = process.env.SUPABASE_ANON_KEY;
 const AUTHORIZE_SIGNATURE_KEY   = process.env.AUTHORIZE_SIGNATURE_KEY || null;
 const AUTHNET_API_LOGIN_ID      = process.env.AUTHNET_API_LOGIN_ID;
 const AUTHNET_TRANSACTION_KEY   = process.env.AUTHNET_TRANSACTION_KEY;
@@ -2777,7 +2779,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 /* ── MAIN CONTENT ── */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#060810;min-width:0}
 .player-wrap{flex:1;display:flex;align-items:center;justify-content:center;background:#000;position:relative;min-height:0}
-.player-wrap iframe{width:100%;height:100%;border:none;display:block}
+.player-wrap iframe, .player-wrap video{width:100%;height:100%;border:none;display:block;object-fit:contain}
 .player-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#64748b;text-align:center;padding:40px;width:100%;height:100%}
 .player-placeholder svg{opacity:0.35;color:#2254F5}
 .player-placeholder h3{font-size:18px;font-weight:700;color:#94a3b8;letter-spacing:-0.3px}
@@ -2843,7 +2845,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
         <h3 style="font-size:18px;font-weight:700;color:#94a3b8;letter-spacing:-0.3px;">HVT Masterclass</h3>
         <p style="font-size:13px;color:#334155;max-width:300px;line-height:1.6;">Select a lesson from the menu to begin. Your progress is saved automatically.</p>
       </div>
-      <iframe id="player" style="display:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;web-share" allowfullscreen></iframe>
+      <div id="player" style="display:none;width:100%;height:100%;"></div>
     </div>
     <div class="video-meta" id="videoMeta">
       <h2 id="videoTitle"></h2>
@@ -2857,39 +2859,11 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 
 <script>
 (function(){
-// ── COURSE DATA ──────────────────────────────────────────────────────────────
-// To add a video: add ytId: 'YOUTUBE_VIDEO_ID' to any video object
-// To add a section: copy the section block pattern below
-var COURSE = [
-  { title: 'Introduction', videos: [
-    { title: 'Welcome to the HVT Portal',           dur: '2m',  ytId: '' },
-    { title: 'How This Course Is Structured',       dur: '3m',  ytId: '' },
-    { title: 'Getting the Most Out of HVT',         dur: '3m',  ytId: '' }
-  ]},
-  { title: 'Indicators', videos: [
-    { title: 'Overview of HVT Indicators',          dur: '4m',  ytId: '' },
-    { title: 'Reading Momentum & Trend',            dur: '5m',  ytId: '' },
-    { title: 'Combining Signals for Entries',       dur: '6m',  ytId: '' }
-  ]},
-  { title: 'Risk Management', videos: [
-    { title: 'Position Sizing & Daily Loss Limits', dur: '5m',  ytId: '' },
-    { title: 'Stop Placement & Trade Invalidation', dur: '4m',  ytId: '' },
-    { title: 'Building a Risk Plan You Keep',       dur: '4m',  ytId: '' }
-  ]},
-  { title: 'Psychology', videos: [
-    { title: 'Welcome to HVT Psychology',           dur: '3m',  ytId: '' },
-    { title: 'Why Traders Fail in the Long Run',    dur: '4m',  ytId: '' },
-    { title: 'Discipline, FOMO, and Tilt',          dur: '5m',  ytId: '' },
-    { title: 'Creating a Professional Routine',     dur: '4m',  ytId: '' }
-  ]}
-  // ADD MORE SECTIONS HERE:
-  // ,{ title: 'Section Name', videos: [
-  //   { title: 'Video Title', dur: '5m', ytId: 'YOUTUBE_ID' }
-  // ]}
-];
-
 // ── STATE ────────────────────────────────────────────────────────────────────
 var activeSec = 0, activeVid = 0;
+var COURSE = []; // Will be loaded from database
+
+// ── DOM ELEMENTS ─────────────────────────────────────────────────────────────
 var sidebarEl  = document.getElementById('sidebar');
 var overlayEl  = document.getElementById('sidebarOverlay');
 var scrollEl   = document.getElementById('sidebarScroll');
@@ -2899,6 +2873,86 @@ var metaEl     = document.getElementById('videoMeta');
 var titleEl    = document.getElementById('videoTitle');
 var sectionEl  = document.getElementById('videoSection');
 var durEl      = document.getElementById('videoDur');
+
+// ── LOAD COURSE DATA FROM DATABASE ──────────────────────────────────────────
+async function loadCourseData() {
+    try {
+        const response = await fetch('/api/course/videos');
+        const data = await response.json();
+        
+        // Group lessons by sections
+        const sections = {};
+        for (const lesson of data.lessons || []) {
+            if (!sections[lesson.section]) sections[lesson.section] = [];
+            sections[lesson.section].push({
+                id: lesson.id,
+                title: lesson.title,
+                dur: lesson.duration || '0m',
+                videoPath: lesson.video_path,
+                ytId: '' // Fallback for YouTube if needed
+            });
+        }
+        
+        // Convert to COURSE format (fallback to empty structure if no data)
+        COURSE = Object.keys(sections).length > 0 
+            ? Object.keys(sections).map(sectionName => ({
+                title: sectionName,
+                videos: sections[sectionName]
+            }))
+            : [
+                { title: 'Introduction', videos: [
+                    { title: 'Welcome to the HVT Portal', dur: '2m', ytId: '' },
+                    { title: 'How This Course Is Structured', dur: '3m', ytId: '' },
+                    { title: 'Getting the Most Out of HVT', dur: '3m', ytId: '' }
+                ]},
+                { title: 'Indicators', videos: [
+                    { title: 'Overview of HVT Indicators', dur: '4m', ytId: '' },
+                    { title: 'Reading Momentum & Trend', dur: '5m', ytId: '' },
+                    { title: 'Combining Signals for Entries', dur: '6m', ytId: '' }
+                ]},
+                { title: 'Risk Management', videos: [
+                    { title: 'Position Sizing & Daily Loss Limits', dur: '5m', ytId: '' },
+                    { title: 'Stop Placement & Trade Invalidation', dur: '4m', ytId: '' },
+                    { title: 'Building a Risk Plan You Keep', dur: '4m', ytId: '' }
+                ]},
+                { title: 'Psychology', videos: [
+                    { title: 'Welcome to HVT Psychology', dur: '3m', ytId: '' },
+                    { title: 'Why Traders Fail in the Long Run', dur: '4m', ytId: '' },
+                    { title: 'Discipline, FOMO, and Tilt', dur: '5m', ytId: '' },
+                    { title: 'Creating a Professional Routine', dur: '4m', ytId: '' }
+                ]}
+            ];
+        
+        buildSidebar();
+    } catch (error) {
+        console.error('Failed to load course data:', error);
+        // Fallback to hardcoded structure
+        COURSE = [
+            { title: 'Introduction', videos: [
+                { title: 'Welcome to the HVT Portal', dur: '2m', ytId: '' },
+                { title: 'How This Course Is Structured', dur: '3m', ytId: '' },
+                { title: 'Getting the Most Out of HVT', dur: '3m', ytId: '' }
+            ]},
+            { title: 'Indicators', videos: [
+                { title: 'Overview of HVT Indicators', dur: '4m', ytId: '' },
+                { title: 'Reading Momentum & Trend', dur: '5m', ytId: '' },
+                { title: 'Combining Signals for Entries', dur: '6m', ytId: '' }
+            ]},
+            { title: 'Risk Management', videos: [
+                { title: 'Position Sizing & Daily Loss Limits', dur: '5m', ytId: '' },
+                { title: 'Stop Placement & Trade Invalidation', dur: '4m', ytId: '' },
+                { title: 'Building a Risk Plan You Keep', dur: '4m', ytId: '' }
+            ]},
+            { title: 'Psychology', videos: [
+                { title: 'Welcome to HVT Psychology', dur: '3m', ytId: '' },
+                { title: 'Why Traders Fail in the Long Run', dur: '4m', ytId: '' },
+                { title: 'Discipline, FOMO, and Tilt', dur: '5m', ytId: '' },
+                { title: 'Creating a Professional Routine', dur: '4m', ytId: '' }
+            ]}
+        ];
+        buildSidebar();
+    }
+}
 
 // ── SIDEBAR TOGGLE ───────────────────────────────────────────────────────────
 document.getElementById('mobMenu').addEventListener('click', function(){
@@ -2957,17 +3011,49 @@ function toggleSection(si){
 }
 
 // ── PLAY VIDEO ───────────────────────────────────────────────────────────────
-function playVideo(si, vi){
+async function playVideo(si, vi){
   activeSec = si; activeVid = vi;
   buildSidebar();
   var v = COURSE[si].videos[vi];
+  
+  // Handle YouTube videos (legacy)
   if(v.ytId){
-    playerEl.src = 'https://www.youtube.com/embed/' + v.ytId + '?autoplay=1&rel=0&modestbranding=1';
+    playerEl.innerHTML = '<iframe src="https://www.youtube.com/embed/' + v.ytId + '?autoplay=1&rel=0&modestbranding=1" style="width:100%;height:100%;border:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;web-share" allowfullscreen></iframe>';
     playerEl.style.display = 'block';
     placeholderEl.style.display = 'none';
-  } else {
+  } 
+  // Handle Supabase videos (new system)
+  else if(v.videoPath && v.id){
+    try {
+      // Get signed URL for video streaming
+      const response = await fetch('/api/course/video/' + v.id + '/stream');
+      const data = await response.json();
+      
+      if (data.streamUrl) {
+        // Use HTML5 video player for Supabase videos
+        playerEl.innerHTML = '<video controls style="width:100%;height:100%;object-fit:contain" src="' + data.streamUrl + '" preload="metadata"></video>';
+        playerEl.style.display = 'block';
+        placeholderEl.style.display = 'none';
+      } else {
+        throw new Error('No stream URL available');
+      }
+    } catch (error) {
+      console.error('Failed to load video:', error);
+      playerEl.style.display = 'none';
+      playerEl.innerHTML = '';
+      placeholderEl.style.display = 'flex';
+      placeholderEl.innerHTML =
+        '<div style="width:64px;height:64px;border-radius:50%;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:4px;">' +
+        '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="1.5" style="opacity:0.7"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg>' +
+        '</div>' +
+        '<h3 style="color:#94a3b8;font-size:17px;font-weight:700;letter-spacing:-0.3px;">' + esc(v.title) + '</h3>' +
+        '<p style="color:#334155;font-size:13px;max-width:280px;line-height:1.6;">Video not available or failed to load. Please try again later.</p>';
+    }
+  } 
+  // No video available
+  else {
     playerEl.style.display = 'none';
-    playerEl.src = '';
+    playerEl.innerHTML = '';
     placeholderEl.style.display = 'flex';
     placeholderEl.innerHTML =
       '<div style="width:64px;height:64px;border-radius:50%;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:4px;">' +
@@ -2976,10 +3062,12 @@ function playVideo(si, vi){
       '<h3 style="color:#94a3b8;font-size:17px;font-weight:700;letter-spacing:-0.3px;">' + esc(v.title) + '</h3>' +
       '<p style="color:#334155;font-size:13px;max-width:280px;line-height:1.6;">This lesson is part of the HVT Masterclass. Video content loads here automatically once published.</p>';
   }
+  
   titleEl.textContent   = v.title;
   sectionEl.textContent = COURSE[si].title;
   durEl.textContent     = v.dur;
   metaEl.style.display  = 'flex';
+  
   // Close mobile sidebar after selection
   if(window.innerWidth < 769){
     sidebarEl.classList.remove('open');
@@ -2991,10 +3079,61 @@ function playVideo(si, vi){
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
-buildSidebar();
+loadCourseData();
 })();
 </script>
 </body></html>`);
+});
+
+// ─── VIDEO API ROUTES ────────────────────────────────────────────────────────
+
+// Get all course videos organized by section
+app.get('/api/course/videos', requireSession, async (req, res) => {
+    try {
+        const { data: lessons, error } = await supabase
+            .from(COURSE_LESSONS_TABLE)
+            .select('*')
+            .eq('is_active', true)
+            .order('section_order', { ascending: true })
+            .order('lesson_order', { ascending: true });
+
+        if (error) throw error;
+
+        res.json({ lessons: lessons || [] });
+    } catch (error) {
+        console.error('[API] Failed to fetch videos:', error);
+        res.status(500).json({ error: 'Failed to fetch videos' });
+    }
+});
+
+// Get signed URL for video streaming
+app.get('/api/course/video/:id/stream', requireSession, async (req, res) => {
+    try {
+        const { data: lesson } = await supabase
+            .from(COURSE_LESSONS_TABLE)
+            .select('video_path')
+            .eq('id', req.params.id)
+            .eq('is_active', true)
+            .single();
+
+        if (!lesson?.video_path) {
+            return res.status(404).json({ error: 'Video not found' });
+        }
+
+        // Generate signed URL (expires in 1 hour)
+        const { data: signedData } = await supabase.storage
+            .from('course-videos')
+            .createSignedUrl(lesson.video_path, 3600);
+
+        if (!signedData?.signedUrl) {
+            return res.status(404).json({ error: 'Could not generate video stream' });
+        }
+
+        res.json({ streamUrl: signedData.signedUrl });
+    } catch (error) {
+        console.error('[API] Failed to get video stream:', error);
+        res.status(500).json({ error: 'Failed to get video stream' });
+    }
 });
 
 // ─── BILLING PORTAL ───────────────────────────────────────────────────────────
@@ -5108,117 +5247,225 @@ app.get('/admin/videos', adm, adminGuard, async (req, res) => {
         body { font-family: -apple-system, sans-serif; background: #000; color: #fff; padding: 40px 20px; }
         .header { margin-bottom: 40px; }
         .header h1 { color: #fff; font-size: 28px; margin-bottom: 8px; }
-        .back-link { color: #2254F5; text-decoration: none; margin-bottom: 20px; display: inline-block; }
-        .upload-section { background: #111; padding: 24px; border-radius: 8px; margin-bottom: 40px; }
+        .header p { color: #999; font-size: 16px; }
+        .back-btn { display: inline-block; background: #333; color: #fff; padding: 8px 16px; border-radius: 6px; text-decoration: none; margin-bottom: 24px; }
+        .back-btn:hover { background: #555; }
+        .upload-section { background: #111; border: 1px solid #333; border-radius: 12px; padding: 32px; margin-bottom: 32px; }
+        .upload-header { text-align: center; margin-bottom: 24px; }
+        .upload-header h2 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+        .upload-header p { color: #999; font-size: 14px; }
+        .upload-form { max-width: 500px; margin: 0 auto; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
         .form-group { margin-bottom: 16px; }
-        .form-label { display: block; margin-bottom: 6px; font-weight: 500; }
-        .form-input, .form-select, .form-textarea { 
-            width: 100%; padding: 12px; background: #222; border: 1px solid #444; 
-            border-radius: 4px; color: #fff; font-size: 14px;
-        }
-        .file-upload { 
-            border: 2px dashed #444; padding: 24px; text-align: center; 
-            border-radius: 8px; margin-bottom: 16px; cursor: pointer;
-        }
-        .file-upload:hover { border-color: #2254F5; }
-        .upload-btn { 
-            background: #2254F5; color: #fff; border: none; padding: 12px 24px; 
-            border-radius: 4px; cursor: pointer; font-weight: 600;
-        }
-        .upload-btn:hover { background: #1d4ed8; }
-        .lessons { margin-top: 20px; }
-        .lesson { background: #222; padding: 16px; margin-bottom: 8px; border-radius: 4px; }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-group label { display: block; font-weight: 500; margin-bottom: 8px; color: #fff; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; background: #222; border: 1px solid #444; border-radius: 6px; color: #fff; }
+        .form-group textarea { height: 80px; resize: vertical; }
+        .drop-zone { border: 2px dashed #444; border-radius: 8px; padding: 40px 20px; text-align: center; cursor: pointer; transition: border-color 0.2s; margin-bottom: 16px; }
+        .drop-zone:hover, .drop-zone.dragover { border-color: #007BFF; background: #111; }
+        .drop-zone-content { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .drop-zone-icon { font-size: 48px; }
+        .drop-zone-text { font-weight: 500; }
+        .drop-zone-subtext { font-size: 14px; color: #999; }
+        .upload-btn { background: #007BFF; color: #fff; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .upload-btn:hover { background: #0056b3; }
+        .upload-btn:disabled { background: #555; cursor: not-allowed; }
+        .progress-wrap { display: none; background: #222; border-radius: 6px; padding: 12px; margin-top: 16px; }
+        .progress-bar { width: 100%; height: 6px; background: #444; border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; background: #007BFF; border-radius: 3px; transition: width 0.3s; width: 0%; }
+        .progress-text { font-size: 12px; color: #999; margin-top: 8px; text-align: center; }
+        .lessons-section { margin-top: 40px; }
+        .lessons-section h3 { margin-bottom: 20px; }
+        .lesson-grid { display: grid; gap: 16px; }
+        .lesson-card { background: #111; border: 1px solid #333; border-radius: 8px; padding: 20px; }
+        .lesson-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .lesson-title { font-weight: 600; font-size: 16px; }
+        .lesson-section { background: #007BFF; color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+        .lesson-meta { color: #999; font-size: 14px; line-height: 1.4; }
+        .lesson-actions { margin-top: 12px; display: flex; gap: 8px; }
+        .lesson-action { padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; }
+        .delete-btn { background: #dc3545; color: #fff; }
+        .delete-btn:hover { background: #c82333; }
+        .success-notification { display: none; background: #28a745; color: #fff; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
     </style>
 </head>
 <body>
-    <a href="/admin?key=${req.query.key}" class="back-link">&larr; Back to Admin</a>
     <div class="header">
-        <h1>🎥 Course Management</h1>
-        <p>Upload and manage course videos</p>
+        <a href="/admin?key=${req.query.key}" class="back-btn">← Back to Admin Dashboard</a>
+        <h1>📹 Course Video Management</h1>
+        <p>Upload and manage course videos • Direct Supabase upload bypasses Railway size limits</p>
     </div>
 
     <div class="upload-section">
-        <h3>Attach Video to Lesson</h3>
-        <form id="uploadForm" enctype="multipart/form-data">
+        <div class="upload-header">
+            <h2>Upload New Video</h2>
+            <p>Add videos to your course library. Files upload directly to Supabase (no Railway size limits)</p>
+        </div>
+
+        <div class="success-notification" id="successNotification"></div>
+
+        <form class="upload-form" id="uploadForm" enctype="multipart/form-data">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="section">Section</label>
+                    <select name="section" id="section" required>
+                        <option value="">Select Section</option>
+                        <option value="Introduction">Introduction</option>
+                        <option value="Indicators">Indicators</option>
+                        <option value="Risk Management">Risk Management</option>
+                        <option value="Psychology">Psychology</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="lesson_order">Lesson Order</label>
+                    <input type="number" name="lesson_order" id="lesson_order" min="1" max="100" required>
+                </div>
+            </div>
+            
             <div class="form-group">
-                <label class="form-label">Select Lesson</label>
-                <select class="form-select" id="lessonSelect" required>
-                    <option value="">Choose which lesson gets this video</option>
-                    <optgroup label="Introduction">
-                        <option value="introduction|1">Welcome to the HVT Portal</option>
-                        <option value="introduction|2">How This Course Is Structured</option>
-                        <option value="introduction|3">Getting the Most Out of HVT</option>
-                    </optgroup>
-                    <optgroup label="Indicators">
-                        <option value="indicators|1">Overview of HVT Indicators</option>
-                        <option value="indicators|2">Reading Momentum & Trend</option>
-                        <option value="indicators|3">Combining Signals for Entries</option>
-                    </optgroup>
-                    <optgroup label="Risk Management">
-                        <option value="risk-management|1">Position Sizing & Daily Loss Limits</option>
-                        <option value="risk-management|2">Stop Placement & Trade Invalidation</option>
-                        <option value="risk-management|3">Building a Risk Plan You Keep</option>
-                    </optgroup>
-                    <optgroup label="Psychology">
-                        <option value="psychology|1">Welcome to HVT Psychology</option>
-                        <option value="psychology|2">Why Traders Fail in the Long Run</option>
-                        <option value="psychology|3">Discipline, FOMO, and Tilt</option>
-                        <option value="psychology|4">Creating a Professional Routine</option>
-                    </optgroup>
-                </select>
+                <label for="title">Video Title</label>
+                <input type="text" name="title" id="title" placeholder="e.g., Welcome to HVT Psychology" required>
             </div>
-            <div class="form-group">
-                <label class="form-label">Duration (optional)</label>
-                <input type="text" class="form-input" id="lessonDuration" placeholder="10:30">
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="duration">Duration</label>
+                    <input type="text" name="duration" id="duration" placeholder="e.g., 5m 30s">
+                </div>
             </div>
-            <div class="file-upload" onclick="document.getElementById('videoFile').click()">
-                <input type="file" id="videoFile" accept="video/*" style="display: none;" required>
-                <div>Click to select video file (Max: 10GB)</div>
+            
+            <div class="form-group full">
+                <label for="description">Description (Optional)</label>
+                <textarea name="description" id="description" placeholder="Brief description of what this lesson covers..."></textarea>
             </div>
-            <button type="submit" class="upload-btn">Attach Video to Lesson</button>
+
+            <div class="drop-zone" id="dropZone">
+                <div class="drop-zone-content">
+                    <div class="drop-zone-icon">📹</div>
+                    <div class="drop-zone-text">Drop video file here or click to browse</div>
+                    <div class="drop-zone-subtext">Supports MP4, MOV, AVI • No file size limit with direct Supabase upload</div>
+                </div>
+                <input type="file" id="videoFile" name="video" accept="video/*" style="display: none;" required>
+            </div>
+
+            <div class="progress-wrap" id="progressWrap">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">Uploading...</div>
+            </div>
+
+            <input type="hidden" name="key" value="${req.query.key}">
+            <button type="submit" class="upload-btn" id="uploadBtn">🚀 Upload Video (Direct to Supabase)</button>
         </form>
-        
-        <!-- Success Notification -->
-        <div id="successNotification" style="display:none;margin-top:16px;padding:12px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:6px;color:#22c55e;">
+    </div>
+
+    <div class="lessons-section">
+        <h3>📚 Course Content</h3>
+        <div class="lesson-grid">
+            ${(lessons || []).map(lesson => `
+                <div class="lesson-card">
+                    <div class="lesson-header">
+                        <div class="lesson-title">${lesson.title}</div>
+                        <div class="lesson-section">${lesson.section}</div>
+                    </div>
+                    <div class="lesson-meta">
+                        Order: ${lesson.lesson_order} • Duration: ${lesson.duration || 'Not set'} • 
+                        Status: ${lesson.is_active ? 'Active' : 'Inactive'}
+                        ${lesson.description ? '<br>' + lesson.description : ''}
+                    </div>
+                    <div class="lesson-actions">
+                        <a href="#" onclick="deleteLesson(${lesson.id})" class="lesson-action delete-btn">Delete</a>
+                    </div>
+                </div>
+            `).join('')}
         </div>
     </div>
 
-    <div class="lessons">
-        <h3>Existing Lessons</h3>
-        ${(lessons || []).map(lesson => `
-            <div class="lesson">
-                <strong>${lesson.title}</strong> - ${lesson.section} (Order: ${lesson.lesson_order})
-                ${lesson.duration ? `<br>Duration: ${lesson.duration}` : ''}
-            </div>
-        `).join('')}
-    </div>
-
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+        // Initialize Supabase client for direct uploads
+        const { createClient } = supabase;
+        const supabaseClient = createClient('${SUPABASE_URL}', '${SUPABASE_ANON_KEY || SUPABASE_SERVICE_ROLE_KEY}');
+        
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('videoFile');
+        const uploadForm = document.getElementById('uploadForm');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const progressWrap = document.getElementById('progressWrap');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+
+        // Drop zone functionality
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                updateDropZoneText(files[0].name);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                updateDropZoneText(e.target.files[0].name);
+            }
+        });
+        
+        function updateDropZoneText(filename) {
+            dropZone.querySelector('.drop-zone-text').textContent = 'Selected: ' + filename;
+        }
+
+        // Form submission with direct Supabase upload
+        uploadForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const lessonSelect = document.getElementById('lessonSelect');
-            const lessonValue = lessonSelect.value;
-            if (!lessonValue) {
-                alert('Please select a lesson');
+            const formData = new FormData(uploadForm);
+            const section = formData.get('section');
+            const title = formData.get('title');
+            const lessonOrder = formData.get('lesson_order');
+            const duration = formData.get('duration');
+            const description = formData.get('description');
+            const videoFile = formData.get('video');
+            
+            if (!section || !title || !lessonOrder || !videoFile) {
+                alert('Please fill in all required fields and select a video file.');
                 return;
             }
             
-            const parts = lessonValue.split('|');
-            const section = parts[0];
-            const lesson_order = parts[1];
-            const selectedOption = lessonSelect.selectedOptions[0];
-            const lessonTitle = selectedOption.text;
-            
-            const formData = new FormData();
-            formData.append('video', document.getElementById('videoFile').files[0]);
-            formData.append('title', lessonTitle);
-            formData.append('section', section);
-            formData.append('lesson_order', lesson_order);
-            formData.append('duration', document.getElementById('lessonDuration').value);
-            formData.append('key', '${req.query.key}');
-            
             try {
+                uploadBtn.disabled = true;
+                uploadBtn.textContent = '⏳ Uploading to Supabase...';
+                progressWrap.style.display = 'block';
+                
+                // Generate unique filename
+                const timestamp = Date.now();
+                const cleanTitle = title.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+                const fileName = section.toLowerCase().replace(/\\s+/g, '-') + '/' + cleanTitle + '-' + timestamp + '.' + videoFile.name.split('.').pop();
+                
+                // Upload directly to Supabase Storage
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                    .from('course-videos')
+                    .upload(fileName, videoFile, {
+                        onUploadProgress: (progress) => {
+                            const percent = Math.round((progress.loaded / progress.total) * 100);
+                            progressFill.style.width = percent + '%';
+                            progressText.textContent = 'Uploading: ' + percent + '%';
+                        }
+                    });
+
+                if (uploadError) throw uploadError;
+
+                progressText.textContent = 'Saving to database...';
+
+                // Save to database via your existing API
                 const response = await fetch('/admin/videos/upload', {
                     method: 'POST',
                     body: formData
@@ -5227,7 +5474,7 @@ app.get('/admin/videos', adm, adminGuard, async (req, res) => {
                 if (result.success) {
                     const notification = document.getElementById('successNotification');
                     const sectionName = section.replace('-', ' ');
-                    notification.innerHTML = '<strong>✅ Video Successfully Uploaded!</strong><div style="font-size:12px;margin-top:4px;">"' + lessonTitle + '" in ' + sectionName + ' section<br>Video is now available to members on the course page.</div>';
+                    notification.innerHTML = '<strong>✅ Video Successfully Uploaded!</strong><div style="font-size:12px;margin-top:4px;">"' + title + '" in ' + sectionName + ' section<br>Video is now available to members on the course page.</div>';
                     notification.style.display = 'block';
                     document.getElementById('uploadForm').reset();
                     
@@ -5239,8 +5486,31 @@ app.get('/admin/videos', adm, adminGuard, async (req, res) => {
                 }
             } catch (error) {
                 alert('Upload failed: ' + error.message);
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = '🚀 Upload Video (Direct to Supabase)';
+                progressWrap.style.display = 'none';
+                progressFill.style.width = '0%';
             }
         });
+
+        function deleteLesson(id) {
+            if (confirm('Are you sure you want to delete this lesson? This action cannot be undone.')) {
+                fetch('/admin/videos/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, key: '${req.query.key}' })
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        location.reload();
+                    } else {
+                        alert('Delete failed: ' + result.error);
+                    }
+                });
+            }
+        }
     </script>
 </body>
 </html>`;
@@ -5310,6 +5580,41 @@ app.post('/admin/videos/upload', adm, upload.single('video'), async (req, res) =
         
     } catch (e) {
         console.error('[VideoUpload]', e.message);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Delete video route
+app.post('/admin/videos/delete', adm, express.json(), async (req, res) => {
+    if (req.body?.key !== ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
+    
+    try {
+        const { id } = req.body;
+        if (!id) return res.status(400).json({ error: 'Video ID required' });
+        
+        // Get video path first
+        const { data: lesson } = await supabase
+            .from(COURSE_LESSONS_TABLE)
+            .select('video_path')
+            .eq('id', id)
+            .single();
+        
+        // Delete from database
+        const { error: dbError } = await supabase
+            .from(COURSE_LESSONS_TABLE)
+            .delete()
+            .eq('id', id);
+            
+        if (dbError) throw dbError;
+        
+        // Delete from storage if exists
+        if (lesson?.video_path) {
+            await supabase.storage.from('course-videos').remove([lesson.video_path]);
+        }
+        
+        res.json({ success: true });
+    } catch (e) {
+        console.error('[VideoDelete]', e.message);
         res.status(500).json({ error: e.message });
     }
 });
