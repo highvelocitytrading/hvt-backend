@@ -6,6 +6,7 @@ const express = require('express');
 const crypto  = require('crypto');
 const Busboy  = require('busboy');
 const multer  = require('multer');
+const fs      = require('fs');
 const { createClient } = require('@supabase/supabase-js');
 
 const fetchFn = global.fetch
@@ -114,10 +115,10 @@ const COURSE_LESSONS_TABLE = 'course_lessons';
 
 // ─── MULTER CONFIGURATION FOR VIDEO UPLOADS ─────────────────────────────────
 const upload = multer({
-    storage: multer.memoryStorage(),
+    dest: '/tmp/', // Use temporary disk storage instead of memory
     limits: { 
         fileSize: 10 * 1024 * 1024 * 1024, // 10GB max file size
-        files: 1 // One file at a time
+        files: 1
     },
     fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('video/')) {
@@ -5268,15 +5269,21 @@ app.post('/admin/videos/upload', adm, upload.single('video'), async (req, res) =
         const timestamp = Date.now();
         const fileName = `${section}/lesson-${lesson_order}-${timestamp}.${videoFile.originalname.split('.').pop()}`;
         
+        // Read file from disk instead of using buffer
+        const fileBuffer = fs.readFileSync(videoFile.path);
+        
         // Upload video to Supabase storage
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from('course-videos')
-            .upload(fileName, videoFile.buffer, {
+            .upload(fileName, fileBuffer, {
                 contentType: videoFile.mimetype,
                 upsert: false
             });
             
         if (uploadError) throw uploadError;
+        
+        // Clean up temporary file
+        fs.unlinkSync(videoFile.path);
         
         // Save lesson info to database
         const { error: dbError } = await supabase
