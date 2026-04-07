@@ -89,7 +89,7 @@ const AUTHORIZE_SIGNATURE_KEY   = process.env.AUTHORIZE_SIGNATURE_KEY || null;
 const AUTHNET_API_LOGIN_ID      = process.env.AUTHNET_API_LOGIN_ID;
 const AUTHNET_TRANSACTION_KEY   = process.env.AUTHNET_TRANSACTION_KEY;
 const RESEND_API_KEY            = process.env.RESEND_API_KEY;
-const FROM_EMAIL                = process.env.FROM_EMAIL || 'support@hvt-mail.com';
+const FROM_EMAIL                = 'support@hvt-mail.com'; // Force correct domain
 const APP_URL                   = process.env.APP_URL    || 'https://hvt-backend-production-ec41.up.railway.app';
 const JOTFORM_SECRET            = process.env.JOTFORM_SECRET || null;
 const ADMIN_SECRET              = process.env.ADMIN_SECRET   || 'HVT-ADMIN-FADBC551B512718D76F4B8744E54B621';
@@ -361,18 +361,27 @@ async function getGuildAll() {
 // ─── EMAIL ───────────────────────────────────────────────────────────────────
 async function sendEmail(to, subject, html) {
     // Demo mode permanently disabled - emails will always send
+    console.log('[Email] Attempting to send to:', to, 'Subject:', subject);
+    
     if (!RESEND_API_KEY) {
-        console.warn('[Email] RESEND_API_KEY not set – skipping send', { to, subject });
+        console.error('[Email] RESEND_API_KEY not set – skipping send', { to, subject });
         return { skipped: true };
     }
+    
+    try {
     const r = await fetchFn('https://api.resend.com/emails', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${RESEND_API_KEY}` },
         body: JSON.stringify({ from: FROM_EMAIL, to, subject, html })
     });
     const d = await r.json();
+    console.log('[Email] Resend response:', d);
     if (!r.ok) throw new Error(`Resend: ${JSON.stringify(d)}`);
     return d;
+    } catch (e) {
+        console.error('[Email] Error sending email:', e.message);
+        throw e;
+    }
 }
 function wrap(content) {
     return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
