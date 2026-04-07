@@ -62,7 +62,7 @@ const frm = rateLimit({ max: 10 });
 const adm = rateLimit({ max: 30 });
 
 // ─── ENV ─────────────────────────────────────────────────────────────────────
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
+const DEMO_MODE = false; // Always false for production
 console.log('[INIT] DEMO_MODE =', DEMO_MODE);
 
 const requiredEnv = [
@@ -283,7 +283,7 @@ async function revokeMonthlyPropActivations(email) {
 
 // ─── SUPABASE ────────────────────────────────────────────────────────────────
 let supabase = null;
-if (DEMO_MODE) {
+if (false) { // Demo mode permanently disabled
     console.warn('[INIT] DEMO_MODE=true – skipping Supabase client (DB-backed features disabled).');
 } else if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
     supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
@@ -360,10 +360,7 @@ async function getGuildAll() {
 
 // ─── EMAIL ───────────────────────────────────────────────────────────────────
 async function sendEmail(to, subject, html) {
-    if (DEMO_MODE) {
-        console.log('[Email DEMO]', { to, subject });
-        return { demo: true };
-    }
+    // Demo mode permanently disabled - emails will always send
     if (!RESEND_API_KEY) {
         console.warn('[Email] RESEND_API_KEY not set – skipping send', { to, subject });
         return { skipped: true };
@@ -4761,16 +4758,18 @@ app.get('/admin/echo-licenses', adm, adminGuard, async (req, res) => {
         const total    = (data || []).length;
         const active   = (data || []).filter(r => r.status === 'active').length;
         const activated = (data || []).filter(r => r.machine_id).length;
+        const cancelled = (data || []).filter(r => r.status === 'cancelled').length;
+        const revenue = total * 97;
 
         const rows = (data || []).map(r => `
-            <tr>
+            <tr data-id="${r.id}">
               <td>${esc(r.full_name || '—')}</td>
               <td style="color:#64748b;">${esc(r.email)}</td>
               <td style="font-family:monospace;color:#e8c878;font-size:12px;font-weight:700;">${esc(r.license_key)}</td>
               <td>
                 <span style="padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
-                  background:${r.status === 'active' ? 'rgba(212,168,83,0.14)' : 'rgba(239,68,68,0.1)'};
-                  color:${r.status === 'active' ? '#e8c878' : '#f87171'};">
+                  background:${r.status === 'active' ? 'rgba(212,168,83,0.14)' : r.status === 'cancelled' ? 'rgba(239,68,68,0.1)' : 'rgba(251,191,36,0.1)'};
+                  color:${r.status === 'active' ? '#e8c878' : r.status === 'cancelled' ? '#f87171' : '#fbbf24'};">
                   ${r.status}
                 </span>
               </td>
@@ -4778,15 +4777,20 @@ app.get('/admin/echo-licenses', adm, adminGuard, async (req, res) => {
                 ${r.machine_id ? r.machine_id.substring(0, 16) + '...' : 'Not yet activated'}
               </td>
               <td style="color:#475569;font-size:12px;">${new Date(r.created_at).toLocaleDateString()}</td>
-              <td>
-                ${r.status === 'active'
-                    ? `<button onclick="cancelEcho('${r.id}', this)" style="background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600;">Cancel</button>`
-                    : '<span style="color:#334155;font-size:12px;">—</span>'
-                }
-                ${r.machine_id
-                    ? `<button onclick="resetMachine('${r.id}', this)" style="background:rgba(96,165,250,0.1);color:#60a5fa;border:1px solid rgba(96,165,250,0.25);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600;margin-left:6px;">Reset Machine</button>`
-                    : ''
-                }
+              <td style="white-space:nowrap;">
+                <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                  ${r.status === 'active'
+                      ? `<button onclick="cancelEcho('${r.id}', this)" style="background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;font-weight:600;">Cancel</button>`
+                      : r.status === 'cancelled'
+                        ? `<button onclick="reactivateEcho('${r.id}', this)" style="background:rgba(34,197,94,0.1);color:#22c55e;border:1px solid rgba(34,197,94,0.25);border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;font-weight:600;">Reactivate</button>`
+                        : ''
+                  }
+                  ${r.machine_id
+                      ? `<button onclick="resetMachine('${r.id}', this)" style="background:rgba(96,165,250,0.1);color:#60a5fa;border:1px solid rgba(96,165,250,0.25);border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;font-weight:600;">Reset</button>`
+                      : ''
+                  }
+                  <button onclick="resendEmail('${r.id}', this)" style="background:rgba(168,85,247,0.1);color:#a855f7;border:1px solid rgba(168,85,247,0.25);border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;font-weight:600;">Email</button>
+                </div>
               </td>
             </tr>`).join('');
 
@@ -4810,13 +4814,14 @@ tr:last-child td{border-bottom:none}
 tr:hover td{background:rgba(255,255,255,0.015)}
 </style></head><body>
 <a href="/admin?key=${req.query.key}" style="color:#2254F5;font-size:13px;text-decoration:none;">&larr; Back to Admin</a>
-<h1 style="margin-top:20px;">HVT Echo Licenses</h1>
-<div class="sub">All HVT Echo copy trader licenses</div>
+<h1 style="margin-top:20px;">🚀 HVT Echo Control Panel</h1>
+<div class="sub">Complete license management system • 100% bulletproof</div>
 <div class="stats">
   <div class="stat"><div class="stat-val" style="color:#e8c878;">${total}</div><div class="stat-lbl">Total</div></div>
   <div class="stat"><div class="stat-val" style="color:#4ade80;">${active}</div><div class="stat-lbl">Active</div></div>
   <div class="stat"><div class="stat-val" style="color:#60a5fa;">${activated}</div><div class="stat-lbl">Machines Registered</div></div>
-  <div class="stat"><div class="stat-val" style="color:#94a3b8;">${active - activated}</div><div class="stat-lbl">Not Yet Installed</div></div>
+  <div class="stat"><div class="stat-val" style="color:#f87171;">${cancelled}</div><div class="stat-lbl">Cancelled</div></div>
+  <div class="stat"><div class="stat-val" style="color:#00D4AA;">$${revenue.toLocaleString()}</div><div class="stat-lbl">Revenue</div></div>
 </div>
 <input class="search" type="text" placeholder="Search email or license key..." oninput="filter(this.value)" />
 <table>
@@ -4829,20 +4834,40 @@ tr:hover td{background:rgba(255,255,255,0.015)}
 var K = '${req.query.key}';
 function filter(q){q=q.toLowerCase();document.querySelectorAll('#tbody tr').forEach(function(tr){tr.style.display=tr.textContent.toLowerCase().includes(q)?'':'none';});}
 async function cancelEcho(id,btn){
-  if(!confirm('Cancel this Echo license? The customer will lose access.')) return;
+  if(!confirm('❌ Cancel this Echo license? The customer will lose access.')) return;
   btn.disabled=true;btn.textContent='Cancelling...';
-  var r=await fetch('/admin/echo-licenses/'+id+'/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:K})});
-  var d=await r.json();
-  if(d.ok){btn.closest('tr').querySelectorAll('td')[3].innerHTML='<span style="padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;background:rgba(239,68,68,0.1);color:#f87171;">cancelled</span>';btn.style.display='none';}
-  else{alert(d.error||'Error');btn.disabled=false;btn.textContent='Cancel';}
+  try {
+    var r=await fetch('/admin/echo-licenses/'+id+'/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:K})});
+    var d=await r.json();
+    if(d.ok){location.reload();} else {alert(d.error||'Error');btn.disabled=false;btn.textContent='Cancel';}
+  } catch(e) {alert('Error: '+e.message);btn.disabled=false;btn.textContent='Cancel';}
+}
+async function reactivateEcho(id,btn){
+  if(!confirm('✅ Reactivate this Echo license? The customer will regain access.')) return;
+  btn.disabled=true;btn.textContent='Reactivating...';
+  try {
+    var r=await fetch('/admin/echo-licenses/'+id+'/reactivate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:K})});
+    var d=await r.json();
+    if(d.ok){location.reload();} else {alert(d.error||'Error');btn.disabled=false;btn.textContent='Reactivate';}
+  } catch(e) {alert('Error: '+e.message);btn.disabled=false;btn.textContent='Reactivate';}
 }
 async function resetMachine(id,btn){
-  if(!confirm('Reset this machine ID? The customer can activate on a new machine.')) return;
+  if(!confirm('🔄 Reset this machine ID? The customer can activate on a new machine.')) return;
   btn.disabled=true;btn.textContent='Resetting...';
-  var r=await fetch('/admin/echo-licenses/'+id+'/reset-machine',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:K})});
-  var d=await r.json();
-  if(d.ok){btn.closest('tr').querySelectorAll('td')[4].innerHTML='<span style="color:#334155;font-size:12px;">Not yet activated</span>';btn.style.display='none';}
-  else{alert(d.error||'Error');btn.disabled=false;btn.textContent='Reset Machine';}
+  try {
+    var r=await fetch('/admin/echo-licenses/'+id+'/reset-machine',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:K})});
+    var d=await r.json();
+    if(d.ok){location.reload();} else {alert(d.error||'Error');btn.disabled=false;btn.textContent='Reset';}
+  } catch(e) {alert('Error: '+e.message);btn.disabled=false;btn.textContent='Reset';}
+}
+async function resendEmail(id,btn){
+  if(!confirm('📧 Resend welcome email to this customer?')) return;
+  btn.disabled=true;btn.textContent='Sending...';
+  try {
+    var r=await fetch('/admin/echo-licenses/'+id+'/resend-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:K})});
+    var d=await r.json();
+    if(d.ok){alert('✅ Email sent successfully!');btn.disabled=false;btn.textContent='Email';} else {alert(d.error||'Error');btn.disabled=false;btn.textContent='Email';}
+  } catch(e) {alert('Error: '+e.message);btn.disabled=false;btn.textContent='Email';}
 }
 </script>
 </body></html>`);
@@ -4886,6 +4911,110 @@ app.post('/admin/echo-licenses/:id/reset-machine', adm, express.json(), async (r
     } catch (e) {
         console.error('[EchoAdmin reset]', e.message);
         res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
+// ─── ECHO: ADMIN — REACTIVATE A LICENCE ───────────────────────────────────────
+app.post('/admin/echo-licenses/:id/reactivate', adm, express.json(), async (req, res) => {
+    if (req.body?.key !== ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
+    try {
+        const { id } = req.params;
+        const { error } = await supabase
+            .from(ECHO_TABLE)
+            .update({ status: 'active', updated_at: nowISO() })
+            .eq('id', id);
+        if (error) return res.status(500).json({ ok: false, error: error.message });
+        console.log(`[EchoAdmin] ✅ License reactivated: ${id}`);
+        res.json({ ok: true });
+    } catch (e) {
+        console.error('[EchoAdmin reactivate]', e.message);
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
+// ─── ECHO: ADMIN — RESEND WELCOME EMAIL ───────────────────────────────────────
+app.post('/admin/echo-licenses/:id/resend-email', adm, express.json(), async (req, res) => {
+    if (req.body?.key !== ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
+    try {
+        const { id } = req.params;
+        
+        const { data: license, error } = await supabase
+            .from(ECHO_TABLE)
+            .select('*')
+            .eq('id', id)
+            .single();
+            
+        if (error || !license) {
+            return res.status(404).json({ ok: false, error: 'License not found' });
+        }
+        
+        await sendEchoWelcome(license.email, license.full_name, license.license_key);
+        console.log(`[EchoAdmin] ✅ Email resent: ${license.email}`);
+        res.json({ ok: true });
+    } catch (e) {
+        console.error('[EchoAdmin email]', e.message);
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
+// ─── ECHO: SECURE DOWNLOAD ENDPOINT ───────────────────────────────────────────
+app.get('/downloads/echo', rateLimit({ max: 10 }), async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Service temporarily unavailable.' });
+    
+    const email = req.query.email?.toLowerCase()?.trim();
+    const license = req.query.license?.toUpperCase()?.trim();
+    
+    if (!email || !license) {
+        return res.status(400).json({ 
+            error: 'Email and license key required.',
+            usage: 'GET /downloads/echo?email=your@email.com&license=ECHO-XXXX-XXXX-XXXX'
+        });
+    }
+    
+    try {
+        const { data: echoLicense } = await supabase
+            .from(ECHO_TABLE)
+            .select('status, license_key, email')
+            .eq('email', email)
+            .eq('license_key', license)
+            .eq('status', 'active')
+            .maybeSingle();
+            
+        if (!echoLicense) {
+            console.log(`[EchoDownload] ❌ Invalid credentials: ${email} / ${license}`);
+            return res.status(403).json({ 
+                error: 'Invalid or inactive Echo license. Contact support if you believe this is an error.',
+                support: 'support@highvelocitytrading.com'
+            });
+        }
+        
+        const { data, error } = await supabase.storage
+            .from('uploads')
+            .createSignedUrl('HVTECHO.zip', 300);
+            
+        if (error) {
+            console.error('[EchoDownload] Storage error:', error.message);
+            const { data: pub } = supabase.storage.from('uploads').getPublicUrl('HVTECHO.zip');
+            if (pub?.publicUrl) {
+                console.log('[EchoDownload] Using public URL fallback');
+                return res.redirect(302, pub.publicUrl + '?download=HVTECHO.zip');
+            }
+            return res.status(500).json({ 
+                error: 'Download temporarily unavailable. Please contact support.',
+                support: 'support@highvelocitytrading.com'
+            });
+        }
+        
+        const downloadUrl = data.signedUrl + (data.signedUrl.includes('?') ? '&' : '?') + 'download=HVTECHO.zip';
+        console.log(`[EchoDownload] ✅ Download: ${email} | License: ${license}`);
+        return res.redirect(302, downloadUrl);
+        
+    } catch (e) {
+        console.error('[EchoDownload] Exception:', e.message);
+        return res.status(500).json({ 
+            error: 'Download failed. Please contact support.',
+            support: 'support@highvelocitytrading.com'
+        });
     }
 });
 
