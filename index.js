@@ -1745,7 +1745,7 @@ async function getSessionAsync(req) {
 async function requireSession(req, res, next) {
     if (DEMO_MODE) {
         req._session = {
-            email: 'demo@highvelocitytrading.com',
+            email: 'demo@hvt-mail.com',
             name: 'Demo Trader',
             plan: 'Demo Access',
             expires: Date.now() + 7 * 24 * 60 * 60 * 1000
