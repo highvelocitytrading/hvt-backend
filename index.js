@@ -5191,40 +5191,65 @@ app.get('/admin/videos', adm, adminGuard, async (req, res) => {
     </div>
 
     <div class="upload-section">
-        <h3>Upload New Lesson</h3>
+        <h3>Attach Video to Lesson</h3>
         <form id="uploadForm" enctype="multipart/form-data">
             <div class="form-group">
-                <label class="form-label">Lesson Title</label>
-                <input type="text" class="form-input" id="lessonTitle" placeholder="e.g., Welcome to HVT" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Section</label>
-                <select class="form-select" id="sectionSelect" required>
-                    <option value="">Select Section</option>
-                    <option value="introduction">Introduction</option>
-                    <option value="indicators">Indicators</option>
-                    <option value="risk-management">Risk Management</option>
-                    <option value="psychology">Psychology</option>
+                <label class="form-label">Select Lesson</label>
+                <select class="form-select" id="lessonSelect" required>
+                    <option value="">Choose which lesson gets this video</option>
+                    <optgroup label="Introduction">
+                        <option value="introduction|1">Welcome to the HVT Portal</option>
+                        <option value="introduction|2">How This Course Is Structured</option>
+                        <option value="introduction|3">Getting the Most Out of HVT</option>
+                    </optgroup>
+                    <optgroup label="Indicators">
+                        <option value="indicators|1">Overview of HVT Indicators</option>
+                        <option value="indicators|2">Reading Momentum & Trend</option>
+                        <option value="indicators|3">Combining Signals for Entries</option>
+                    </optgroup>
+                    <optgroup label="Risk Management">
+                        <option value="risk-management|1">Position Sizing & Daily Loss Limits</option>
+                        <option value="risk-management|2">Stop Placement & Trade Invalidation</option>
+                        <option value="risk-management|3">Building a Risk Plan You Keep</option>
+                    </optgroup>
+                    <optgroup label="Psychology">
+                        <option value="psychology|1">Welcome to HVT Psychology</option>
+                        <option value="psychology|2">Why Traders Fail in the Long Run</option>
+                        <option value="psychology|3">Discipline, FOMO, and Tilt</option>
+                        <option value="psychology|4">Creating a Professional Routine</option>
+                    </optgroup>
                 </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Lesson Order</label>
-                <input type="number" class="form-input" id="lessonOrder" placeholder="1" min="1" required>
             </div>
             <div class="form-group">
                 <label class="form-label">Duration (optional)</label>
                 <input type="text" class="form-input" id="lessonDuration" placeholder="10:30">
             </div>
-            <div class="form-group">
-                <label class="form-label">Description (optional)</label>
-                <textarea class="form-textarea" id="lessonDescription" rows="3" placeholder="Lesson description..."></textarea>
-            </div>
             <div class="file-upload" onclick="document.getElementById('videoFile').click()">
                 <input type="file" id="videoFile" accept="video/*" style="display: none;" required>
                 <div>Click to select video file (Max: 2GB)</div>
             </div>
-            <button type="submit" class="upload-btn">Upload Video</button>
+            <button type="submit" class="upload-btn" id="uploadBtn">Attach Video to Lesson</button>
         </form>
+        
+        <!-- Upload Progress -->
+        <div id="uploadProgress" style="display:none;margin-top:16px;">
+            <div style="background:#222;border-radius:4px;overflow:hidden;">
+                <div id="progressBar" style="background:#2254F5;height:6px;width:0%;transition:width 0.3s;"></div>
+            </div>
+            <div style="font-size:12px;color:#64748b;margin-top:4px;" id="progressText">Uploading...</div>
+        </div>
+        
+        <!-- Success Notification -->
+        <div id="successNotification" style="display:none;margin-top:16px;padding:12px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:6px;color:#22c55e;">
+            <strong>✅ Video Successfully Uploaded!</strong>
+            <div style="font-size:12px;margin-top:4px;" id="successDetails"></div>
+        </div>
+        
+        <!-- Error Notification -->
+        <div id="errorNotification" style="display:none;margin-top:16px;padding:12px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;color:#ef4444;">
+            <strong>❌ Upload Failed</strong>
+            <div style="font-size:12px;margin-top:4px;" id="errorDetails"></div>
+        </div>
     </div>
 
     <div class="lessons">
@@ -5240,31 +5265,113 @@ app.get('/admin/videos', adm, adminGuard, async (req, res) => {
     <script>
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            // Hide previous notifications
+            document.getElementById('successNotification').style.display = 'none';
+            document.getElementById('errorNotification').style.display = 'none';
+            
+            const lessonSelect = document.getElementById('lessonSelect').value;
+            if (!lessonSelect) {
+                showError('Please select a lesson');
+                return;
+            }
+            
+            const [section, lesson_order] = lessonSelect.split('|');
+            const selectedOption = document.getElementById('lessonSelect').selectedOptions[0];
+            const lessonTitle = selectedOption.text;
+            
             const formData = new FormData();
             formData.append('video', document.getElementById('videoFile').files[0]);
-            formData.append('title', document.getElementById('lessonTitle').value);
-            formData.append('section', document.getElementById('sectionSelect').value);
-            formData.append('lesson_order', document.getElementById('lessonOrder').value);
+            formData.append('title', lessonTitle);
+            formData.append('section', section);
+            formData.append('lesson_order', lesson_order);
             formData.append('duration', document.getElementById('lessonDuration').value);
-            formData.append('description', document.getElementById('lessonDescription').value);
             formData.append('key', '${req.query.key}');
             
+            // Show progress
+            const progressDiv = document.getElementById('uploadProgress');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const uploadBtn = document.getElementById('uploadBtn');
+            
+            progressDiv.style.display = 'block';
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Uploading...';
+            
             try {
-                const response = await fetch('/admin/videos/upload', {
-                    method: 'POST',
-                    body: formData
+                // Create XMLHttpRequest to track upload progress
+                const xhr = new XMLHttpRequest();
+                
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        progressBar.style.width = percentComplete + '%';
+                        progressText.textContent = `Uploading... ${Math.round(percentComplete)}%`;
+                    }
                 });
-                const result = await response.json();
-                if (result.success) {
-                    alert('Video uploaded successfully!');
-                    location.reload();
-                } else {
-                    alert('Upload failed: ' + (result.error || 'Unknown error'));
-                }
+                
+                xhr.addEventListener('load', () => {
+                    progressDiv.style.display = 'none';
+                    uploadBtn.disabled = false;
+                    uploadBtn.textContent = 'Attach Video to Lesson';
+                    
+                    if (xhr.status === 200) {
+                        const result = JSON.parse(xhr.responseText);
+                        if (result.success) {
+                            showSuccess(lessonTitle, section);
+                            document.getElementById('uploadForm').reset();
+                        } else {
+                            showError(result.error || 'Upload failed');
+                        }
+                    } else {
+                        showError('Upload failed. Please try again.');
+                    }
+                });
+                
+                xhr.addEventListener('error', () => {
+                    progressDiv.style.display = 'none';
+                    uploadBtn.disabled = false;
+                    uploadBtn.textContent = 'Attach Video to Lesson';
+                    showError('Network error. Please check your connection.');
+                });
+                
+                xhr.open('POST', '/admin/videos/upload');
+                xhr.send(formData);
+                
             } catch (error) {
-                alert('Upload failed: ' + error.message);
+                progressDiv.style.display = 'none';
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Attach Video to Lesson';
+                showError('Upload failed: ' + error.message);
             }
         });
+        
+        function showSuccess(lessonTitle, section) {
+            const notification = document.getElementById('successNotification');
+            const details = document.getElementById('successDetails');
+            details.innerHTML = `
+                <strong>"${lessonTitle}"</strong> in <em>${section.replace('-', ' ')}</em> section<br>
+                Video is now available to members on the course page.
+            `;
+            notification.style.display = 'block';
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 5000);
+        }
+        
+        function showError(message) {
+            const notification = document.getElementById('errorNotification');
+            const details = document.getElementById('errorDetails');
+            details.textContent = message;
+            notification.style.display = 'block';
+            
+            // Auto-hide after 8 seconds
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 8000);
+        }
     </script>
 </body>
 </html>`;
