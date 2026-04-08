@@ -2861,7 +2861,33 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 (function(){
 // ── STATE ────────────────────────────────────────────────────────────────────
 var activeSec = 0, activeVid = 0;
-var COURSE = []; // Will be loaded from database
+// ── COURSE DATA (YOUTUBE ONLY) ──────────────────────────────────────────────
+var COURSE = [
+  { title: 'Introduction', videos: [
+    { title: 'Welcome to the HVT Portal',     dur: '2m',  ytId: '' },
+    { title: 'How This Course Is Structured', dur: '3m',  ytId: '' },
+    { title: 'Getting the Most Out of HVT',   dur: '3m',  ytId: 'DYZ8njASd74' }
+  ]},
+  { title: 'Indicators', videos: [
+    { title: 'Overview of HVT Indicators',    dur: '4m',  ytId: '' },
+    { title: 'Reading Momentum & Trend',      dur: '5m',  ytId: '' },
+    { title: 'Combining Signals for Entries', dur: '6m',  ytId: '' }
+  ]},
+  { title: 'Risk Management', videos: [
+    { title: 'Position Sizing & Daily Loss Limits', dur: '5m',  ytId: '' },
+    { title: 'Stop Placement & Trade Invalidation', dur: '4m',  ytId: '' },
+    { title: 'Building a Risk Plan You Keep',       dur: '4m',  ytId: '' }
+  ]},
+  { title: 'Psychology', videos: [
+    { title: 'Welcome to HVT Psychology',        dur: '3m',  ytId: '' },
+    { title: 'Why Traders Fail in the Long Run', dur: '4m',  ytId: '' },
+    { title: 'Discipline, FOMO, and Tilt',       dur: '5m',  ytId: '' },
+    { title: 'Creating a Professional Routine',  dur: '4m',  ytId: '' }
+  ]}
+];
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+var activeSec = 0, activeVid = 0;
 
 // ── DOM ELEMENTS ─────────────────────────────────────────────────────────────
 var sidebarEl  = document.getElementById('sidebar');
@@ -2873,86 +2899,6 @@ var metaEl     = document.getElementById('videoMeta');
 var titleEl    = document.getElementById('videoTitle');
 var sectionEl  = document.getElementById('videoSection');
 var durEl      = document.getElementById('videoDur');
-
-// ── LOAD COURSE DATA FROM DATABASE ──────────────────────────────────────────
-async function loadCourseData() {
-    try {
-        const response = await fetch('/api/course/videos');
-        const data = await response.json();
-        
-        // Group lessons by sections
-        const sections = {};
-        for (const lesson of data.lessons || []) {
-            if (!sections[lesson.section]) sections[lesson.section] = [];
-            sections[lesson.section].push({
-                id: lesson.id,
-                title: lesson.title,
-                dur: lesson.duration || '0m',
-                videoPath: lesson.video_path,
-                ytId: '' // Fallback for YouTube if needed
-            });
-        }
-        
-        // Convert to COURSE format (fallback to empty structure if no data)
-        COURSE = Object.keys(sections).length > 0 
-            ? Object.keys(sections).map(sectionName => ({
-                title: sectionName,
-                videos: sections[sectionName]
-            }))
-            : [
-                { title: 'Introduction', videos: [
-                    { title: 'Welcome to the HVT Portal', dur: '2m', ytId: '' },
-                    { title: 'How This Course Is Structured', dur: '3m', ytId: '' },
-                    { title: 'Getting the Most Out of HVT', dur: '3m', ytId: 'DYZ8njASd74' }
-                ]},
-                { title: 'Indicators', videos: [
-                    { title: 'Overview of HVT Indicators', dur: '4m', ytId: '' },
-                    { title: 'Reading Momentum & Trend', dur: '5m', ytId: '' },
-                    { title: 'Combining Signals for Entries', dur: '6m', ytId: '' }
-                ]},
-                { title: 'Risk Management', videos: [
-                    { title: 'Position Sizing & Daily Loss Limits', dur: '5m', ytId: '' },
-                    { title: 'Stop Placement & Trade Invalidation', dur: '4m', ytId: '' },
-                    { title: 'Building a Risk Plan You Keep', dur: '4m', ytId: '' }
-                ]},
-                { title: 'Psychology', videos: [
-                    { title: 'Welcome to HVT Psychology', dur: '3m', ytId: '' },
-                    { title: 'Why Traders Fail in the Long Run', dur: '4m', ytId: '' },
-                    { title: 'Discipline, FOMO, and Tilt', dur: '5m', ytId: '' },
-                    { title: 'Creating a Professional Routine', dur: '4m', ytId: '' }
-                ]}
-            ];
-        
-        buildSidebar();
-    } catch (error) {
-        console.error('Failed to load course data:', error);
-        // Fallback to hardcoded structure
-        COURSE = [
-            { title: 'Introduction', videos: [
-                { title: 'Welcome to the HVT Portal', dur: '2m', ytId: '' },
-                { title: 'How This Course Is Structured', dur: '3m', ytId: '' },
-                { title: 'Getting the Most Out of HVT', dur: '3m', ytId: 'DYZ8njASd74' }
-            ]},
-            { title: 'Indicators', videos: [
-                { title: 'Overview of HVT Indicators', dur: '4m', ytId: '' },
-                { title: 'Reading Momentum & Trend', dur: '5m', ytId: '' },
-                { title: 'Combining Signals for Entries', dur: '6m', ytId: '' }
-            ]},
-            { title: 'Risk Management', videos: [
-                { title: 'Position Sizing & Daily Loss Limits', dur: '5m', ytId: '' },
-                { title: 'Stop Placement & Trade Invalidation', dur: '4m', ytId: '' },
-                { title: 'Building a Risk Plan You Keep', dur: '4m', ytId: '' }
-            ]},
-            { title: 'Psychology', videos: [
-                { title: 'Welcome to HVT Psychology', dur: '3m', ytId: '' },
-                { title: 'Why Traders Fail in the Long Run', dur: '4m', ytId: '' },
-                { title: 'Discipline, FOMO, and Tilt', dur: '5m', ytId: '' },
-                { title: 'Creating a Professional Routine', dur: '4m', ytId: '' }
-            ]}
-        ];
-        buildSidebar();
-    }
-}
 
 // ── SIDEBAR TOGGLE ───────────────────────────────────────────────────────────
 document.getElementById('mobMenu').addEventListener('click', function(){
@@ -3011,47 +2957,16 @@ function toggleSection(si){
 }
 
 // ── PLAY VIDEO ───────────────────────────────────────────────────────────────
-async function playVideo(si, vi){
+function playVideo(si, vi){
   activeSec = si; activeVid = vi;
   buildSidebar();
   var v = COURSE[si].videos[vi];
   
-  // Handle YouTube videos (legacy)
   if(v.ytId){
     playerEl.innerHTML = '<iframe src="https://www.youtube.com/embed/' + v.ytId + '?autoplay=1&rel=0&modestbranding=1" style="width:100%;height:100%;border:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;web-share" allowfullscreen></iframe>';
     playerEl.style.display = 'block';
     placeholderEl.style.display = 'none';
-  } 
-  // Handle Supabase videos (new system)
-  else if(v.videoPath && v.id){
-    try {
-      // Get signed URL for video streaming
-      const response = await fetch('/api/course/video/' + v.id + '/stream');
-      const data = await response.json();
-      
-      if (data.streamUrl) {
-        // Use HTML5 video player for Supabase videos
-        playerEl.innerHTML = '<video controls style="width:100%;height:100%;object-fit:contain" src="' + data.streamUrl + '" preload="metadata"></video>';
-        playerEl.style.display = 'block';
-        placeholderEl.style.display = 'none';
-      } else {
-        throw new Error('No stream URL available');
-      }
-    } catch (error) {
-      console.error('Failed to load video:', error);
-      playerEl.style.display = 'none';
-      playerEl.innerHTML = '';
-      placeholderEl.style.display = 'flex';
-      placeholderEl.innerHTML =
-        '<div style="width:64px;height:64px;border-radius:50%;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:4px;">' +
-        '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="1.5" style="opacity:0.7"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg>' +
-        '</div>' +
-        '<h3 style="color:#94a3b8;font-size:17px;font-weight:700;letter-spacing:-0.3px;">' + esc(v.title) + '</h3>' +
-        '<p style="color:#334155;font-size:13px;max-width:280px;line-height:1.6;">Video not available or failed to load. Please try again later.</p>';
-    }
-  } 
-  // No video available
-  else {
+  } else {
     playerEl.style.display = 'none';
     playerEl.innerHTML = '';
     placeholderEl.style.display = 'flex';
@@ -3079,61 +2994,10 @@ async function playVideo(si, vi){
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
-loadCourseData();
+buildSidebar();
 })();
 </script>
 </body></html>`);
-});
-
-// ─── VIDEO API ROUTES ────────────────────────────────────────────────────────
-
-// Get all course videos organized by section
-app.get('/api/course/videos', requireSession, async (req, res) => {
-    try {
-        const { data: lessons, error } = await supabase
-            .from(COURSE_LESSONS_TABLE)
-            .select('*')
-            .eq('is_active', true)
-            .order('section_order', { ascending: true })
-            .order('lesson_order', { ascending: true });
-
-        if (error) throw error;
-
-        res.json({ lessons: lessons || [] });
-    } catch (error) {
-        console.error('[API] Failed to fetch videos:', error);
-        res.status(500).json({ error: 'Failed to fetch videos' });
-    }
-});
-
-// Get signed URL for video streaming
-app.get('/api/course/video/:id/stream', requireSession, async (req, res) => {
-    try {
-        const { data: lesson } = await supabase
-            .from(COURSE_LESSONS_TABLE)
-            .select('video_path')
-            .eq('id', req.params.id)
-            .eq('is_active', true)
-            .single();
-
-        if (!lesson?.video_path) {
-            return res.status(404).json({ error: 'Video not found' });
-        }
-
-        // Generate signed URL (expires in 1 hour)
-        const { data: signedData } = await supabase.storage
-            .from('course-videos')
-            .createSignedUrl(lesson.video_path, 3600);
-
-        if (!signedData?.signedUrl) {
-            return res.status(404).json({ error: 'Could not generate video stream' });
-        }
-
-        res.json({ streamUrl: signedData.signedUrl });
-    } catch (error) {
-        console.error('[API] Failed to get video stream:', error);
-        res.status(500).json({ error: 'Failed to get video stream' });
-    }
 });
 
 // ─── BILLING PORTAL ───────────────────────────────────────────────────────────
