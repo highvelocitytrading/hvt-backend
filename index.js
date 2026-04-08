@@ -2865,7 +2865,7 @@ var activeSec = 0, activeVid = 0;
 var COURSE = [
   { title: 'Introduction', videos: [
     { title: 'Welcome to the HVT Portal',     dur: '2m',  ytId: 'vn0L41oxvl4' },
-    { title: 'How This Course Is Structured', dur: '3m',  ytId: '' },
+    { title: 'How This Course Is Structured', dur: '3m',  ytId: 'g38umuTvf_M' },
     { title: 'Getting the Most Out of HVT',   dur: '3m',  ytId: 'DYZ8njASd74' }
   ]},
   { title: 'Indicators', videos: [
