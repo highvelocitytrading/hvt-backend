@@ -2817,40 +2817,32 @@ app.post('/api/course/video-token', requireSession, express.json(), rateLimit({ 
 });
 
 // ─── /api/course/play/:token ──────────────────────────────────────────────────
-// The iframe src. Validates + consumes the token, serves the embed page.
-// The YouTube ID only ever appears inside this server response — never in JS the browser downloads.
+// Called via fetch (NOT as iframe src). Validates + consumes token, returns JSON
+// with the embed URL. Client sets iframe.src directly to YouTube — this avoids
+// the nested iframe problem that causes Error 153.
 app.get('/api/course/play/:token', (req, res) => {
     const ip = req.ip || req.connection.remoteAddress || 'unknown';
     const ua = req.headers['user-agent'] || 'unknown';
     const result = consumeVideoToken(req.params.token, ip, ua);
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.setHeader('Pragma',        'no-cache');
-    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    res.setHeader('Content-Security-Policy',
-        "default-src 'none'; frame-src https://www.youtube-nocookie.com; style-src 'unsafe-inline'; frame-ancestors 'self';");
-    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('Pragma', 'no-cache');
     res.setHeader('X-Content-Type-Options', 'nosniff');
 
     if (!result.ok) {
         console.warn(`[CoursePlay] Rejected: ${result.reason} | IP:${ip.substring(0,8)}`);
-        return res.status(403).send(`<!DOCTYPE html><html><head><meta charset="utf-8">
-<style>body{margin:0;background:#0d1117;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif}
-.m{color:#475569;font-size:14px;text-align:center}.m strong{display:block;font-size:16px;color:#94a3b8;margin-bottom:8px}</style></head>
-<body><div class="m"><strong>Video Unavailable</strong>Please click the lesson again to reload.</div></body></html>`);
+        return res.status(403).json({ ok: false, error: 'Invalid or expired token. Click the lesson again.' });
     }
 
     const section = COURSE_DATA[result.si];
     const video   = section?.videos?.[result.vi];
-    if (!video?.ytId) return res.status(404).send('Video not found.');
+    if (!video?.ytId) return res.status(404).json({ ok: false, error: 'Video not found.' });
 
-    console.log(`[CoursePlay] ✅ Served [${result.si}][${result.vi}] "${video.title}"`);
-    res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;height:100%;background:#000;overflow:hidden}
-iframe{width:100%;height:100%;border:none;display:block}</style></head>
-<body><iframe src="https://www.youtube-nocookie.com/embed/${video.ytId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=0&iv_load_policy=3&color=white"
-allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"
-allowfullscreen referrerpolicy="no-referrer"></iframe></body></html>`);
+    console.log(`[CoursePlay] \u2705 Served [${result.si}][${result.vi}] "${video.title}"`);
+    res.json({
+        ok: true,
+        embedUrl: `https://www.youtube.com/embed/${video.ytId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3`
+    });
 });
 
 // ─── COURSE PLAYER (session-gated, secure) ────────────────────────────────────
@@ -3087,6 +3079,7 @@ function playVideo(si, vi){
     overlayEl.classList.remove('show');
   }
 
+  // Step 1: get a one-time token from the server (token, never a YouTube ID)
   fetch('/api/course/video-token', {
     method: 'POST',
     credentials: 'include',
@@ -3095,15 +3088,21 @@ function playVideo(si, vi){
   })
   .then(function(r){ return r.json(); })
   .then(function(d){
-    _playing = false;
-    if (!d.ok){ showError(d.error || 'Could not load this lesson. Please try again.'); return; }
-    if (d.comingSoon){ showComingSoon(v.title); return; }
-    // Set iframe src to the play endpoint — token is the only thing the browser sees
-    frameEl.onload = function(){
-      loadingEl.style.display = 'none';
-      frameEl.style.display   = 'block';
-    };
-    frameEl.src = '/api/course/play/' + encodeURIComponent(d.token);
+    if (!d.ok){ _playing = false; showError(d.error || 'Could not load this lesson. Please try again.'); return; }
+    if (d.comingSoon){ _playing = false; showComingSoon(v.title); return; }
+    // Step 2: exchange token for the embed URL (second authenticated request)
+    return fetch('/api/course/play/' + encodeURIComponent(d.token), { credentials: 'include' })
+      .then(function(r){ return r.json(); })
+      .then(function(p){
+        _playing = false;
+        if (!p.ok){ showError(p.error || 'Could not load this lesson. Please try again.'); return; }
+        // Step 3: set iframe src directly to YouTube — no nested iframe, no Error 153
+        frameEl.onload = function(){
+          loadingEl.style.display = 'none';
+          frameEl.style.display   = 'block';
+        };
+        frameEl.src = p.embedUrl;
+      });
   })
   .catch(function(e){
     _playing = false;
