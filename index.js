@@ -2870,7 +2870,7 @@ var COURSE = [
   ]},
   { title: 'Indicators', videos: [
     { title: 'Overview of HVT Indicators',    dur: '4m',  ytId: 'MRteZN0Xgmw' },
-    { title: 'Reading Momentum & Trend',      dur: '5m',  ytId: '' },
+    { title: 'Reading Momentum & Trend',      dur: '5m',  ytId: 'pVP01QzVidM' },
     { title: 'Combining Signals for Entries', dur: '6m',  ytId: '' }
   ]},
   { title: 'Risk Management', videos: [
