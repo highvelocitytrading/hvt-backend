@@ -2817,9 +2817,10 @@ app.post('/api/course/video-token', requireSession, express.json(), rateLimit({ 
 });
 
 // ─── /api/course/play/:token ──────────────────────────────────────────────────
-// Called via fetch (NOT as iframe src). Validates + consumes token, returns JSON
-// with the embed URL. Client sets iframe.src directly to YouTube — this avoids
-// the nested iframe problem that causes Error 153.
+// Returns a full HTML page that embeds the YouTube player.
+// The page explicitly sets referrerpolicy so YouTube receives the Referer header.
+// The iframe src is set to the Railway domain page, which then embeds YouTube —
+// Railway domain acts as the referrer, satisfying YouTube's requirement.
 app.get('/api/course/play/:token', (req, res) => {
     const ip = req.ip || req.connection.remoteAddress || 'unknown';
     const ua = req.headers['user-agent'] || 'unknown';
@@ -2827,22 +2828,58 @@ app.get('/api/course/play/:token', (req, res) => {
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.setHeader('X-Content-Type-Options', 'nosniff');
 
     if (!result.ok) {
         console.warn(`[CoursePlay] Rejected: ${result.reason} | IP:${ip.substring(0,8)}`);
-        return res.status(403).json({ ok: false, error: 'Invalid or expired token. Click the lesson again.' });
+        return res.status(403).send(`<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>body{margin:0;background:#0d1117;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif}
+.m{color:#475569;font-size:14px;text-align:center}.m strong{display:block;font-size:16px;color:#94a3b8;margin-bottom:8px}</style></head>
+<body><div class="m"><strong>Session Expired</strong>Click the lesson again to reload.</div></body></html>`);
     }
 
     const section = COURSE_DATA[result.si];
     const video   = section?.videos?.[result.vi];
-    if (!video?.ytId) return res.status(404).json({ ok: false, error: 'Video not found.' });
+    if (!video?.ytId) return res.status(404).send('Video not found.');
 
-    console.log(`[CoursePlay] \u2705 Served [${result.si}][${result.vi}] "${video.title}"`);
-    res.json({
-        ok: true,
-        embedUrl: `https://www.youtube.com/embed/${video.ytId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3`
-    });
+    const origin = req.headers.origin || `https://${req.headers.host}`;
+    console.log(`[CoursePlay] ✅ Served [${result.si}][${result.vi}] "${video.title}"`);
+    res.send(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#000;overflow:hidden}
+iframe{width:100%;height:100%;border:none;display:block}
+</style>
+</head>
+<body>
+<!-- Transparent overlay blocks the YouTube logo/link click in bottom-right -->
+<div id="ov"></div>
+<iframe
+  id="yt"
+  src="https://www.youtube.com/embed/${video.ytId}?autoplay=1&rel=0&iv_load_policy=3&disablekb=0&modestbranding=1&showinfo=0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowfullscreen
+  referrerpolicy="strict-origin-when-cross-origin"
+></iframe>
+<script>
+// Block right-click
+document.addEventListener('contextmenu', function(e){ e.preventDefault(); return false; });
+// Overlay covers the YouTube watermark/logo area (bottom-right corner)
+var ov = document.getElementById('ov');
+ov.style.cssText = 'position:fixed;bottom:0;right:0;width:120px;height:40px;z-index:9999;background:transparent;cursor:default;';
+// Also block keyboard shortcut to open video info
+document.addEventListener('keydown', function(e){
+  if(e.key === 'i' || e.key === 'I') e.preventDefault();
+});
+</script>
+</body>
+</html>`);
 });
 
 // ─── COURSE PLAYER (session-gated, secure) ────────────────────────────────────
@@ -3079,7 +3116,6 @@ function playVideo(si, vi){
     overlayEl.classList.remove('show');
   }
 
-  // Step 1: get a one-time token from the server (token, never a YouTube ID)
   fetch('/api/course/video-token', {
     method: 'POST',
     credentials: 'include',
@@ -3088,21 +3124,16 @@ function playVideo(si, vi){
   })
   .then(function(r){ return r.json(); })
   .then(function(d){
-    if (!d.ok){ _playing = false; showError(d.error || 'Could not load this lesson. Please try again.'); return; }
-    if (d.comingSoon){ _playing = false; showComingSoon(v.title); return; }
-    // Step 2: exchange token for the embed URL (second authenticated request)
-    return fetch('/api/course/play/' + encodeURIComponent(d.token), { credentials: 'include' })
-      .then(function(r){ return r.json(); })
-      .then(function(p){
-        _playing = false;
-        if (!p.ok){ showError(p.error || 'Could not load this lesson. Please try again.'); return; }
-        // Step 3: set iframe src directly to YouTube — no nested iframe, no Error 153
-        frameEl.onload = function(){
-          loadingEl.style.display = 'none';
-          frameEl.style.display   = 'block';
-        };
-        frameEl.src = p.embedUrl;
-      });
+    _playing = false;
+    if (!d.ok){ showError(d.error || 'Could not load this lesson. Please try again.'); return; }
+    if (d.comingSoon){ showComingSoon(v.title); return; }
+    // Set iframe src to the token play endpoint — server returns a full HTML page
+    // with correct referrer policy so YouTube receives the Referer header
+    frameEl.onload = function(){
+      loadingEl.style.display = 'none';
+      frameEl.style.display   = 'block';
+    };
+    frameEl.src = '/api/course/play/' + encodeURIComponent(d.token);
   })
   .catch(function(e){
     _playing = false;
