@@ -2859,6 +2859,7 @@ app.get('/course', requireSession, (req, res) => {
     res.send(`<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Course Library — HVT</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -2972,12 +2973,11 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
         <div class="spinner"></div>
         <p style="font-size:13px;color:#334155;">Loading lesson...</p>
       </div>
-      <!-- Secure iframe — src is set to /api/course/play/<one-time-token> only after auth -->
+      <!-- Secure iframe — src is set dynamically via JS after token exchange -->
       <iframe id="playerFrame"
         allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"
         allowfullscreen
-        sandbox="allow-scripts allow-same-origin allow-presentation allow-fullscreen"
-        referrerpolicy="no-referrer"
+        referrerpolicy="strict-origin-when-cross-origin"
         oncontextmenu="return false;"
       ></iframe>
     </div>
