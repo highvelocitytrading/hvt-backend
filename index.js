@@ -2864,7 +2864,7 @@ var activeSec = 0, activeVid = 0;
 // ── COURSE DATA (YOUTUBE ONLY) ──────────────────────────────────────────────
 var COURSE = [
   { title: 'Introduction', videos: [
-    { title: 'Welcome to the HVT Portal',     dur: '2m',  ytId: '' },
+    { title: 'Welcome to the HVT Portal',     dur: '2m',  ytId: 'vn0L41oxvl4' },
     { title: 'How This Course Is Structured', dur: '3m',  ytId: '' },
     { title: 'Getting the Most Out of HVT',   dur: '3m',  ytId: 'DYZ8njASd74' }
   ]},
