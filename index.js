@@ -2903,7 +2903,7 @@ async function loadCourseData() {
                 { title: 'Introduction', videos: [
                     { title: 'Welcome to the HVT Portal', dur: '2m', ytId: '' },
                     { title: 'How This Course Is Structured', dur: '3m', ytId: '' },
-                    { title: 'Getting the Most Out of HVT', dur: '3m', ytId: '' }
+                    { title: 'Getting the Most Out of HVT', dur: '3m', ytId: 'DYZ8njASd74' }
                 ]},
                 { title: 'Indicators', videos: [
                     { title: 'Overview of HVT Indicators', dur: '4m', ytId: '' },
@@ -2931,7 +2931,7 @@ async function loadCourseData() {
             { title: 'Introduction', videos: [
                 { title: 'Welcome to the HVT Portal', dur: '2m', ytId: '' },
                 { title: 'How This Course Is Structured', dur: '3m', ytId: '' },
-                { title: 'Getting the Most Out of HVT', dur: '3m', ytId: '' }
+                { title: 'Getting the Most Out of HVT', dur: '3m', ytId: 'DYZ8njASd74' }
             ]},
             { title: 'Indicators', videos: [
                 { title: 'Overview of HVT Indicators', dur: '4m', ytId: '' },
