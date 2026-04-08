@@ -2693,20 +2693,177 @@ app.get('/billing/confirm-session', async (req, res, next) => {
         </div></div>`, {pill:'BILLING', title:'Your Membership', sub:'Manage your plan and billing details below.'}));
 });
 
-// ─── COURSE PLAYER (cookie-gated) ─────────────────────────────────────────────
-app.get('/course', requireSession, (req, res) => {
-    // Always enter through the portal — /course is accessed via the portal card
-    // If someone hits /course directly (bookmark, stale link), send to portal first
-    if (!req.headers.referer || !req.headers.referer.includes('/member')) {
-        // Allow direct access from member portal card only
-        // For all other entry points (direct URL, email links, bookmarks) → portal
-        const ref = req.headers.referer || '';
-        if (!ref.includes('/member') && !ref.includes('/course')) {
-            return res.redirect(302, '/member');
-        }
+// ═══════════════════════════════════════════════════════════════════════════════
+//  SECURE VIDEO TOKEN SYSTEM
+//  YouTube IDs NEVER reach the browser. All video playback goes through
+//  server-side one-time tokens that are IP+UA bound, HMAC-signed, and
+//  consumed on first use. The embed page is served by the server with
+//  strict no-cache / frame-ancestors headers.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── VIDEO TOKEN SECRET ───────────────────────────────────────────────────────
+// Add VIDEO_TOKEN_SECRET to .env — generate with:
+//   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+const VIDEO_TOKEN_SECRET = process.env.VIDEO_TOKEN_SECRET
+    || crypto.randomBytes(32).toString('hex'); // rotates on restart — fine for dev, use .env in prod
+
+// ─── SERVER-SIDE COURSE DATA (NEVER SENT TO CLIENT) ──────────────────────────
+const COURSE_DATA = [
+    { title: 'Introduction', videos: [
+        { title: 'Welcome to the HVT Portal',     dur: '2m',  ytId: 'vn0L41oxvl4' },
+        { title: 'How This Course Is Structured', dur: '3m',  ytId: 'g38umuTvf_M' },
+        { title: 'Getting the Most Out of HVT',   dur: '3m',  ytId: 'DYZ8njASd74' }
+    ]},
+    { title: 'Indicators', videos: [
+        { title: 'Overview of HVT Indicators',    dur: '4m',  ytId: 'MRteZN0Xgmw' },
+        { title: 'Reading Momentum & Trend',      dur: '5m',  ytId: 'pVP01QzVidM' },
+        { title: 'Combining Signals for Entries', dur: '6m',  ytId: '' }
+    ]},
+    { title: 'Risk Management', videos: [
+        { title: 'Position Sizing & Daily Loss Limits', dur: '5m',  ytId: '' },
+        { title: 'Stop Placement & Trade Invalidation', dur: '4m',  ytId: '' },
+        { title: 'Building a Risk Plan You Keep',       dur: '4m',  ytId: '' }
+    ]},
+    { title: 'Psychology', videos: [
+        { title: 'Welcome to HVT Psychology',        dur: '3m',  ytId: '' },
+        { title: 'Why Traders Fail in the Long Run', dur: '4m',  ytId: '' },
+        { title: 'Discipline, FOMO, and Tilt',       dur: '5m',  ytId: '' },
+        { title: 'Creating a Professional Routine',  dur: '4m',  ytId: '' }
+    ]}
+];
+
+// Client-safe manifest — titles + durations only. NO ytId. This is all the browser ever sees.
+const COURSE_MANIFEST = COURSE_DATA.map(sec => ({
+    title: sec.title,
+    videos: sec.videos.map(v => ({ title: v.title, dur: v.dur, hasVideo: !!v.ytId }))
+}));
+
+// ─── ONE-TIME TOKEN STORE ─────────────────────────────────────────────────────
+const _videoTokens = new Map(); // token -> { email, si, vi, ip, ua, expiresAt, used }
+setInterval(() => {
+    const now = Date.now();
+    for (const [k, v] of _videoTokens) if (now > v.expiresAt || v.used) _videoTokens.delete(k);
+}, 5 * 60 * 1000);
+
+function mintVideoToken(email, si, vi, ip, ua) {
+    const nonce     = crypto.randomBytes(16).toString('hex');
+    const expiresAt = Date.now() + 60_000; // 60-second TTL
+    const payload   = [email, si, vi, nonce, ip, ua, expiresAt].join('|');
+    const sig       = crypto.createHmac('sha256', VIDEO_TOKEN_SECRET).update(payload).digest('hex');
+    const token     = sig + '.' + Buffer.from(JSON.stringify({ email, si, vi, nonce, ip, ua, expiresAt })).toString('base64url');
+    _videoTokens.set(token, { email, si, vi, ip, ua, expiresAt, used: false });
+    return token;
+}
+
+function consumeVideoToken(token, ip, ua) {
+    const entry = _videoTokens.get(token);
+    if (!entry)          return { ok: false, reason: 'invalid_token' };
+    if (entry.used)      return { ok: false, reason: 'token_already_used' };
+    if (Date.now() > entry.expiresAt) { _videoTokens.delete(token); return { ok: false, reason: 'token_expired' }; }
+    if (entry.ip !== ip) return { ok: false, reason: 'ip_mismatch' };
+    if (entry.ua !== ua) return { ok: false, reason: 'ua_mismatch' };
+    // Verify HMAC
+    const dotIdx = token.indexOf('.');
+    const sig    = token.slice(0, dotIdx);
+    let parsed;
+    try { parsed = JSON.parse(Buffer.from(token.slice(dotIdx + 1), 'base64url').toString()); }
+    catch { return { ok: false, reason: 'malformed_token' }; }
+    const expected = crypto.createHmac('sha256', VIDEO_TOKEN_SECRET)
+        .update([parsed.email, parsed.si, parsed.vi, parsed.nonce, parsed.ip, parsed.ua, parsed.expiresAt].join('|'))
+        .digest('hex');
+    try {
+        if (!crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex')))
+            return { ok: false, reason: 'invalid_signature' };
+    } catch { return { ok: false, reason: 'invalid_signature' }; }
+    entry.used = true;
+    return { ok: true, si: entry.si, vi: entry.vi };
+}
+
+// ─── /api/course/video-token ──────────────────────────────────────────────────
+// Browser calls this to get a one-time play token. Never returns a YouTube ID.
+app.post('/api/course/video-token', requireSession, express.json(), rateLimit({ windowMs: 60000, max: 30 }), async (req, res) => {
+    try {
+        const s  = req._session;
+        const { sectionIndex: si, videoIndex: vi } = req.body || {};
+        if (typeof si !== 'number' || typeof vi !== 'number')
+            return res.status(400).json({ ok: false, error: 'Invalid request.' });
+        const section = COURSE_DATA[si];
+        if (!section) return res.status(400).json({ ok: false, error: 'Invalid lesson.' });
+        const video = section.videos[vi];
+        if (!video)   return res.status(400).json({ ok: false, error: 'Invalid lesson.' });
+        if (!video.ytId) return res.json({ ok: true, token: null, comingSoon: true });
+
+        // Live membership check — never rely on cached session state alone
+        const email = s.email.toLowerCase().trim();
+        const [{ data: mem }, { data: lic }] = await Promise.all([
+            supabase.from(MEMBERSHIP_TABLE).select('status,expires_at').eq('email', email).maybeSingle(),
+            supabase.from(LICENSE_TABLE).select('status').eq('email', email).maybeSingle()
+        ]);
+        const isLifetime = lic?.status === 'active';
+        const isMonthly  = (mem?.status === 'active' || mem?.status === 'pending_cancel')
+                           && mem?.expires_at && new Date(mem.expires_at) > new Date();
+        if (!isLifetime && !isMonthly)
+            return res.status(403).json({ ok: false, error: 'Active membership required to watch course videos.' });
+
+        const ip    = req.ip || req.connection.remoteAddress || 'unknown';
+        const ua    = req.headers['user-agent'] || 'unknown';
+        const token = mintVideoToken(email, si, vi, ip, ua);
+        console.log(`[CourseToken] Issued: ${email} | [${si}][${vi}]`);
+        res.json({ ok: true, token, ttl: 60 });
+    } catch (e) {
+        console.error('[CourseToken]', e.message);
+        res.status(500).json({ ok: false, error: 'Server error.' });
     }
+});
+
+// ─── /api/course/play/:token ──────────────────────────────────────────────────
+// The iframe src. Validates + consumes the token, serves the embed page.
+// The YouTube ID only ever appears inside this server response — never in JS the browser downloads.
+app.get('/api/course/play/:token', (req, res) => {
+    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    const ua = req.headers['user-agent'] || 'unknown';
+    const result = consumeVideoToken(req.params.token, ip, ua);
+
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma',        'no-cache');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('Content-Security-Policy',
+        "default-src 'none'; frame-src https://www.youtube-nocookie.com; style-src 'unsafe-inline'; frame-ancestors 'self';");
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+
+    if (!result.ok) {
+        console.warn(`[CoursePlay] Rejected: ${result.reason} | IP:${ip.substring(0,8)}`);
+        return res.status(403).send(`<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>body{margin:0;background:#0d1117;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif}
+.m{color:#475569;font-size:14px;text-align:center}.m strong{display:block;font-size:16px;color:#94a3b8;margin-bottom:8px}</style></head>
+<body><div class="m"><strong>Video Unavailable</strong>Please click the lesson again to reload.</div></body></html>`);
+    }
+
+    const section = COURSE_DATA[result.si];
+    const video   = section?.videos?.[result.vi];
+    if (!video?.ytId) return res.status(404).send('Video not found.');
+
+    console.log(`[CoursePlay] ✅ Served [${result.si}][${result.vi}] "${video.title}"`);
+    res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;height:100%;background:#000;overflow:hidden}
+iframe{width:100%;height:100%;border:none;display:block}</style></head>
+<body><iframe src="https://www.youtube-nocookie.com/embed/${video.ytId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=0&iv_load_policy=3&color=white"
+allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"
+allowfullscreen referrerpolicy="no-referrer"></iframe></body></html>`);
+});
+
+// ─── COURSE PLAYER (session-gated, secure) ────────────────────────────────────
+app.get('/course', requireSession, (req, res) => {
+    const ref = req.headers.referer || '';
+    if (!ref.includes('/member') && !ref.includes('/course'))
+        return res.redirect(302, '/member');
+
     const s = req._session;
     const LOGO_URL = '/hvt-logo.cropped.png';
+    const manifestJson = JSON.stringify(COURSE_MANIFEST);
+
+    res.setHeader('Cache-Control', 'no-store');
     res.send(`<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -2716,29 +2873,18 @@ app.get('/course', requireSession, (req, res) => {
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
 body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-serif;display:flex;flex-direction:column}
-
-/* ── TOPBAR (matches member portal topnav) ── */
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;border-bottom:1px solid rgba(255,255,255,0.08);background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);flex-shrink:0;z-index:200;position:relative}
 .topbar-left{display:flex;align-items:center;gap:12px;min-width:0;flex-shrink:0}
 .topbar-logo{display:flex;align-items:center;text-decoration:none;flex-shrink:0}
 .topbar-logo img{height:29px;width:auto;object-fit:contain;display:block;flex-shrink:0}
 .topbar-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
-.topnav-link{color:rgba(255,255,255,0.82);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;text-decoration:none;letter-spacing:0.02em;padding:8px 0;transition:color .2s}
-.topnav-link:hover{color:#fff}
-.topnav-out{color:rgba(255,255,255,0.82);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;text-decoration:none;letter-spacing:0.02em;padding:8px 0;transition:color .2s}
-.topnav-out:hover{color:#fff}
-.topnav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);letter-spacing:0.2px;transition:background .2s,color .2s,border-color .2s}
-.topnav-cta:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18)}
-.prop-firm-btn{display:inline-block;background:#2254F5;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.02em;text-decoration:none;padding:8px 14px;border-radius:6px;border:none;transition:background .2s ease,color .2s ease;white-space:nowrap}
-.prop-firm-btn:hover{background:#2d5cf7;color:#fff}
-.prop-firm-btn:active{opacity:0.92}
+.topnav-link,.topnav-out{color:rgba(255,255,255,0.82);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;text-decoration:none;letter-spacing:0.02em;padding:8px 0;transition:color .2s}
+.topnav-link:hover,.topnav-out:hover{color:#fff}
+.prop-firm-btn{display:inline-block;background:#2254F5;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.02em;text-decoration:none;padding:8px 14px;border-radius:6px;border:none;transition:background .2s ease;white-space:nowrap}
+.prop-firm-btn:hover{background:#2d5cf7}
 .mob-menu{display:none;align-items:center;justify-content:center;width:36px;height:36px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:6px;cursor:pointer;color:rgba(255,255,255,0.7);font-size:18px;flex-shrink:0;transition:background .2s,border-color .2s}
 .mob-menu:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18)}
-
-/* ── LAYOUT ── */
 .layout{display:flex;flex:1;overflow:hidden;position:relative}
-
-/* ── SIDEBAR ── */
 .sidebar{width:288px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.07);background:#060810;display:flex;flex-direction:column;overflow:hidden;transition:transform .25s ease}
 .sidebar-header{padding:16px 20px 14px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0}
 .sidebar-header h2{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#334155}
@@ -2746,8 +2892,6 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 .sidebar-scroll::-webkit-scrollbar{width:3px}
 .sidebar-scroll::-webkit-scrollbar-track{background:transparent}
 .sidebar-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.07);border-radius:2px}
-
-/* ── SECTION ── */
 .section{margin-bottom:1px}
 .section-header{display:flex;align-items:center;gap:8px;padding:10px 18px;cursor:pointer;user-select:none;transition:background .15s}
 .section-header:hover{background:rgba(255,255,255,0.025)}
@@ -2760,44 +2904,36 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 .section.open .section-chevron{transform:rotate(90deg);color:#334155}
 .section-videos{display:none;padding:2px 0 4px}
 .section.open .section-videos{display:block}
-
-/* ── VIDEO ITEM ── */
 .video-item{display:flex;align-items:center;gap:11px;padding:8px 18px 8px 26px;cursor:pointer;transition:background .12s;position:relative}
 .video-item:hover{background:rgba(255,255,255,0.025)}
 .video-item.active{background:rgba(34,84,245,0.06)}
 .video-item.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:#2254F5;border-radius:0 2px 2px 0}
+.video-item.coming-soon{opacity:0.4;cursor:default}
 .video-thumb{width:52px;height:32px;border-radius:5px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.video-thumb img{width:100%;height:100%;object-fit:cover}
 .play-icon{width:13px;height:13px;color:#2d3f52}
 .video-item.active .play-icon{color:#2254F5}
 .video-info{flex:1;min-width:0}
 .video-title{font-size:12px;font-weight:500;color:#475569;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .15s}
-.video-item:hover .video-title{color:#64748b}
+.video-item:hover:not(.coming-soon) .video-title{color:#64748b}
 .video-item.active .video-title{color:#e2e8f0;font-weight:600}
 .video-dur{font-size:10px;color:#1e2d3d;margin-top:1px;font-weight:500}
-
-/* ── MAIN CONTENT ── */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#060810;min-width:0}
 .player-wrap{flex:1;display:flex;align-items:center;justify-content:center;background:#000;position:relative;min-height:0}
-.player-wrap iframe, .player-wrap video{width:100%;height:100%;border:none;display:block;object-fit:contain}
-.player-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#64748b;text-align:center;padding:40px;width:100%;height:100%}
-.player-placeholder svg{opacity:0.35;color:#2254F5}
-.player-placeholder h3{font-size:18px;font-weight:700;color:#94a3b8;letter-spacing:-0.3px}
-.player-placeholder p{font-size:13px;color:#64748b;max-width:300px;line-height:1.6}
+.player-placeholder,.player-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#64748b;text-align:center;padding:40px;width:100%;height:100%}
+.player-loading{display:none}
+.spinner{width:36px;height:36px;border:3px solid rgba(34,84,245,0.2);border-top-color:#2254F5;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#playerFrame{width:100%;height:100%;border:none;display:none}
 .video-meta{padding:16px 24px;border-top:1px solid rgba(255,255,255,0.06);flex-shrink:0;background:#060810;display:none;align-items:center;gap:14px;flex-wrap:wrap}
 .video-meta h2{font-size:16px;font-weight:700;color:#fff;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .video-meta-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
 .section-badge{background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.2);border-radius:20px;padding:3px 11px;font-size:10px;font-weight:700;color:#2254F5;letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap}
 .video-dur-meta{font-size:12px;color:#334155;font-weight:500;white-space:nowrap}
-
-/* ── SIDEBAR OVERLAY (mobile) ── */
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:149;backdrop-filter:blur(2px)}
 .sidebar-overlay.show{display:block}
-
-/* ── MOBILE ── */
 @media(max-width:768px){
   .topbar{padding:0 12px;height:56px}
-  .topbar-logo img{height:21px;}
+  .topbar-logo img{height:21px}
   .topbar-right a.topnav-link,.topbar-right a.topnav-out{display:none}
   .mob-menu{display:flex}
   .sidebar{position:fixed;left:0;top:56px;bottom:0;width:280px;z-index:150;transform:translateX(-100%);box-shadow:4px 0 32px rgba(0,0,0,0.6)}
@@ -2805,10 +2941,7 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
   .video-meta{padding:12px 16px}
   .video-meta h2{font-size:14px}
 }
-@media(max-width:400px){
-  .topbar-logo img{height:18px;}
-  .user-pill{display:none}
-}
+@media(max-width:400px){.topbar-logo img{height:18px}}
 </style>
 </head><body>
 
@@ -2837,15 +2970,24 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
   <div class="main">
     <div class="player-wrap" id="playerWrap">
       <div class="player-placeholder" id="placeholder">
-        <div style="width:72px;height:72px;border-radius:50%;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.18);display:flex;align-items:center;justify-content:center;margin-bottom:8px;">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="1.5" style="opacity:0.8">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/>
-          </svg>
+        <div style="width:72px;height:72px;border-radius:50%;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.18);display:flex;align-items:center;justify-content:center;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="1.5" style="opacity:0.8"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg>
         </div>
-        <h3 style="font-size:18px;font-weight:700;color:#94a3b8;letter-spacing:-0.3px;">HVT Masterclass</h3>
-        <p style="font-size:13px;color:#334155;max-width:300px;line-height:1.6;">Select a lesson from the menu to begin. Your progress is saved automatically.</p>
+        <h3 style="font-size:18px;font-weight:700;color:#94a3b8;letter-spacing:-0.3px;margin-top:4px;">HVT Masterclass</h3>
+        <p style="font-size:13px;color:#334155;max-width:300px;line-height:1.6;">Select a lesson from the menu to begin.</p>
       </div>
-      <div id="player" style="display:none;width:100%;height:100%;"></div>
+      <div class="player-loading" id="playerLoading">
+        <div class="spinner"></div>
+        <p style="font-size:13px;color:#334155;">Loading lesson...</p>
+      </div>
+      <!-- Secure iframe — src is set to /api/course/play/<one-time-token> only after auth -->
+      <iframe id="playerFrame"
+        allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"
+        allowfullscreen
+        sandbox="allow-scripts allow-same-origin allow-presentation allow-fullscreen"
+        referrerpolicy="no-referrer"
+        oncontextmenu="return false;"
+      ></iframe>
     </div>
     <div class="video-meta" id="videoMeta">
       <h2 id="videoTitle"></h2>
@@ -2859,48 +3001,23 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 
 <script>
 (function(){
-// ── STATE ────────────────────────────────────────────────────────────────────
-var activeSec = 0, activeVid = 0;
-// ── COURSE DATA (YOUTUBE ONLY) ──────────────────────────────────────────────
-var COURSE = [
-  { title: 'Introduction', videos: [
-    { title: 'Welcome to the HVT Portal',     dur: '2m',  ytId: 'vn0L41oxvl4' },
-    { title: 'How This Course Is Structured', dur: '3m',  ytId: 'g38umuTvf_M' },
-    { title: 'Getting the Most Out of HVT',   dur: '3m',  ytId: 'DYZ8njASd74' }
-  ]},
-  { title: 'Indicators', videos: [
-    { title: 'Overview of HVT Indicators',    dur: '4m',  ytId: 'MRteZN0Xgmw' },
-    { title: 'Reading Momentum & Trend',      dur: '5m',  ytId: 'pVP01QzVidM' },
-    { title: 'Combining Signals for Entries', dur: '6m',  ytId: '' }
-  ]},
-  { title: 'Risk Management', videos: [
-    { title: 'Position Sizing & Daily Loss Limits', dur: '5m',  ytId: '' },
-    { title: 'Stop Placement & Trade Invalidation', dur: '4m',  ytId: '' },
-    { title: 'Building a Risk Plan You Keep',       dur: '4m',  ytId: '' }
-  ]},
-  { title: 'Psychology', videos: [
-    { title: 'Welcome to HVT Psychology',        dur: '3m',  ytId: '' },
-    { title: 'Why Traders Fail in the Long Run', dur: '4m',  ytId: '' },
-    { title: 'Discipline, FOMO, and Tilt',       dur: '5m',  ytId: '' },
-    { title: 'Creating a Professional Routine',  dur: '4m',  ytId: '' }
-  ]}
-];
+'use strict';
 
-// ── STATE ────────────────────────────────────────────────────────────────────
-var activeSec = 0, activeVid = 0;
+// ── COURSE MANIFEST — titles & durations only. NO YouTube IDs. ────────────────
+var COURSE = ${manifestJson};
 
-// ── DOM ELEMENTS ─────────────────────────────────────────────────────────────
-var sidebarEl  = document.getElementById('sidebar');
-var overlayEl  = document.getElementById('sidebarOverlay');
-var scrollEl   = document.getElementById('sidebarScroll');
-var playerEl   = document.getElementById('player');
+var activeSec = 0, activeVid = 0;
+var sidebarEl     = document.getElementById('sidebar');
+var overlayEl     = document.getElementById('sidebarOverlay');
+var scrollEl      = document.getElementById('sidebarScroll');
+var frameEl       = document.getElementById('playerFrame');
 var placeholderEl = document.getElementById('placeholder');
-var metaEl     = document.getElementById('videoMeta');
-var titleEl    = document.getElementById('videoTitle');
-var sectionEl  = document.getElementById('videoSection');
-var durEl      = document.getElementById('videoDur');
+var loadingEl     = document.getElementById('playerLoading');
+var metaEl        = document.getElementById('videoMeta');
+var titleEl       = document.getElementById('videoTitle');
+var sectionEl     = document.getElementById('videoSection');
+var durEl         = document.getElementById('videoDur');
 
-// ── SIDEBAR TOGGLE ───────────────────────────────────────────────────────────
 document.getElementById('mobMenu').addEventListener('click', function(){
   var open = sidebarEl.classList.toggle('open');
   overlayEl.classList.toggle('show', open);
@@ -2910,13 +3027,11 @@ overlayEl.addEventListener('click', function(){
   overlayEl.classList.remove('show');
 });
 
-// ── BUILD SIDEBAR ────────────────────────────────────────────────────────────
 function buildSidebar(){
   scrollEl.innerHTML = '';
   COURSE.forEach(function(sec, si){
     var secEl = document.createElement('div');
     secEl.className = 'section' + (si === activeSec ? ' open' : '');
-
     var header = document.createElement('div');
     header.className = 'section-header';
     header.innerHTML =
@@ -2925,75 +3040,103 @@ function buildSidebar(){
       '<div class="section-count">' + sec.videos.length + '</div>' +
       '<div class="section-chevron">&#9654;</div>';
     header.addEventListener('click', function(){ toggleSection(si); });
-
     var vids = document.createElement('div');
     vids.className = 'section-videos';
     sec.videos.forEach(function(v, vi){
       var item = document.createElement('div');
-      item.className = 'video-item' + (si===activeSec && vi===activeVid ? ' active' : '');
-      var thumb = v.ytId
-        ? '<img src="https://img.youtube.com/vi/' + v.ytId + '/mqdefault.jpg" alt="" loading="lazy">'
-        : '<svg class="play-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg>';
+      var isActive = (si === activeSec && vi === activeVid);
+      item.className = 'video-item' + (isActive ? ' active' : '') + (!v.hasVideo ? ' coming-soon' : '');
+      // Generic SVG thumb — no YouTube thumbnail URL (which would expose the ID)
       item.innerHTML =
-        '<div class="video-thumb">' + thumb + '</div>' +
-        '<div class="video-info">' +
-          '<div class="video-title">' + esc(v.title) + '</div>' +
-          '<div class="video-dur">' + esc(v.dur) + '</div>' +
-        '</div>';
-      item.addEventListener('click', function(){ playVideo(si, vi); });
+        '<div class="video-thumb"><svg class="play-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg></div>' +
+        '<div class="video-info"><div class="video-title">' + esc(v.title) + '</div>' +
+        '<div class="video-dur">' + esc(v.dur) + (v.hasVideo ? '' : ' · Soon') + '</div></div>';
+      if (v.hasVideo) item.addEventListener('click', function(){ playVideo(si, vi); });
       vids.appendChild(item);
     });
-
     secEl.appendChild(header);
     secEl.appendChild(vids);
     scrollEl.appendChild(secEl);
   });
 }
 
-// ── TOGGLE SECTION ───────────────────────────────────────────────────────────
 function toggleSection(si){
   var els = scrollEl.querySelectorAll('.section');
-  if(els[si]) els[si].classList.toggle('open');
+  if (els[si]) els[si].classList.toggle('open');
 }
 
-// ── PLAY VIDEO ───────────────────────────────────────────────────────────────
+// ── SECURE PLAY — requests a one-time server token, never touches a YouTube ID ─
+var _playing = false;
 function playVideo(si, vi){
+  if (_playing) return;
+  _playing = true;
   activeSec = si; activeVid = vi;
   buildSidebar();
+
   var v = COURSE[si].videos[vi];
-  
-  if(v.ytId){
-    playerEl.innerHTML = '<iframe src="https://www.youtube.com/embed/' + v.ytId + '?autoplay=1&rel=0&modestbranding=1" style="width:100%;height:100%;border:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;web-share" allowfullscreen></iframe>';
-    playerEl.style.display = 'block';
-    placeholderEl.style.display = 'none';
-  } else {
-    playerEl.style.display = 'none';
-    playerEl.innerHTML = '';
-    placeholderEl.style.display = 'flex';
-    placeholderEl.innerHTML =
-      '<div style="width:64px;height:64px;border-radius:50%;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:4px;">' +
-      '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="1.5" style="opacity:0.7"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg>' +
-      '</div>' +
-      '<h3 style="color:#94a3b8;font-size:17px;font-weight:700;letter-spacing:-0.3px;">' + esc(v.title) + '</h3>' +
-      '<p style="color:#334155;font-size:13px;max-width:280px;line-height:1.6;">This lesson is part of the HVT Masterclass. Video content loads here automatically once published.</p>';
-  }
-  
+  placeholderEl.style.display = 'none';
+  frameEl.style.display       = 'none';
+  loadingEl.style.display     = 'flex';
   titleEl.textContent   = v.title;
   sectionEl.textContent = COURSE[si].title;
   durEl.textContent     = v.dur;
   metaEl.style.display  = 'flex';
-  
-  // Close mobile sidebar after selection
-  if(window.innerWidth < 769){
+
+  if (window.innerWidth < 769){
     sidebarEl.classList.remove('open');
     overlayEl.classList.remove('show');
   }
+
+  fetch('/api/course/video-token', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sectionIndex: si, videoIndex: vi })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    _playing = false;
+    if (!d.ok){ showError(d.error || 'Could not load this lesson. Please try again.'); return; }
+    if (d.comingSoon){ showComingSoon(v.title); return; }
+    // Set iframe src to the play endpoint — token is the only thing the browser sees
+    frameEl.onload = function(){
+      loadingEl.style.display = 'none';
+      frameEl.style.display   = 'block';
+    };
+    frameEl.src = '/api/course/play/' + encodeURIComponent(d.token);
+  })
+  .catch(function(e){
+    _playing = false;
+    showError('Network error. Please check your connection and try again.');
+  });
 }
 
-// ── HTML ESCAPE ──────────────────────────────────────────────────────────────
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function showError(msg){
+  loadingEl.style.display     = 'none';
+  frameEl.style.display       = 'none';
+  placeholderEl.style.display = 'flex';
+  placeholderEl.innerHTML =
+    '<div style="width:56px;height:56px;border-radius:50%;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);display:flex;align-items:center;justify-content:center;">' +
+    '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>' +
+    '</div><p style="font-size:13px;color:#f87171;max-width:280px;line-height:1.6;text-align:center;">' + esc(msg) + '</p>';
+}
 
-// ── INIT ─────────────────────────────────────────────────────────────────────
+function showComingSoon(title){
+  loadingEl.style.display     = 'none';
+  frameEl.style.display       = 'none';
+  placeholderEl.style.display = 'flex';
+  placeholderEl.innerHTML =
+    '<div style="width:56px;height:56px;border-radius:50%;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.18);display:flex;align-items:center;justify-content:center;">' +
+    '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2254F5" stroke-width="1.5" style="opacity:0.8"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg>' +
+    '</div><h3 style="color:#94a3b8;font-size:17px;font-weight:700;letter-spacing:-0.3px;">' + esc(title) + '</h3>' +
+    '<p style="color:#334155;font-size:13px;max-width:280px;line-height:1.6;text-align:center;">This lesson will be available soon.</p>';
+}
+
+// Disable right-click on player area
+document.getElementById('playerWrap').addEventListener('contextmenu', function(e){ e.preventDefault(); return false; });
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
 buildSidebar();
 })();
 </script>
