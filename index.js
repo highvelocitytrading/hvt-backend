@@ -73,18 +73,21 @@ const requiredEnv = [
     'SUPABASE_ANON_KEY',
     'APP_URL',
     'RESEND_API_KEY',
-    'ADMIN_SECRET'
+    'ADMIN_SECRET',
+    'AUTHNET_API_LOGIN_ID',
+    'AUTHNET_TRANSACTION_KEY',
+    'DISCORD_BOT_TOKEN',
+    'NT_USERNAME',
+    'NT_PASSWORD',
+    'NT_PRODUCT_ID'
 ];
 const missing = requiredEnv.filter(k => !process.env[k] || String(process.env[k]).trim() === '');
 if (missing.length) {
-    if (DEMO_MODE) {
-        console.warn('[WARN] DEMO_MODE=true and some env are missing (server will still start):');
-        missing.forEach(k => console.warn('  -', k));
-    } else {
-        console.warn('[WARN] Missing env (server will still start, but some features may fail):');
-        missing.forEach(k => console.warn('  -', k));
-    }
+    console.error('[FATAL] Missing required environment variables — server refusing to start:');
+    missing.forEach(k => console.error('  ❌ Missing:', k));
+    process.exit(1);
 }
+console.log('[INIT] All required environment variables present ✅');
 
 const SUPABASE_URL              = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -96,7 +99,20 @@ const RESEND_API_KEY            = process.env.RESEND_API_KEY;
 const FROM_EMAIL                = 'support@hvt-mail.com';
 const APP_URL                   = process.env.APP_URL    || 'https://hvt-backend-production-ec41.up.railway.app';
 const JOTFORM_SECRET            = process.env.JOTFORM_SECRET || null;
-const ADMIN_SECRET              = process.env.ADMIN_SECRET   || 'HVT-ADMIN-FADBC551B512718D76F4B8744E54B621';
+const ADMIN_SECRET              = process.env.ADMIN_SECRET;
+if (!ADMIN_SECRET) { console.error('[FATAL] ADMIN_SECRET env var not set — refusing to start.'); process.exit(1); }
+
+// ─── SAFE COMPARE — constant-time to prevent timing attacks on secrets ────────
+function safeCompare(a, b) {
+    if (!a || !b) return false;
+    try {
+        const aBuf = Buffer.from(String(a));
+        const bBuf = Buffer.from(String(b));
+        if (aBuf.length !== bBuf.length) return false;
+        return crypto.timingSafeEqual(aBuf, bBuf);
+    } catch { return false; }
+}
+
 
 const DISCORD_BOT_TOKEN        = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_GUILD_ID         = process.env.DISCORD_GUILD_ID         || '1460694720090083483';
@@ -157,7 +173,7 @@ function ntBuildPayload(name, password) {
     const chl = `${Date.now() - 1581e9}`;
     const deviceId = 'hvt-backend-railway';
     const appId = 'arena';
-    const hmac = crypto.createHmac('sha256', '035a1259-11e7-485a-aeae-9b6016579351');
+    const hmac = crypto.createHmac('sha256', process.env.NT_HMAC_SECRET || '035a1259-11e7-485a-aeae-9b6016579351');
     const data = [chl, deviceId, name, password, appId].join(''); // HMAC uses raw password, not scrambled
     hmac.update(data);
     const sec = hmac.digest('hex');
@@ -1845,7 +1861,7 @@ app.get('/course/confirm', async (req, res) => {
         const plan    = isLifetime ? 'Lifetime Access' : 'Monthly Membership';
         // Set 7-day session cookie — member stays logged in across the portal
         const sessToken = createSession(rec.email, name, plan);
-        res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${sessToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${7*24*3600}`);
+        res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${sessToken}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${7*24*3600}`);
         // Invalidate the one-time token so the link cannot be reused
         const clearTable = lData ? LICENSE_TABLE : MEMBERSHIP_TABLE;
         supabase.from(clearTable).update({ course_token: null, course_token_expires: null, updated_at: nowISO() }).eq('course_token', token).then(() => {}).catch(e => console.error('[CourseConfirm clear token]', e.message));
@@ -1949,7 +1965,7 @@ body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;width:
   <div class="hero-section">
     <div class="hero-section-inner">
       <span class="pill">MEMBER PORTAL</span>
-      <h1>Welcome back, <span class="hero-name">${s.name}</span></h1>
+      <h1>Welcome back, <span class="hero-name">${esc(s.name)}</span></h1>
       <p>Stay sharp. Stay ahead.</p>
       <div class="hero-div"></div>
     </div>
@@ -2679,14 +2695,14 @@ app.get('/billing/confirm-session', async (req, res, next) => {
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;margin-top:16px;">
             <div>
               <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;margin-bottom:4px;">Welcome back</div>
-              <div style="font-size:22px;font-weight:700;color:#fff;">${s.name}</div>
+              <div style="font-size:22px;font-weight:700;color:#fff;">${esc(s.name)}</div>
             </div>
             <div style="background:${sb};border:1px solid ${sbd};border-radius:20px;padding:6px 14px;font-size:12px;color:${sc};font-weight:600;">${statusLabel}</div>
           </div>
           <div class="div"></div>
           <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;overflow:hidden;margin-bottom:16px;">
             <div style="display:flex;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:#64748b;font-size:13px;">Plan</span><span style="color:#94a3b8;font-size:13px;">${s.plan}</span></div>
-            <div style="display:flex;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:#64748b;font-size:13px;">Email</span><span style="color:#94a3b8;font-size:13px;">${s.email}</span></div>
+            <div style="display:flex;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:#64748b;font-size:13px;">Email</span><span style="color:#94a3b8;font-size:13px;">${esc(s.email)}</span></div>
             <div style="display:flex;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:#64748b;font-size:13px;">Next Billing</span><span style="color:#94a3b8;font-size:13px;">${nextLabel}</span></div>
             <div style="display:flex;justify-content:space-between;padding:14px 18px;"><span style="color:#64748b;font-size:13px;">Days Remaining</span>${daysDisplay}</div>
           </div>${cancelHtml}
@@ -3102,7 +3118,7 @@ app.post('/webhooks/jotform', wh, (req, res) => {
                 const act = await upsertLicense(txId, { jotform_received: true, email: email || row.email, full_name: fname || row.full_name, phone: phone || row.phone, status: 'active' });
                 // NT lifetime license — will be created when user activates via /trading-room using their NT email
                 try { await sendWelcome(act.email, act.full_name, 'lifetime'); } catch (e) { console.error('[LicenseEmail]', e.message); }
-                console.log(`✅ License activated: ${act.email} | ${act.license_key}`);
+                console.log(`✅ License activated: ${act.email} | ${act.license_key ? act.license_key.substring(0,8)+'...' : 'n/a'}`);
                 return res.json({ ok: true, transaction_id: txId, license_key: act.license_key, status: act.status });
             }
             res.json({ ok: true, transaction_id: txId, license_key: row.license_key, status: row.status });
@@ -3114,13 +3130,13 @@ app.post('/webhooks/jotform', wh, (req, res) => {
 // ─── ADMIN PANEL ──────────────────────────────────────────────────────────────
 function adminGuard(req, res, next) {
     const k = req.query.key || req.body?.key;
-    if (!k || k !== ADMIN_SECRET) return res.status(403).send(resultPage('error', 'Access Denied', 'Invalid or missing admin key.'));
+    if (!k || !safeCompare(k, ADMIN_SECRET)) return res.status(403).send(resultPage('error', 'Access Denied', 'Invalid or missing admin key.'));
     next();
 }
 
 // ─── ADMIN: REFRESH NT TOKEN ──────────────────────────────────────────────────
 app.post('/admin/refresh-nt-token', adm, express.json(), async (req, res) => {
-    if (req.body?.key !== ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
+    if (!safeCompare(req.body?.key, ADMIN_SECRET)) return res.status(403).json({ error: 'Unauthorized' });
     try {
         const ok = await ntLogin();
         if (ok) return res.json({ ok: true, message: '✅ NT re-authenticated successfully' });
@@ -3131,7 +3147,7 @@ app.post('/admin/refresh-nt-token', adm, express.json(), async (req, res) => {
 // ─── ADMIN: CANCEL / REVOKE ───────────────────────────────────────────────────
 app.post('/admin/cancel', adm, express.json(), async (req, res) => {
     console.log('[AdminCancel] body:', JSON.stringify(req.body));
-    if (req.body?.key !== ADMIN_SECRET) {
+    if (!safeCompare(req.body?.key, ADMIN_SECRET)) {
         console.log('[AdminCancel] UNAUTHORIZED — key mismatch');
         return res.status(403).json({ error: 'Unauthorized' });
     }
@@ -3251,7 +3267,7 @@ app.post('/admin/cancel', adm, express.json(), async (req, res) => {
 
 // ─── ADMIN: REMOVE DISCORD ROLE ───────────────────────────────────────────────
 app.post('/admin/remove-role', adm, express.json(), async (req, res) => {
-    if (req.body?.key !== ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
+    if (!safeCompare(req.body?.key, ADMIN_SECRET)) return res.status(403).json({ error: 'Unauthorized' });
     try {
         const uid = req.body.discord_user_id;
         if (!uid) return res.status(400).json({ error: 'discord_user_id required' });
@@ -3271,7 +3287,7 @@ app.post('/admin/remove-role', adm, express.json(), async (req, res) => {
 
 // ─── ADMIN: GOD MODE GRANT ────────────────────────────────────────────────────
 app.post('/admin/god-add', adm, express.json(), async (req, res) => {
-    if (req.body?.key !== ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
+    if (!safeCompare(req.body?.key, ADMIN_SECRET)) return res.status(403).json({ error: 'Unauthorized' });
     try {
         const email         = (req.body.email || '').trim().toLowerCase();
         const role          = req.body.role || 'monthly';
@@ -3778,7 +3794,7 @@ app.get('/logout', async (req, res) => {
             ]);
         } catch (e) { console.error('[Logout DB clear]', e.message); }
     }
-    res.setHeader('Set-Cookie', `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
+    res.setHeader('Set-Cookie', `${SESSION_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`);
     res.redirect(302, 'https://highvelocitytrading.com');
 });
 
@@ -3936,7 +3952,7 @@ select option{background:#0d1117}
     </div>
     <div class="form-row">
       <label>Your HVT Purchase Email</label>
-      <input id="prop-email" type="email" placeholder="email@example.com" value="${s.email || ''}"/>
+      <input id="prop-email" type="email" placeholder="email@example.com" value="${esc(s.email || '')}"/>
       <div style="font-size:12px;color:#475569;margin-top:6px;">This must match the email you used when purchasing HVT access.</div>
     </div>
     <div class="form-row">
@@ -4230,7 +4246,7 @@ app.get('/api/prop-activations/mine', requireSession, async (req, res) => {
 // ─── ADMIN: VIEW ALL PROP ACTIVATIONS ────────────────────────────────────────
 app.get('/admin/prop-activations', adm, async (req, res) => {
     const secret = req.query.secret || req.headers['x-admin-secret'];
-    if (secret !== ADMIN_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    if (!safeCompare(secret, ADMIN_SECRET)) return res.status(401).json({ ok: false, error: 'Unauthorized' });
     try {
     const { data, error } = await supabase
         .from(PROP_FIRM_TABLE)
@@ -4344,7 +4360,7 @@ async function revokeRow(id, btn) {
 // ─── ADMIN: REVOKE A PROP ACTIVATION ─────────────────────────────────────────
 app.post('/admin/prop-activations/:id/revoke', adm, express.json(), async (req, res) => {
     const secret = req.query.secret || req.headers['x-admin-secret'];
-    if (secret !== ADMIN_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    if (!safeCompare(secret, ADMIN_SECRET)) return res.status(401).json({ ok: false, error: 'Unauthorized' });
     try {
         const { id } = req.params;
         if (!id) return res.status(400).json({ ok: false, error: 'Missing id.' });
@@ -4482,7 +4498,7 @@ async function sendEchoWelcome(email, fullName, licenseKey) {
     `);
 
     await sendEmail(email, subject, html);
-    console.log(`[EchoEmail] Welcome → ${email} | key: ${licenseKey}`);
+    console.log(`[EchoEmail] Welcome → ${email} | key: ${licenseKey ? licenseKey.substring(0,8)+'...' : 'n/a'}`);
 }
 
 // ─── ECHO: JOTFORM WEBHOOK ────────────────────────────────────────────────────
@@ -4556,7 +4572,7 @@ app.post('/webhooks/echo-jotform', wh, (req, res) => {
                 }
 
                 record = newRecord;
-                console.log(`[EchoJF] ✅ New Echo license created: ${email} | ${licenseKey}`);
+                console.log(`[EchoJF] ✅ New Echo license created: ${email} | ${licenseKey ? licenseKey.substring(0,8)+'...' : 'n/a'}`);
             }
 
             // Send welcome email with license key
@@ -4638,7 +4654,7 @@ app.post('/webhooks/echo-authnet', wh, express.json(), async (req, res) => {
             try { await sendEchoWelcome(email, null, licenseKey); }
             catch (e) { console.error('[EchoAN] Email error:', e.message); }
 
-            console.log(`[EchoAN] ✅ Echo license created: ${email} | ${licenseKey}`);
+            console.log(`[EchoAN] ✅ Echo license created: ${email} | ${licenseKey ? licenseKey.substring(0,8)+'...' : 'n/a'}`);
 
         } else if (CANCEL_EVENTS.includes(eventType)) {
             if (!email && !subId) { console.warn('[EchoAN] No identifier for cancel'); return; }
@@ -4688,7 +4704,7 @@ app.post('/api/echo/validate', rateLimit({ windowMs: 60000, max: 30 }), express.
 
         // Key not found
         if (!license) {
-            console.log(`[EchoValidate] Key not found: ${license_key}`);
+            console.log(`[EchoValidate] Key not found: ${license_key ? license_key.substring(0,8)+'...' : 'n/a'}`);
             return res.json({
                 valid:   false,
                 message: 'License key not found. Please check your key or contact support at 786-461-4235.'
@@ -4697,7 +4713,7 @@ app.post('/api/echo/validate', rateLimit({ windowMs: 60000, max: 30 }), express.
 
         // Licence cancelled
         if (license.status === 'cancelled') {
-            console.log(`[EchoValidate] Cancelled key: ${license_key}`);
+            console.log(`[EchoValidate] Cancelled key: ${license_key ? license_key.substring(0,8)+'...' : 'n/a'}`);
             return res.json({
                 valid:   false,
                 message: 'This license has been cancelled. Visit highvelocitytrading.com to reactivate.'
@@ -4883,7 +4899,7 @@ async function resendEmail(id,btn){
 
 // ─── ECHO: ADMIN — CANCEL A LICENSE ──────────────────────────────────────────
 app.post('/admin/echo-licenses/:id/cancel', adm, express.json(), async (req, res) => {
-    if (req.body?.key !== ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
+    if (!safeCompare(req.body?.key, ADMIN_SECRET)) return res.status(403).json({ error: 'Unauthorized' });
     try {
         const { id } = req.params;
         const { error } = await supabase
@@ -4901,7 +4917,7 @@ app.post('/admin/echo-licenses/:id/cancel', adm, express.json(), async (req, res
 
 // ─── ECHO: ADMIN — RESET MACHINE ID (for transfers) ──────────────────────────
 app.post('/admin/echo-licenses/:id/reset-machine', adm, express.json(), async (req, res) => {
-    if (req.body?.key !== ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
+    if (!safeCompare(req.body?.key, ADMIN_SECRET)) return res.status(403).json({ error: 'Unauthorized' });
     try {
         const { id } = req.params;
         const { error } = await supabase
@@ -4919,7 +4935,7 @@ app.post('/admin/echo-licenses/:id/reset-machine', adm, express.json(), async (r
 
 // ─── ECHO: ADMIN — REACTIVATE A LICENCE ───────────────────────────────────────
 app.post('/admin/echo-licenses/:id/reactivate', adm, express.json(), async (req, res) => {
-    if (req.body?.key !== ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
+    if (!safeCompare(req.body?.key, ADMIN_SECRET)) return res.status(403).json({ error: 'Unauthorized' });
     try {
         const { id } = req.params;
         const { error } = await supabase
@@ -4937,7 +4953,7 @@ app.post('/admin/echo-licenses/:id/reactivate', adm, express.json(), async (req,
 
 // ─── ECHO: ADMIN — RESEND WELCOME EMAIL ───────────────────────────────────────
 app.post('/admin/echo-licenses/:id/resend-email', adm, express.json(), async (req, res) => {
-    if (req.body?.key !== ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
+    if (!safeCompare(req.body?.key, ADMIN_SECRET)) return res.status(403).json({ error: 'Unauthorized' });
     try {
         const { id } = req.params;
         
@@ -4963,7 +4979,7 @@ app.post('/admin/echo-licenses/:id/resend-email', adm, express.json(), async (re
 
 // ─── ECHO: ADMIN — GRANT ACCESS MANUALLY ─────────────────────────────────────
 app.post('/admin/echo-grant', adm, express.json(), async (req, res) => {
-    if (req.body?.key !== ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
+    if (!safeCompare(req.body?.key, ADMIN_SECRET)) return res.status(403).json({ error: 'Unauthorized' });
     try {
         const email    = (req.body.email || '').toLowerCase().trim();
         const fullName = (req.body.full_name || '').trim();
@@ -5002,7 +5018,7 @@ app.post('/admin/echo-grant', adm, express.json(), async (req, res) => {
             catch (e) { console.error('[EchoGrant] Email error:', e.message); }
         }
 
-        console.log(`[EchoGrant] ✅ Granted to ${email} | ${licenseKey}`);
+        console.log(`[EchoGrant] ✅ Granted to ${email} | ${licenseKey ? licenseKey.substring(0,8)+'...' : 'n/a'}`);
         res.json({ ok: true, license_key: licenseKey, email });
 
     } catch (e) {
@@ -5156,13 +5172,13 @@ app.get('/admin/videos', adm, adminGuard, async (req, res) => {
             ${(lessons || []).map(lesson => `
                 <div class="lesson-card">
                     <div class="lesson-header">
-                        <div class="lesson-title">${lesson.title}</div>
-                        <div class="lesson-section">${lesson.section}</div>
+                        <div class="lesson-title">${esc(lesson.title)}</div>
+                        <div class="lesson-section">${esc(lesson.section)}</div>
                     </div>
                     <div class="lesson-meta">
                         Order: ${lesson.lesson_order} • Duration: ${lesson.duration || 'Not set'} • 
                         Status: ${lesson.is_active ? 'Active' : 'Inactive'}
-                        ${lesson.description ? '<br>' + lesson.description : ''}
+                        ${lesson.description ? '<br>' + esc(lesson.description) : ''}
                     </div>
                     <div class="lesson-actions">
                         <a href="#" onclick="deleteLesson(${lesson.id})" class="lesson-action delete-btn">Delete</a>
@@ -5315,7 +5331,7 @@ app.get('/admin/videos', adm, adminGuard, async (req, res) => {
 
 // Video upload endpoint
 app.post('/admin/videos/upload', adm, upload.single('video'), async (req, res) => {
-    if (req.body?.key !== ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
+    if (!safeCompare(req.body?.key, ADMIN_SECRET)) return res.status(403).json({ error: 'Unauthorized' });
     
     try {
         const { title, section, lesson_order, duration, description } = req.body;
@@ -5376,7 +5392,7 @@ app.post('/admin/videos/upload', adm, upload.single('video'), async (req, res) =
 
 // Delete video route
 app.post('/admin/videos/delete', adm, express.json(), async (req, res) => {
-    if (req.body?.key !== ADMIN_SECRET) return res.status(403).json({ error: 'Unauthorized' });
+    if (!safeCompare(req.body?.key, ADMIN_SECRET)) return res.status(403).json({ error: 'Unauthorized' });
     
     try {
         const { id } = req.body;
