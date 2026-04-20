@@ -61,17 +61,17 @@ async function chargeCard({ opaqueDataDescriptor, opaqueDataValue, amount, email
                         dataValue:      opaqueDataValue,
                     },
                 },
-                billTo: {
-                    firstName: first,
-                    lastName:  last,
-                    email,
+                order: {
+                    description: 'HVT Lifetime License',
                 },
                 customer: {
                     type:  'individual',
                     email,
                 },
-                order: {
-                    description: 'HVT Lifetime License',
+                billTo: {
+                    firstName: first,
+                    lastName:  last,
+                    email,
                 },
                 transactionSettings: {
                     setting: [
