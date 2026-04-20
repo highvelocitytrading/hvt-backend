@@ -10,6 +10,7 @@ const router  = express.Router();
 const { chargeCard, createSubscription } = require('../services/authnet');
 const { rateLimit } = require('../middleware/rateLimiter');
 const { AUTHNET_API_LOGIN_ID, AUTHNET_CLIENT_KEY } = require('../config/constants');
+const AUTHNET_ENV = process.env.AUTHNET_ENV === 'sandbox' ? 'sandbox' : 'production';
 
 // Tight rate limit — max 5 payment attempts per IP per minute
 const payLimit = rateLimit({ windowMs: 60000, max: 5 });
@@ -21,7 +22,7 @@ router.get('/api/payment/config', (req, res) => {
     if (!AUTHNET_API_LOGIN_ID || !AUTHNET_CLIENT_KEY) {
         return res.status(503).json({ ok: false, error: 'Payment not configured.' });
     }
-    res.json({ ok: true, apiLoginID: AUTHNET_API_LOGIN_ID, clientKey: AUTHNET_CLIENT_KEY });
+    res.json({ ok: true, apiLoginID: AUTHNET_API_LOGIN_ID, clientKey: AUTHNET_CLIENT_KEY, env: AUTHNET_ENV });
 });
 
 // ─── PLAN CONFIG ─────────────────────────────────────────────────────────────
