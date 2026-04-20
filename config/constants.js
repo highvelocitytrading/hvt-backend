@@ -37,6 +37,12 @@ const SUPABASE_ANON_KEY         = process.env.SUPABASE_ANON_KEY;
 const AUTHORIZE_SIGNATURE_KEY = process.env.AUTHORIZE_SIGNATURE_KEY || null;
 const AUTHNET_API_LOGIN_ID    = process.env.AUTHNET_API_LOGIN_ID;
 const AUTHNET_TRANSACTION_KEY = process.env.AUTHNET_TRANSACTION_KEY;
+// Public client key embedded in frontend Accept.js — safe to expose
+const AUTHNET_CLIENT_KEY      = process.env.AUTHNET_CLIENT_KEY || null;
+// Switch AUTHNET_ENV=sandbox for testing, anything else = production
+const AUTHNET_API_URL         = (process.env.AUTHNET_ENV === 'sandbox')
+    ? 'https://apitest.authorize.net/xml/v1/request.api'
+    : 'https://api.authorize.net/xml/v1/request.api';
 
 // ─── EMAIL ────────────────────────────────────────────────────────────────────
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -47,8 +53,13 @@ const APP_URL      = process.env.APP_URL    || 'https://app.highvelocitytrading.
 const ADMIN_SECRET = process.env.ADMIN_SECRET   || 'HVT-ADMIN-FADBC551B512718D76F4B8744E54B621';
 const PORT         = process.env.PORT || 8080;
 
-// ─── JOTFORM ──────────────────────────────────────────────────────────────────
-const JOTFORM_SECRET = process.env.JOTFORM_SECRET || null;
+// ─── CORS ─────────────────────────────────────────────────────────────────────
+// Origins allowed to POST to /api/submit/* form endpoints.
+// Add your website domain(s) here via ALLOWED_ORIGINS env var (comma-separated).
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://highvelocitytrading.com,https://www.highvelocitytrading.com')
+    .split(',')
+    .map(o => o.trim())
+    .filter(Boolean);
 
 // ─── DISCORD ──────────────────────────────────────────────────────────────────
 const DISCORD_BOT_TOKEN        = process.env.DISCORD_BOT_TOKEN;
@@ -76,9 +87,9 @@ const COURSE_LESSONS_TABLE = 'course_lessons';
 module.exports = {
     DEMO_MODE,
     SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY,
-    AUTHORIZE_SIGNATURE_KEY, AUTHNET_API_LOGIN_ID, AUTHNET_TRANSACTION_KEY,
+    AUTHORIZE_SIGNATURE_KEY, AUTHNET_API_LOGIN_ID, AUTHNET_TRANSACTION_KEY, AUTHNET_CLIENT_KEY, AUTHNET_API_URL,
     RESEND_API_KEY, FROM_EMAIL,
-    APP_URL, ADMIN_SECRET, PORT, JOTFORM_SECRET,
+    APP_URL, ADMIN_SECRET, PORT, ALLOWED_ORIGINS,
     DISCORD_BOT_TOKEN, DISCORD_GUILD_ID, DISCORD_MONTHLY_ROLE_ID,
     DISCORD_LIFETIME_ROLE_ID, DISCORD_ROOM_ROLE_ID, DISCORD_INVITE_URL, DISCORD_ROOM_CHECKOUT_URL,
     NT_PRODUCT_ID, NT_USERNAME, NT_PASSWORD,

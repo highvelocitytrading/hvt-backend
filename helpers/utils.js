@@ -4,7 +4,7 @@
 'use strict';
 
 const crypto = require('crypto');
-const { JOTFORM_SECRET, AUTHORIZE_SIGNATURE_KEY } = require('../config/constants');
+const { AUTHORIZE_SIGNATURE_KEY } = require('../config/constants');
 
 // ─── FETCH POLYFILL ───────────────────────────────────────────────────────────
 // Uses native fetch if available (Node 18+), otherwise falls back to node-fetch
@@ -42,24 +42,6 @@ function nowISO() {
     return new Date().toISOString();
 }
 
-// ─── JOTFORM FIELD PARSER ─────────────────────────────────────────────────────
-// Extracts email, name, and phone from raw Jotform multipart body
-function huntData(raw) {
-    const email = raw.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0]?.toLowerCase() || null;
-    const fn    = (raw.match(/\[q3[^\]]*\]=([^\n]+)/) || raw.match(/"q3[^"]*":"([^"]+)"/))?.[1]?.trim() || '';
-    const ln    = (raw.match(/\[q4[^\]]*\]=([^\n]+)/) || raw.match(/"q4[^"]*":"([^"]+)"/))?.[1]?.trim() || '';
-    let phone   = null;
-    const rr    = raw.match(/\[rawRequest\]=(\{.*\})/s);
-    if (rr) {
-        try {
-            const o  = JSON.parse(rr[1]);
-            const pf = Object.keys(o).find(k => k.startsWith('q7'));
-            if (pf && o[pf]?.full) phone = o[pf].full.trim();
-        } catch {}
-    }
-    return { email, full_name: [fn, ln].filter(Boolean).join(' ') || null, phone };
-}
-
 // ─── SIGNATURE VERIFICATION ───────────────────────────────────────────────────
 // Verifies Authorize.net webhook HMAC-SHA512 signature header
 function verifyAuthnetSig(rawBody, hdr) {
@@ -74,13 +56,7 @@ function verifyAuthnetSig(rawBody, hdr) {
     } catch { return { ok: false, reason: 'format_error' }; }
 }
 
-// Verifies Jotform webhook secret query param or header
-function verifyJF(req) {
-    if (!JOTFORM_SECRET) return true;
-    return (req.query.secret || req.headers['x-jotform-secret']) === JOTFORM_SECRET;
-}
-
 module.exports = {
     fetchFn, pickFirst, genKey, genEchoKey, esc, now30days, nowISO,
-    huntData, verifyAuthnetSig, verifyJF
+    verifyAuthnetSig
 };
