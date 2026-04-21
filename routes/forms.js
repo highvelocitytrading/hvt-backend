@@ -25,9 +25,9 @@ function parseEmail(raw) {
 function parseFields(body) {
     return {
         email:          parseEmail(body?.email),
-        full_name:      (body?.full_name  || '').trim() || null,
-        phone:          (body?.phone      || '').trim() || null,
-        transaction_id: (body?.transaction_id || '').trim() || null,
+        full_name:      (body?.full_name  || '').trim().slice(0, 100) || null,
+        phone:          (body?.phone      || '').trim().slice(0, 30)  || null,
+        transaction_id: (body?.transaction_id || '').trim().slice(0, 64) || null,
     };
 }
 

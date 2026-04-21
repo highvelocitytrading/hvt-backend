@@ -14,11 +14,13 @@ const AUTHNET_ENV = process.env.AUTHNET_ENV === 'sandbox' ? 'sandbox' : 'product
 
 // Tight rate limit — max 5 payment attempts per IP per minute
 const payLimit = rateLimit({ windowMs: 60000, max: 5 });
+// Loose rate limit for the public config endpoint
+const cfgLimit = rateLimit({ windowMs: 60000, max: 30 });
 
 // ─── GET /api/payment/config ──────────────────────────────────────────────────
 // Returns the public Authorize.net credentials needed by Accept.js on the frontend.
 // These are NOT secrets — the client key is designed to be embedded in the browser.
-router.get('/api/payment/config', (req, res) => {
+router.get('/api/payment/config', cfgLimit, (req, res) => {
     if (!AUTHNET_API_LOGIN_ID || !AUTHNET_CLIENT_KEY) {
         return res.status(503).json({ ok: false, error: 'Payment not configured.' });
     }
@@ -50,11 +52,19 @@ router.post('/api/payment/charge', payLimit, express.json({ limit: '64kb' }), as
         return res.status(400).json({ ok: false, error: 'Invalid plan.' });
     }
     const emailClean = (email || '').toLowerCase().trim();
-    if (!emailClean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailClean)) {
+    if (!emailClean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailClean) || emailClean.length > 254) {
         return res.status(400).json({ ok: false, error: 'Valid email is required.' });
     }
+    const nameClean = (full_name || '').trim().slice(0, 100);
     if (!opaqueDataDescriptor || !opaqueDataValue) {
         return res.status(400).json({ ok: false, error: 'Payment token is missing.' });
+    }
+    // Accept.js always sends this exact descriptor — reject anything else
+    if (opaqueDataDescriptor !== 'COMMON.ACCEPT.INAPP.PAYMENT') {
+        return res.status(400).json({ ok: false, error: 'Invalid payment token.' });
+    }
+    if (typeof opaqueDataValue !== 'string' || opaqueDataValue.length > 8192) {
+        return res.status(400).json({ ok: false, error: 'Invalid payment token.' });
     }
 
     const config = PLANS[plan];
@@ -66,7 +76,7 @@ router.post('/api/payment/charge', payLimit, express.json({ limit: '64kb' }), as
                 opaqueDataValue,
                 amount:   config.amount,
                 email:    emailClean,
-                fullName: full_name || '',
+                fullName: nameClean,
             });
             console.log(`✅ Payment charged (${plan}): ${emailClean} | txId=${transactionId}`);
             return res.json({ ok: true, transaction_id: transactionId });
@@ -80,7 +90,7 @@ router.post('/api/payment/charge', payLimit, express.json({ limit: '64kb' }), as
                 intervalMonths: config.intervalMonths,
                 planName:       config.planName,
                 email:          emailClean,
-                fullName:       full_name || '',
+                fullName:       nameClean,
             });
             console.log(`✅ Subscription created (${plan}): ${emailClean} | subId=${subscriptionId}`);
             return res.json({ ok: true, subscription_id: subscriptionId });
