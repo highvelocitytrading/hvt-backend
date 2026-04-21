@@ -10,6 +10,8 @@ const router  = express.Router();
 const { chargeCard, createSubscription } = require('../services/authnet');
 const { rateLimit } = require('../middleware/rateLimiter');
 const { AUTHNET_API_LOGIN_ID, AUTHNET_CLIENT_KEY } = require('../config/constants');
+const { upsertLicense } = require('../services/supabase');
+const { nowISO } = require('../helpers/utils');
 const AUTHNET_ENV = process.env.AUTHNET_ENV === 'sandbox' ? 'sandbox' : 'production';
 
 // Tight rate limit — max 5 payment attempts per IP per minute
@@ -68,6 +70,18 @@ router.post('/api/payment/charge', payLimit, express.json({ limit: '64kb' }), as
                 email:    emailClean,
                 fullName: full_name || '',
             });
+            // Pre-seed the license record as authorize_received so /api/submit/license
+            // activates immediately without waiting for an Authorize.net webhook.
+            try {
+                await upsertLicense(transactionId, {
+                    authorize_received:    true,
+                    authorize_event_type:  'net.authorize.payment.authcapture.created',
+                    last_source:           'charge',
+                    updated_at:            nowISO(),
+                });
+            } catch (e) {
+                console.error('[PaymentCharge] License pre-seed error:', e.message);
+            }
             console.log(`✅ Payment charged (${plan}): ${emailClean} | txId=${transactionId}`);
             return res.json({ ok: true, transaction_id: transactionId });
         }
