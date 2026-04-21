@@ -12,6 +12,9 @@ function securityHeaders(req, res, next) {
     res.setHeader('Referrer-Policy',               'strict-origin-when-cross-origin');
     res.setHeader('Permissions-Policy',            'geolocation=(), microphone=(), camera=()');
     res.setHeader('Strict-Transport-Security',     'max-age=31536000; includeSubDomains');
+    // Prevent Fastly/Railway CDN from caching HTML portal pages with stale headers
+    res.setHeader('Cache-Control',                 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma',                        'no-cache');
     res.removeHeader('X-Powered-By');
     next();
 }
