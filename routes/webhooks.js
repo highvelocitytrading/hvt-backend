@@ -102,7 +102,7 @@ router.post('/authorize-net', express.raw({ type: '*/*', limit: '2mb' }), async 
         const txId  = pickFirst(body?.payload?.id);
         const eType = pickFirst(body?.eventType) || 'authorize_net';
         if (!txId) { console.warn('[AuthNet] No transaction ID in payload'); return; }
-        const row = await upsertLicense(txId, { authorize_received: true, last_source: 'authorize', authorize_event_type: eType, raw_authorize: rawBody, authorize_body_json: body, status: 'pending_jotform' });
+        const row = await upsertLicense(txId, { authorize_received: true, last_source: 'authorize', authorize_event_type: eType, raw_authorize: rawBody, authorize_body_json: body, status: 'pending_form' });
         if (row.email && row.full_name) {
             const act = await upsertLicense(txId, { authorize_received: true, last_source: 'authorize', status: 'active' });
             console.log(`✅ License (AN): ${act.email}`);
