@@ -68,7 +68,7 @@ const DISCORD_MONTHLY_ROLE_ID  = process.env.DISCORD_MONTHLY_ROLE_ID  || '147663
 const DISCORD_LIFETIME_ROLE_ID = process.env.DISCORD_LIFETIME_ROLE_ID || '1476634362811384001';
 const DISCORD_ROOM_ROLE_ID     = process.env.DISCORD_ROOM_ROLE_ID     || '';
 const DISCORD_INVITE_URL       = process.env.DISCORD_INVITE_URL       || 'https://discord.gg/2xG96nV4Hn';
-const DISCORD_ROOM_CHECKOUT_URL = process.env.DISCORD_ROOM_CHECKOUT_URL || 'https://highvelocitytrading.com/checkout-discord';
+const DISCORD_ROOM_CHECKOUT_URL = process.env.DISCORD_ROOM_CHECKOUT_URL || 'https://app.highvelocitytrading.com/checkout-discord';
 
 // ─── NINJATRADER ECOSYSTEM ────────────────────────────────────────────────────
 const NT_PRODUCT_ID = process.env.NT_PRODUCT_ID || '1212';

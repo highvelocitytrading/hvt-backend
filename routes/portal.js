@@ -773,7 +773,7 @@ body{font-family:"DM Sans",sans-serif;background:#000;min-height:100vh;color:#ff
           <li><span class="feat-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#a67c2e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>License key delivered instantly</li>
         </ul>
         <div class="price-row" style="flex-wrap:wrap;align-items:baseline;gap:4px 8px;"><div class="price">$97</div><span class="price-was">$130</span><div class="price-note">one-time &bull; no subscription</div></div>
-        <a href="https://highvelocitytrading.com/checkout-echo" class="buy-btn">Get HVT Echo &rarr;</a>
+        <a href="https://app.highvelocitytrading.com/checkout-echo" class="buy-btn">Get HVT Echo &rarr;</a>
       </div>
     </div>
     <div class="product-card" style="opacity:0.5;pointer-events:none;">
