@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=(self), usb=(), interest-cohort=()">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://api.web3forms.com https://pci.jotform.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com; font-src 'self' https://fonts.gstatic.com https://api.fontshare.com; img-src 'self' data: https://pub-ae4c5aafb8f24f34aaac5fc0a105eae3.r2.dev; frame-src https://pci.jotform.com; connect-src 'self' https://api.web3forms.com; object-src 'none';">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Disclosure — High Velocity Trading</title>
+    <meta name="description" content="Risk Disclosure Statement for High Velocity Trading — futures, forex, and options trading risks.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=general-sans@300,400,500,600,700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .legal-hero {
+            padding-top: calc(var(--nav-h) + 56px);
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--border);
+        }
+        .legal-hero .section-label { margin-bottom: 12px; }
+        .legal-hero h1 {
+            font-size: clamp(28px, 5vw, 48px);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.15;
+            margin-bottom: 14px;
+        }
+        .legal-meta { font-size: 13px; color: var(--text-3); }
+
+        .legal-layout {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 64px;
+            align-items: start;
+            padding: 56px 0 120px;
+        }
+
+        .legal-toc {
+            position: sticky;
+            top: calc(var(--nav-h) + 24px);
+        }
+        .legal-toc h4 {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: var(--text-3);
+            margin-bottom: 14px;
+        }
+        .legal-toc ol {
+            list-style: none;
+            counter-reset: toc;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .legal-toc ol li { counter-increment: toc; }
+        .legal-toc ol li a {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-2);
+            padding: 6px 10px;
+            border-radius: 8px;
+            transition: color 0.15s, background 0.15s;
+            line-height: 1.4;
+        }
+        .legal-toc ol li a::before {
+            content: counter(toc, decimal-leading-zero);
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-3);
+            flex-shrink: 0;
+        }
+        .legal-toc ol li a:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.05);
+        }
+        .legal-toc ol li a.active {
+            color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        .legal-content { min-width: 0; }
+
+        .legal-section {
+            padding-bottom: 56px;
+            margin-bottom: 56px;
+            border-bottom: 1px solid var(--border);
+        }
+        .legal-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .legal-section-num {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+        .legal-section h2 {
+            font-size: clamp(18px, 3vw, 24px);
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            line-height: 1.25;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+        .legal-section p {
+            font-size: 15px;
+            line-height: 1.75;
+            color: rgba(255,255,255,0.65);
+            margin-bottom: 16px;
+        }
+        .legal-section p:last-child { margin-bottom: 0; }
+
+        /* Sub-section heading inside a section */
+        .sub-section {
+            margin-top: 36px;
+            padding-top: 28px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .sub-section:first-of-type { margin-top: 0; padding-top: 0; border-top: none; }
+        .sub-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 14px;
+            letter-spacing: -0.01em;
+        }
+
+        .legal-section ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .legal-section ul li {
+            font-size: 15px;
+            line-height: 1.7;
+            color: rgba(255,255,255,0.65);
+            padding-left: 20px;
+            position: relative;
+        }
+        .legal-section ul li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 11px;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--accent);
+            opacity: 0.6;
+        }
+
+        .legal-warning {
+            background: rgba(255,165,0,0.06);
+            border: 1px solid rgba(255,165,0,0.18);
+            border-left: 3px solid rgba(255,165,0,0.7);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            margin: 20px 0;
+        }
+        .legal-warning p {
+            font-size: 14px !important;
+            color: rgba(255,255,255,0.72) !important;
+            margin-bottom: 0 !important;
+        }
+        .legal-warning strong { color: #fff; }
+
+        .legal-callout {
+            background: var(--accent-dim);
+            border: 1px solid rgba(0,85,254,0.20);
+            border-left: 3px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            margin: 20px 0;
+        }
+        .legal-callout p {
+            font-size: 14px !important;
+            color: rgba(255,255,255,0.75) !important;
+            margin-bottom: 0 !important;
+        }
+        .legal-callout strong { color: #fff; }
+
+        /* Additional risks grid */
+        .risk-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 20px;
+        }
+        .risk-card {
+            background: var(--bg-1);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+        }
+        .risk-card h4 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
+            letter-spacing: 0.01em;
+        }
+        .risk-card p {
+            font-size: 13px !important;
+            line-height: 1.6 !important;
+            color: rgba(255,255,255,0.50) !important;
+            margin-bottom: 0 !important;
+        }
+
+        /* Final notice */
+        .final-notice {
+            background: rgba(224,64,64,0.06);
+            border: 1px solid rgba(224,64,64,0.18);
+            border-left: 3px solid rgba(224,64,64,0.6);
+            border-radius: var(--radius);
+            padding: 22px 24px;
+            margin-top: 20px;
+        }
+        .final-notice p {
+            font-size: 15px !important;
+            color: rgba(255,255,255,0.72) !important;
+            margin-bottom: 0 !important;
+            line-height: 1.7 !important;
+        }
+        .final-notice strong { color: #fff; }
+
+        @media (max-width: 900px) {
+            .legal-layout { grid-template-columns: 1fr; gap: 32px; }
+            .legal-toc { position: static; }
+            .risk-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .legal-hero { padding-top: calc(var(--nav-h) + 32px); }
+            .legal-toc { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav class="nav" id="nav">
+    <div class="nav-inner">
+        <a href="/" class="nav-logo">
+            <img src="assets/&quot;V&quot; HVT.png" alt="High Velocity Trading" class="logo-img">
+            <span class="nav-wordmark">HIGH VELOCITY TRADING</span>
+        </a>
+        <div class="nav-pill">
+            <ul class="nav-links">
+                <li><a href="index.html#product">Product</a></li>
+                <li><a href="index.html#about">About</a></li>
+                <li><a href="index.html#features">Features</a></li>
+                <li><a href="index.html#pricing">Pricing</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+        </div>
+        <div class="nav-cta">
+            <a href="https://app.highvelocitytrading.com/login" class="nav-text-link">Member Portal</a>
+            <a href="index.html#pricing" class="nav-btn">Get Started</a>
+        </div>
+        <button class="hamburger" id="hamburger" aria-label="Open menu">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+    <ul>
+        <li><a href="index.html#product">Product</a></li>
+        <li><a href="index.html#about">About</a></li>
+        <li><a href="index.html#features">Features</a></li>
+        <li><a href="index.html#pricing">Pricing</a></li>
+        <li><a href="contact.html">Contact</a></li>
+    </ul>
+    <div class="mobile-cta">
+        <a href="https://app.highvelocitytrading.com/login" class="btn btn-ghost btn-full">Member Portal</a>
+        <a href="index.html#pricing" class="btn btn-primary btn-full">Get Started</a>
+    </div>
+</div>
+
+<!-- ===== HERO ===== -->
+<div class="legal-hero">
+    <div class="container">
+        <div class="section-label">Legal</div>
+        <h1>Risk Disclosure</h1>
+        <p class="legal-meta">Effective Date: January 1, 2025 &nbsp;·&nbsp; High Velocity Trading</p>
+    </div>
+</div>
+
+<!-- ===== CONTENT ===== -->
+<div class="container">
+    <div class="legal-layout">
+
+        <!-- TOC -->
+        <nav class="legal-toc" aria-label="Table of contents">
+            <h4>On this page</h4>
+            <ol>
+                <li><a href="#general">General Risk Disclosure</a></li>
+                <li><a href="#hypothetical">Hypothetical Performance</a></li>
+                <li><a href="#statement">Risk Disclosure Statement</a></li>
+                <li><a href="#futures">Futures Risks</a></li>
+                <li><a href="#options">Options Risks</a></li>
+                <li><a href="#additional">Additional Risks</a></li>
+                <li><a href="#final">Final Notice</a></li>
+            </ol>
+        </nav>
+
+        <!-- Sections -->
+        <div class="legal-content">
+
+            <div class="legal-section" id="general">
+                <div class="legal-section-num">Section 01</div>
+                <h2>General Risk Disclosure</h2>
+                <div class="legal-warning">
+                    <p><strong>Futures and forex trading contain substantial risk and are not for every investor.</strong> An investor could potentially lose all or more than the initial investment. Risk capital is money that can be lost without jeopardizing one's financial security or lifestyle. Only risk capital should be used for trading, and only those with sufficient risk capital should consider trading.</p>
+                </div>
+                <p>Past performance is not necessarily indicative of future results. Testimonials appearing on this website may not be representative of other clients or customers and are not a guarantee of future performance or success.</p>
+                <p>The risk of loss in trading commodity futures contracts can be substantial. You should therefore carefully consider whether such trading is suitable for you in light of your financial condition. You may sustain a total loss of the initial margin funds and any additional funds that you deposit with your broker to establish or maintain a position in the commodity futures market.</p>
+            </div>
+
+            <div class="legal-section" id="hypothetical">
+                <div class="legal-section-num">Section 02</div>
+                <h2>Hypothetical Performance Disclosure</h2>
+                <p>Hypothetical or simulated performance results have certain limitations. Unlike an actual performance record, simulated results do not represent actual trading.</p>
+                <div class="legal-warning">
+                    <p>Since trades may or may not have actually been executed, the results may have under- or over-compensated for the impact, if any, of certain market factors such as lack of liquidity. Simulated trading programs are generally designed with the benefit of hindsight. <strong>No representation can, will, or is being made that any account will, or is likely to, achieve profits or losses similar to those shown.</strong></p>
+                </div>
+                <div class="legal-callout">
+                    <p>Before trading, we recommend that you <strong>"Get the Facts"</strong> from the CFTC at <a href="https://www.cftc.gov" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">cftc.gov</a> or visit the <a href="https://www.nfa.futures.org" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">National Futures Association</a> website for additional information.</p>
+                </div>
+            </div>
+
+            <div class="legal-section" id="statement">
+                <div class="legal-section-num">Section 03</div>
+                <h2>Risk Disclosure Statement for Futures &amp; Options</h2>
+                <p>This brief statement does not disclose all of the risks and other significant aspects of trading in futures and options. You should undertake such transactions only if you fully understand:</p>
+                <ul>
+                    <li>The nature of the contracts and contractual relationships you are entering into</li>
+                    <li>The full extent of your exposure to risk</li>
+                    <li>Whether trading is appropriate given your experience, objectives, financial resources, and other relevant circumstances</li>
+                </ul>
+                <p>Trading in futures and options is <strong>not suitable for many members of the public.</strong> You should carefully consider whether trading is appropriate for you before proceeding.</p>
+            </div>
+
+            <div class="legal-section" id="futures">
+                <div class="legal-section-num">Section 04</div>
+                <h2>Futures Risks</h2>
+
+                <div class="sub-section">
+                    <h3>Effect of Leverage</h3>
+                    <p>Transactions in futures carry a high degree of risk. Because margin is only a fraction of a contract's full value, futures trading is highly leveraged. A small price movement in the market can result in proportionally much larger gains or losses relative to your deposited margin.</p>
+                    <div class="legal-warning">
+                        <p>You may sustain a <strong>total loss of initial margin funds</strong> and any additional funds deposited to maintain your position. Failure to meet margin calls promptly can result in the liquidation of your position at a loss, and you will be liable for any resulting deficit.</p>
+                    </div>
+                </div>
+
+                <div class="sub-section">
+                    <h3>Risk-Reducing Orders</h3>
+                    <p>Orders intended to limit losses — such as stop-loss orders — may not be effective in all market conditions. Market gaps, illiquidity, or rapid price movements can prevent these orders from executing at the intended price.</p>
+                    <p>Strategies combining positions, including spreads and straddles, may be as risky as taking simple long or short positions and should not be assumed to carry reduced risk.</p>
+                </div>
+            </div>
+
+            <div class="legal-section" id="options">
+                <div class="legal-section-num">Section 05</div>
+                <h2>Options Risks</h2>
+
+                <div class="sub-section">
+                    <h3>Variable Degree of Risk</h3>
+                    <p>Options involve a high degree of risk. Buyers and sellers of options should fully understand the type of option (put or call) and the risks associated with it. You should carefully evaluate how much the option's value must increase to cover both the premium paid and all associated transaction costs before the position becomes profitable.</p>
+                </div>
+
+                <div class="sub-section">
+                    <h3>Buying Options</h3>
+                    <p>Purchasers may allow options to expire worthless, resulting in a complete loss of the purchase price (premium). Purchasing deep out-of-the-money options involves only a remote chance of the option becoming profitable prior to expiration.</p>
+                </div>
+
+                <div class="sub-section">
+                    <h3>Writing (Selling) Options</h3>
+                    <div class="legal-warning">
+                        <p>Selling (writing) options carries <strong>substantially greater risk than buying options.</strong> The premium received by the seller is fixed, but the seller may incur losses far exceeding that amount. Writing uncovered (naked) options can involve <strong>unlimited potential loss.</strong></p>
+                    </div>
+                    <p>Some exchanges allow deferred payment of the option premium, exposing the buyer to margin call obligations. The purchaser remains responsible for any unpaid premium if the option is exercised or expires.</p>
+                </div>
+            </div>
+
+            <div class="legal-section" id="additional">
+                <div class="legal-section-num">Section 06</div>
+                <h2>Additional Risks</h2>
+                <p>The following factors may also affect your trading and should be understood before entering any position.</p>
+                <div class="risk-grid">
+                    <div class="risk-card">
+                        <h4>Terms &amp; Conditions</h4>
+                        <p>Know the specific terms and obligations of the contracts you trade. Some contract specifications may change due to market events or exchange rule changes.</p>
+                    </div>
+                    <div class="risk-card">
+                        <h4>Market Conditions &amp; Suspension</h4>
+                        <p>Market illiquidity, price limits, and circuit breakers may prevent liquidating positions and can significantly increase losses. Normal pricing relationships may not exist during volatile periods.</p>
+                    </div>
+                    <div class="risk-card">
+                        <h4>Deposited Cash &amp; Property</h4>
+                        <p>Understand the protections for funds or property deposited with your broker. In the event of broker insolvency, recovery of deposited funds may be limited.</p>
+                    </div>
+                    <div class="risk-card">
+                        <h4>Commissions &amp; Fees</h4>
+                        <p>Know all fees and transaction costs before trading. Commissions and fees can significantly impact profitability, particularly on smaller accounts.</p>
+                    </div>
+                    <div class="risk-card">
+                        <h4>Foreign Transactions</h4>
+                        <p>Trading in foreign markets may involve different regulatory environments or reduced investor protection compared to domestic markets.</p>
+                    </div>
+                    <div class="risk-card">
+                        <h4>Currency Risk</h4>
+                        <p>Profits and losses in foreign denominated contracts may be significantly affected by exchange rate fluctuations, independent of the underlying market movement.</p>
+                    </div>
+                    <div class="risk-card">
+                        <h4>Electronic Trading</h4>
+                        <p>Trading system failures, connectivity issues, or platform outages may result in orders not being executed as intended or delays in order placement.</p>
+                    </div>
+                    <div class="risk-card">
+                        <h4>Off-Exchange Transactions</h4>
+                        <p>Off-exchange trading can carry increased risk due to limited liquidity, reduced regulatory oversight, and potential difficulty in determining fair market value.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="legal-section" id="final">
+                <div class="legal-section-num">Section 07</div>
+                <h2>Final Notice</h2>
+                <div class="final-notice">
+                    <p><strong>Trading futures, forex, and options involves substantial risk and may not be suitable for all investors.</strong> Always trade only with capital you can afford to lose. Past performance is not indicative of future results. High Velocity Trading does not guarantee any specific outcome or profit. All trading decisions are made solely at your own risk and discretion.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <img src="assets/hvtfooterlogo.png" alt="High Velocity Trading" class="footer-logo">
+                <div class="footer-partners">
+                    <a href="https://lp.ninjatrader.com/platform?im_ref=2jfSCezFAxyZWTpxAGxOez3aUku3QZ1x1XCtUE0&sharedid=&irpid=7019303&irgwc=1&afsrc=1" target="_blank" rel="noopener noreferrer"><img src="assets/NinjaTrader_Wordmark_color_RGB.png" alt="NinjaTrader" class="footer-partner-logo"></a>
+                    <a href="https://kinetick.com/NinjaTrader" target="_blank" rel="noopener noreferrer"><img src="assets/Kinetick_Logo.png" alt="Kinetick" class="footer-partner-logo"></a>
+                </div>
+                <p>Trade With Structure. No Emotion.</p>
+                <p class="footer-tagline">Built for future traders who want clarity and repeatable execution. No noise, guessing or emotional decisions.</p>
+                <a href="tel:7864614235" class="footer-phone">786-461-4235</a>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="index.html#product">About</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                    <li><a href="#">Billing</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Socials</h4>
+                <ul>
+                    <li><a href="#">Instagram</a></li>
+                    <li><a href="#">Twitter (X)</a></li>
+                    <li><a href="#">YouTube</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="terms.html">Terms of Service</a></li>
+                    <li><a href="privacy.html">Privacy Policy</a></li>
+                    <li><a href="risk-disclosure.html">Risk Disclosure</a></li>
+                    <li><a href="cancellation.html">Cancellation Policy</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 High Velocity Trading. All rights reserved.</p>
+            <p class="footer-risk">Risk Disclosure: Futures and forex trading contains substantial risk and is not for every investor. An investor could potentially lose all or more than the initial investment. Risk capital is money that can be lost without jeopardizing ones' financial security or lifestyle. Only risk capital should be used for trading and only those with sufficient risk capital should consider trading. Past performance is not necessarily indicative of future results. Testimonials appearing on this website may not be representative of other clients or customers and is not a guarantee of future performance or success.</p>
+        </div>
+    </div>
+</footer>
+
+<script>
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+    nav.classList.toggle('nav--scrolled', window.scrollY > 40);
+}, { passive: true });
+
+const hamburger  = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobileMenu');
+hamburger.addEventListener('click', () => {
+    const open = mobileMenu.classList.toggle('open');
+    hamburger.classList.toggle('open', open);
+    hamburger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    hamburger.setAttribute('aria-expanded', open);
+    document.body.style.overflow = open ? 'hidden' : '';
+});
+mobileMenu.querySelectorAll('a').forEach(a =>
+    a.addEventListener('click', () => {
+        mobileMenu.classList.remove('open');
+        hamburger.classList.remove('open');
+        hamburger.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+    })
+);
+
+const tocLinks = document.querySelectorAll('.legal-toc a');
+const sections = document.querySelectorAll('.legal-section');
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            tocLinks.forEach(a => a.classList.remove('active'));
+            const active = document.querySelector(`.legal-toc a[href="#${entry.target.id}"]`);
+            if (active) active.classList.add('active');
+        }
+    });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

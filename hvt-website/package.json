@@ -1,0 +1,11 @@
+{
+  "name": "hvt-website",
+  "version": "1.0.0",
+  "description": "High Velocity Trading website",
+  "scripts": {
+    "dev": "browser-sync start --server --files '**/*.html, **/*.css, **/*.js' --no-notify --open"
+  },
+  "devDependencies": {
+    "browser-sync": "^3.0.3"
+  }
+}

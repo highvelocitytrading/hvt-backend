@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=(self), usb=(), interest-cohort=()">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://api.web3forms.com https://pci.jotform.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com; font-src 'self' https://fonts.gstatic.com https://api.fontshare.com; img-src 'self' data: https://pub-ae4c5aafb8f24f34aaac5fc0a105eae3.r2.dev; frame-src https://pci.jotform.com; connect-src 'self' https://api.web3forms.com; object-src 'none';">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact — High Velocity Trading</title>
+    <meta name="description" content="Get in touch with the High Velocity Trading team. We're here to help with questions about our futures trading software, billing, and support.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=general-sans@300,400,500,600,700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* ─── CONTACT PAGE SPECIFIC ─────────────────────── */
+        .contact-hero {
+            padding-top: calc(var(--nav-h) + 60px);
+            padding-bottom: 40px;
+            text-align: center;
+        }
+        .contact-hero .section-label { margin-bottom: 14px; }
+        .contact-hero h1 {
+            font-size: clamp(36px, 6vw, 64px);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+            margin-bottom: 18px;
+        }
+        .contact-hero p {
+            font-size: 17px;
+            color: var(--text-2);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* ─── CONTACT LAYOUT ─────────────────────────────── */
+        .contact-section {
+            padding: 20px 0 120px;
+        }
+        .contact-grid {
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 64px;
+            align-items: start;
+        }
+
+        /* ─── FORM CARD ──────────────────────────────────── */
+        .contact-card {
+            background: var(--bg-1);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.65);
+            letter-spacing: 0.01em;
+        }
+        .form-group label .req {
+            color: var(--accent);
+            margin-left: 2px;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border-2);
+            border-radius: var(--radius);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 15px;
+            padding: 13px 16px;
+            outline: none;
+            transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .form-group select {
+            background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a8a9e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 38px;
+            cursor: pointer;
+        }
+        .form-group select option {
+            background: #0a0a14;
+            color: #fff;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 130px;
+            line-height: 1.55;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: var(--accent);
+            background: rgba(0,85,254,0.05);
+            box-shadow: 0 0 0 3px rgba(0,85,254,0.12);
+        }
+        .form-group input.error,
+        .form-group select.error,
+        .form-group textarea.error {
+            border-color: #e04040;
+            box-shadow: 0 0 0 3px rgba(224,64,64,0.10);
+        }
+        .field-error {
+            font-size: 12px;
+            color: #e04040;
+            display: none;
+        }
+        .field-error.visible { display: block; }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        /* Submit button */
+        .btn-submit {
+            width: 100%;
+            padding: 15px 24px;
+            background: var(--accent);
+            color: #fff;
+            font-family: var(--font);
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: opacity 0.18s, transform 0.18s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        .btn-submit:hover:not(:disabled) {
+            opacity: 0.88;
+            transform: translateY(-1px);
+        }
+        .btn-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-submit .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: none;
+        }
+        .btn-submit.loading .spinner { display: block; }
+        .btn-submit.loading .btn-text { display: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Status messages */
+        .form-status {
+            margin-top: 18px;
+            padding: 14px 18px;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 500;
+            display: none;
+        }
+        .form-status.success {
+            display: block;
+            background: rgba(0,200,90,0.08);
+            border: 1px solid rgba(0,200,90,0.20);
+            color: #00c85a;
+        }
+        .form-status.error {
+            display: block;
+            background: rgba(224,64,64,0.08);
+            border: 1px solid rgba(224,64,64,0.20);
+            color: #e04040;
+        }
+
+        /* ─── SIDEBAR INFO ────────────────────────────────── */
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+            position: sticky;
+            top: calc(var(--nav-h) + 24px);
+        }
+        .contact-info-block h3 {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 12px;
+        }
+        .contact-detail {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+        .contact-detail-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: var(--accent-dim);
+            border: 1px solid rgba(0,85,254,0.20);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .contact-detail-icon svg {
+            width: 16px;
+            height: 16px;
+            stroke: var(--accent);
+        }
+        .contact-detail-body p {
+            font-size: 14px;
+            color: var(--text-2);
+            margin-bottom: 2px;
+        }
+        .contact-detail-body a,
+        .contact-detail-body strong {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text);
+        }
+        .contact-detail-body a:hover { color: var(--accent); }
+
+        .contact-divider {
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* Hours block */
+        .hours-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-2);
+        }
+        .hours-row:last-child { border-bottom: none; }
+        .hours-row span:last-child { color: var(--text); font-weight: 500; }
+
+        /* ─── RESPONSIVE ─────────────────────────────────── */
+        @media (max-width: 900px) {
+            .contact-grid {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+            .contact-info {
+                position: static;
+                order: -1;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+        }
+        @media (max-width: 768px) {
+            .contact-hero { padding-top: calc(var(--nav-h) + 32px); }
+            .contact-card { padding: 28px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav class="nav" id="nav">
+    <div class="nav-inner">
+        <a href="/" class="nav-logo">
+            <img src="assets/&quot;V&quot; HVT.png" alt="High Velocity Trading" class="logo-img">
+            <span class="nav-wordmark">HIGH VELOCITY TRADING</span>
+        </a>
+        <div class="nav-pill">
+            <ul class="nav-links">
+                <li><a href="index.html#product">Product</a></li>
+                <li><a href="index.html#about">About</a></li>
+                <li><a href="index.html#features">Features</a></li>
+                <li><a href="index.html#pricing">Pricing</a></li>
+                <li><a href="contact.html" class="active">Contact</a></li>
+            </ul>
+        </div>
+        <div class="nav-cta">
+            <a href="https://app.highvelocitytrading.com/login" class="nav-text-link">Member Portal</a>
+            <a href="index.html#pricing" class="nav-btn">Get Started</a>
+        </div>
+        <button class="hamburger" id="hamburger" aria-label="Open menu">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+</nav>
+
+<!-- Mobile menu -->
+<div class="mobile-menu" id="mobileMenu">
+    <ul>
+        <li><a href="index.html#product">Product</a></li>
+        <li><a href="index.html#about">About</a></li>
+        <li><a href="index.html#features">Features</a></li>
+        <li><a href="index.html#pricing">Pricing</a></li>
+        <li><a href="contact.html">Contact</a></li>
+    </ul>
+    <div class="mobile-cta">
+        <a href="https://app.highvelocitytrading.com/login" class="btn btn-ghost btn-full">Member Portal</a>
+        <a href="index.html#pricing" class="btn btn-primary btn-full">Get Started</a>
+    </div>
+</div>
+
+<!-- ===== CONTACT HERO ===== -->
+<div class="contact-hero">
+    <div class="container">
+        <div class="section-label">Contact Us</div>
+        <h1>We're here to help.</h1>
+        <p>Questions about software, billing, or getting started? Send us a message and we'll be back within 24 hours.</p>
+    </div>
+</div>
+
+<!-- ===== CONTACT SECTION ===== -->
+<section class="contact-section">
+    <div class="container">
+        <div class="contact-grid">
+
+            <!-- FORM -->
+            <div class="contact-card">
+                <form id="contactForm" action="https://api.web3forms.com/submit" method="POST" novalidate>
+                    <input type="hidden" name="access_key" value="99e065e5-72a9-4729-87f4-37388a2d5cca">
+                    <input type="hidden" name="subject" value="New Contact Form Submission — High Velocity Trading">
+                    <!-- note: the select below uses name="topic" to avoid duplicate "subject" field -->
+                    <input type="hidden" name="from_name" value="HVT Website">
+                    <input type="hidden" name="redirect" value="false">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fullName">Full Name <span class="req">*</span></label>
+                            <input type="text" id="fullName" name="fullName" placeholder="John Smith" autocomplete="name" maxlength="100" spellcheck="false">
+                            <span class="field-error" id="fullNameError">Please enter your full name.</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email Address <span class="req">*</span></label>
+                            <input type="email" id="email" name="email" placeholder="john@example.com" autocomplete="email" maxlength="254">
+                            <span class="field-error" id="emailError">Please enter a valid email address.</span>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" name="phone" placeholder="+1 (786) 000-0000" autocomplete="tel" maxlength="30">
+                        </div>
+                        <div class="form-group">
+                            <label for="topic">Subject <span class="req">*</span></label>
+                            <select id="topic" name="topic">
+                                <option value="" disabled selected>Select a topic…</option>
+                                <option value="General Inquiry">General Inquiry</option>
+                                <option value="Technical Support">Technical Support</option>
+                                <option value="Billing &amp; Payments">Billing &amp; Payments</option>
+                                <option value="Partnership Opportunity">Partnership Opportunity</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <span class="field-error" id="subjectError">Please select a subject.</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="message">Message <span class="req">*</span></label>
+                        <textarea id="message" name="message" placeholder="Tell us how we can help…" maxlength="5000"></textarea>
+                        <span class="field-error" id="messageError">Please enter a message.</span>
+                    </div>
+
+                    <!-- Web3Forms built-in spam protection -->
+                    <input type="checkbox" name="botcheck" style="display:none">
+
+                    <button type="submit" class="btn-submit" id="submitBtn">
+                        <div class="spinner"></div>
+                        <span class="btn-text">Send Message</span>
+                    </button>
+
+                    <div class="form-status" id="formStatus"></div>
+                </form>
+            </div>
+
+            <!-- SIDEBAR -->
+            <div class="contact-info">
+                <div class="contact-info-block">
+                    <h3>Get in Touch</h3>
+                    <div class="contact-detail">
+                        <div class="contact-detail-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 11a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .18h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7a2 2 0 011.72 2.02z"/></svg>
+                        </div>
+                        <div class="contact-detail-body">
+                            <p>Phone</p>
+                            <a href="tel:7864614235">786-461-4235</a>
+                        </div>
+                    </div>
+                    <div class="contact-detail">
+                        <div class="contact-detail-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                        </div>
+                        <div class="contact-detail-body">
+                            <p>Email</p>
+                            <a href="mailto:alerts@hvt-mail.com">alerts@hvt-mail.com</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="contact-divider"></div>
+
+                <div class="contact-info-block">
+                    <h3>Support Hours</h3>
+                    <div class="hours-row">
+                        <span>Monday – Friday</span>
+                        <span>9 AM – 4:30 PM ET</span>
+                    </div>
+                    <div class="hours-row">
+                        <span>Saturday</span>
+                        <span>Closed</span>
+                    </div>
+                    <div class="hours-row">
+                        <span>Sunday</span>
+                        <span>Closed</span>
+                    </div>
+                </div>
+
+                <div class="contact-divider"></div>
+
+                <div class="contact-info-block">
+                    <h3>Response Time</h3>
+                    <p style="font-size:14px;color:var(--text-2);line-height:1.6;">We respond to all inquiries within <strong style="color:var(--text)">24 hours</strong> on business days. For urgent issues call us directly at <a href="tel:7864614235" style="color:var(--accent)">786-461-4235</a>.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <img src="assets/hvtfooterlogo.png" alt="High Velocity Trading" class="footer-logo">
+                <div class="footer-partners">
+                    <a href="https://lp.ninjatrader.com/platform?im_ref=2jfSCezFAxyZWTpxAGxOez3aUku3QZ1x1XCtUE0&sharedid=&irpid=7019303&irgwc=1&afsrc=1" target="_blank" rel="noopener noreferrer"><img src="assets/NinjaTrader_Wordmark_color_RGB.png" alt="NinjaTrader" class="footer-partner-logo"></a>
+                    <a href="https://kinetick.com/NinjaTrader" target="_blank" rel="noopener noreferrer"><img src="assets/Kinetick_Logo.png" alt="Kinetick" class="footer-partner-logo"></a>
+                </div>
+                <p>Trade With Structure. No Emotion.</p>
+                <p class="footer-tagline">Built for future traders who want clarity and repeatable execution. No noise, guessing or emotional decisions.</p>
+                <a href="tel:7864614235" class="footer-phone">786-461-4235</a>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="index.html#product">About</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                    <li><a href="#">Billing</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Socials</h4>
+                <ul>
+                    <li><a href="#">Instagram</a></li>
+                    <li><a href="#">Twitter (X)</a></li>
+                    <li><a href="#">YouTube</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="terms.html">Terms of Service</a></li>
+                    <li><a href="privacy.html">Privacy Policy</a></li>
+                    <li><a href="risk-disclosure.html">Risk Disclosure</a></li>
+                    <li><a href="cancellation.html">Cancellation Policy</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 High Velocity Trading. All rights reserved.</p>
+            <p class="footer-risk">Risk Disclosure: Futures and forex trading contains substantial risk and is not for every investor. An investor could potentially lose all or more than the initial investment. Risk capital is money that can be lost without jeopardizing ones' financial security or lifestyle. Only risk capital should be used for trading and only those with sufficient risk capital should consider trading. Past performance is not necessarily indicative of future results. Testimonials appearing on this website may not be representative of other clients or customers and is not a guarantee of future performance or success.</p>
+        </div>
+    </div>
+</footer>
+
+<script>
+// ─── NAV SCROLL BEHAVIOR (mirrors script.js) ─────────────
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+    nav.classList.toggle('nav--scrolled', window.scrollY > 40);
+}, { passive: true });
+
+// ─── HAMBURGER ───────────────────────────────────────────
+const hamburger   = document.getElementById('hamburger');
+const mobileMenu  = document.getElementById('mobileMenu');
+hamburger.addEventListener('click', () => {
+    const open = mobileMenu.classList.toggle('open');
+    hamburger.classList.toggle('open', open);
+    hamburger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    hamburger.setAttribute('aria-expanded', open);
+    document.body.style.overflow = open ? 'hidden' : '';
+});
+mobileMenu.querySelectorAll('a').forEach(a =>
+    a.addEventListener('click', () => {
+        mobileMenu.classList.remove('open');
+        hamburger.classList.remove('open');
+        hamburger.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+    })
+);
+
+// ─── CONTACT FORM ────────────────────────────────────────
+const form      = document.getElementById('contactForm');
+const submitBtn = document.getElementById('submitBtn');
+const status    = document.getElementById('formStatus');
+
+const fields = {
+    fullName: { el: document.getElementById('fullName'), err: document.getElementById('fullNameError'), validate: v => v.trim().length >= 2 },
+    email:    { el: document.getElementById('email'),    err: document.getElementById('emailError'),    validate: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) },
+    subject:  { el: document.getElementById('topic'),    err: document.getElementById('subjectError'),  validate: v => v !== '' },
+    message:  { el: document.getElementById('message'),  err: document.getElementById('messageError'),  validate: v => v.trim().length >= 1 },
+};
+
+// Live validation: clear error on fix
+Object.values(fields).forEach(({ el, err, validate }) => {
+    ['input', 'change'].forEach(evt => el.addEventListener(evt, () => {
+            if (validate(el.value)) {
+                el.classList.remove('error');
+                err.classList.remove('visible');
+            }
+        }));
+});
+
+function validateAll() {
+    let ok = true;
+    Object.values(fields).forEach(({ el, err, validate }) => {
+        if (!validate(el.value)) {
+            el.classList.add('error');
+            err.classList.add('visible');
+            ok = false;
+        } else {
+            el.classList.remove('error');
+            err.classList.remove('visible');
+        }
+    });
+    return ok;
+}
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    status.className = 'form-status';
+    status.textContent = '';
+
+    if (!validateAll()) return;
+
+    submitBtn.disabled = true;
+    submitBtn.classList.add('loading');
+
+        try {
+            // Sanitize: strip HTML tags from all text inputs before sending
+            const sanitize = (str) => str.replace(/<[^>]*>/g, '').trim();
+            const data = new FormData(form);
+            ['fullName', 'phone', 'message'].forEach(field => {
+                const val = data.get(field);
+                if (val) data.set(field, sanitize(String(val)));
+            });
+
+            const res  = await fetch(form.action, {
+                method:  'POST',
+                body:    data,
+                headers: { 'Accept': 'application/json' },
+            });
+
+            const json = await res.json();
+
+            if (json.success) {
+                status.textContent = "Thank you! We'll get back to you within 24 hours.";
+                status.className   = 'form-status success';
+                form.reset();
+                // Rate-limit: lock form for 30s after success to prevent spam
+                submitBtn.disabled = true;
+                let countdown = 30;
+                const cooldown = setInterval(() => {
+                    countdown--;
+                    if (countdown <= 0) {
+                        clearInterval(cooldown);
+                        submitBtn.disabled = false;
+                        submitBtn.querySelector('.btn-text').textContent = 'Send Message';
+                    } else {
+                        submitBtn.querySelector('.btn-text').textContent = `Please wait ${countdown}s`;
+                    }
+                }, 1000);
+                return; // skip finally re-enable
+            } else {
+                throw new Error(json.message || 'Server error');
+            }
+        } catch (err) {
+            status.textContent = "Something went wrong. Please try again or call us at 786-461-4235.";
+            status.className   = 'form-status error';
+        } finally {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('loading');
+        status.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+});
+</script>
+</body>
+</html>

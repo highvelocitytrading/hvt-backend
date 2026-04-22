@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=(self), usb=(), interest-cohort=()">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://api.web3forms.com https://pci.jotform.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com; font-src 'self' https://fonts.gstatic.com https://api.fontshare.com; img-src 'self' data: https://pub-ae4c5aafb8f24f34aaac5fc0a105eae3.r2.dev; frame-src https://pci.jotform.com; connect-src 'self' https://api.web3forms.com; object-src 'none';">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy — High Velocity Trading</title>
+    <meta name="description" content="High Velocity Trading Privacy Policy — how we collect, use, and protect your personal information.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=general-sans@300,400,500,600,700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .legal-hero {
+            padding-top: calc(var(--nav-h) + 56px);
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--border);
+        }
+        .legal-hero .section-label { margin-bottom: 12px; }
+        .legal-hero h1 {
+            font-size: clamp(28px, 5vw, 48px);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.15;
+            margin-bottom: 14px;
+        }
+        .legal-meta { font-size: 13px; color: var(--text-3); }
+
+        .legal-layout {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 64px;
+            align-items: start;
+            padding: 56px 0 120px;
+        }
+
+        .legal-toc {
+            position: sticky;
+            top: calc(var(--nav-h) + 24px);
+        }
+        .legal-toc h4 {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: var(--text-3);
+            margin-bottom: 14px;
+        }
+        .legal-toc ol {
+            list-style: none;
+            counter-reset: toc;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .legal-toc ol li { counter-increment: toc; }
+        .legal-toc ol li a {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-2);
+            padding: 6px 10px;
+            border-radius: 8px;
+            transition: color 0.15s, background 0.15s;
+            line-height: 1.4;
+        }
+        .legal-toc ol li a::before {
+            content: counter(toc, decimal-leading-zero);
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-3);
+            flex-shrink: 0;
+        }
+        .legal-toc ol li a:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.05);
+        }
+        .legal-toc ol li a.active {
+            color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        .legal-content { min-width: 0; }
+
+        .legal-section {
+            padding-bottom: 56px;
+            margin-bottom: 56px;
+            border-bottom: 1px solid var(--border);
+        }
+        .legal-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .legal-section-num {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+        .legal-section h2 {
+            font-size: clamp(18px, 3vw, 24px);
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            line-height: 1.25;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+        .legal-section p {
+            font-size: 15px;
+            line-height: 1.75;
+            color: rgba(255,255,255,0.65);
+            margin-bottom: 16px;
+        }
+        .legal-section p:last-child { margin-bottom: 0; }
+        .legal-section ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .legal-section ul li {
+            font-size: 15px;
+            line-height: 1.7;
+            color: rgba(255,255,255,0.65);
+            padding-left: 20px;
+            position: relative;
+        }
+        .legal-section ul li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 11px;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--accent);
+            opacity: 0.6;
+        }
+
+        .legal-callout {
+            background: var(--accent-dim);
+            border: 1px solid rgba(0,85,254,0.20);
+            border-left: 3px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            margin: 20px 0;
+        }
+        .legal-callout p {
+            font-size: 14px !important;
+            color: rgba(255,255,255,0.75) !important;
+            margin-bottom: 0 !important;
+        }
+        .legal-callout strong { color: #fff; }
+
+        .legal-contact-box {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: var(--bg-1);
+            border: 1px solid var(--border-2);
+            border-radius: var(--radius);
+            padding: 18px 22px;
+            margin: 20px 0;
+        }
+        .legal-contact-box svg {
+            width: 18px;
+            height: 18px;
+            stroke: var(--accent);
+            flex-shrink: 0;
+        }
+        .legal-contact-box p {
+            margin: 0 !important;
+            font-size: 14px !important;
+            color: rgba(255,255,255,0.70) !important;
+        }
+        .legal-contact-box a {
+            color: var(--accent);
+            font-weight: 500;
+        }
+        .legal-contact-box a:hover { text-decoration: underline; }
+
+        /* Two-column data table */
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .data-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-1);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px 16px;
+            font-size: 14px;
+            color: rgba(255,255,255,0.7);
+        }
+        .data-item::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            opacity: 0.7;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 900px) {
+            .legal-layout { grid-template-columns: 1fr; gap: 32px; }
+            .legal-toc { position: static; }
+            .data-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .legal-hero { padding-top: calc(var(--nav-h) + 32px); }
+            .legal-toc { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav class="nav" id="nav">
+    <div class="nav-inner">
+        <a href="/" class="nav-logo">
+            <img src="assets/&quot;V&quot; HVT.png" alt="High Velocity Trading" class="logo-img">
+            <span class="nav-wordmark">HIGH VELOCITY TRADING</span>
+        </a>
+        <div class="nav-pill">
+            <ul class="nav-links">
+                <li><a href="index.html#product">Product</a></li>
+                <li><a href="index.html#about">About</a></li>
+                <li><a href="index.html#features">Features</a></li>
+                <li><a href="index.html#pricing">Pricing</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+        </div>
+        <div class="nav-cta">
+            <a href="https://app.highvelocitytrading.com/login" class="nav-text-link">Member Portal</a>
+            <a href="index.html#pricing" class="nav-btn">Get Started</a>
+        </div>
+        <button class="hamburger" id="hamburger" aria-label="Open menu">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+    <ul>
+        <li><a href="index.html#product">Product</a></li>
+        <li><a href="index.html#about">About</a></li>
+        <li><a href="index.html#features">Features</a></li>
+        <li><a href="index.html#pricing">Pricing</a></li>
+        <li><a href="contact.html">Contact</a></li>
+    </ul>
+    <div class="mobile-cta">
+        <a href="https://app.highvelocitytrading.com/login" class="btn btn-ghost btn-full">Member Portal</a>
+        <a href="index.html#pricing" class="btn btn-primary btn-full">Get Started</a>
+    </div>
+</div>
+
+<!-- ===== HERO ===== -->
+<div class="legal-hero">
+    <div class="container">
+        <div class="section-label">Legal</div>
+        <h1>Privacy Policy</h1>
+        <p class="legal-meta">Effective Date: January 1, 2025 &nbsp;·&nbsp; High Velocity Trading</p>
+    </div>
+</div>
+
+<!-- ===== CONTENT ===== -->
+<div class="container">
+    <div class="legal-layout">
+
+        <!-- TOC -->
+        <nav class="legal-toc" aria-label="Table of contents">
+            <h4>On this page</h4>
+            <ol>
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#collect">Information We Collect</a></li>
+                <li><a href="#use">How We Use It</a></li>
+                <li><a href="#sharing">Sharing &amp; Third Parties</a></li>
+                <li><a href="#updating">Updating Your Information</a></li>
+                <li><a href="#contact">Contact &amp; Support</a></li>
+                <li><a href="#security">Security</a></li>
+                <li><a href="#updates">Policy Updates</a></li>
+            </ol>
+        </nav>
+
+        <!-- Sections -->
+        <div class="legal-content">
+
+            <div class="legal-section" id="overview">
+                <div class="legal-section-num">Section 01</div>
+                <h2>Overview</h2>
+                <p>At High Velocity Trading, we take your privacy seriously. This policy explains what information we collect, how we use it, and the steps we take to protect it. It applies to all information gathered through our website and related services.</p>
+                <div class="legal-callout">
+                    <p>High Velocity Trading does <strong>not knowingly collect personal information from anyone under the age of 18.</strong> If you believe a minor has submitted information to us, please contact us immediately so we can remove it.</p>
+                </div>
+            </div>
+
+            <div class="legal-section" id="collect">
+                <div class="legal-section-num">Section 02</div>
+                <h2>Information We Collect</h2>
+                <p>We may collect the following information when you visit or interact with our website. We only collect information that you voluntarily provide to us. Some information, such as payment details, may be required in order to access certain products or services.</p>
+                <div class="data-grid">
+                    <div class="data-item">Full name</div>
+                    <div class="data-item">Email address</div>
+                    <div class="data-item">Phone number</div>
+                    <div class="data-item">Mailing address</div>
+                    <div class="data-item">IP address</div>
+                    <div class="data-item">Payment information</div>
+                </div>
+                <p>Payment information is collected only when you subscribe to or purchase our services, and is handled securely through our payment processor.</p>
+            </div>
+
+            <div class="legal-section" id="use">
+                <div class="legal-section-num">Section 03</div>
+                <h2>How We Use Your Information</h2>
+                <p>We use the information we collect to provide and improve our services. Specifically, we use it to:</p>
+                <ul>
+                    <li>Provide our services and manage account access</li>
+                    <li>Send emails, platform updates, and educational content</li>
+                    <li>Improve your experience on our website</li>
+                    <li>Process transactions and verify payment information</li>
+                    <li>Respond to questions and support requests</li>
+                </ul>
+                <div class="legal-callout">
+                    <p>You may <strong>unsubscribe from our email communications at any time</strong> by clicking the unsubscribe link in any email or by contacting us directly.</p>
+                </div>
+            </div>
+
+            <div class="legal-section" id="sharing">
+                <div class="legal-section-num">Section 04</div>
+                <h2>Sharing &amp; Third Parties</h2>
+                <p>In limited situations, we may share necessary information with third-party service providers — such as payment processors — only for the purpose of completing transactions securely. We do not sell, rent, or trade your personal information to any outside parties for marketing purposes.</p>
+                <p>Some areas of our platform may allow you to share information publicly, such as community features or chat rooms. Please use caution when sharing personal details in these spaces, as other users may see and use information you post. High Velocity Trading is not responsible for information you voluntarily disclose in public areas of the platform.</p>
+            </div>
+
+            <div class="legal-section" id="updating">
+                <div class="legal-section-num">Section 05</div>
+                <h2>Updating Your Information</h2>
+                <p>If you need to update or correct your personal information, you can do so through your account dashboard or by contacting us directly. We want your information to be accurate and up to date at all times.</p>
+            </div>
+
+            <div class="legal-section" id="contact">
+                <div class="legal-section-num">Section 06</div>
+                <h2>Contact &amp; Support</h2>
+                <p>If you have questions about this Privacy Policy, wish to request access to your data, or need assistance with your account, please reach out to us directly. We are committed to addressing any concerns promptly and respectfully.</p>
+                <div class="legal-contact-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    <p>Email us at <a href="mailto:alerts@highvelocitytrading.com">alerts@highvelocitytrading.com</a> or call <a href="tel:7864614235">786-461-4235</a> during business hours.</p>
+                </div>
+            </div>
+
+            <div class="legal-section" id="security">
+                <div class="legal-section-num">Section 07</div>
+                <h2>Security</h2>
+                <p>We use recognized industry practices to protect your personal information, including:</p>
+                <ul>
+                    <li>Secure server technology and encrypted connections (SSL/TLS)</li>
+                    <li>Data encryption for sensitive information including payment details</li>
+                    <li>Password-protected systems with restricted access controls</li>
+                </ul>
+                <p>While no online system can guarantee complete security, we work diligently to safeguard your data and keep it private. In the event of a data breach that may affect your personal information, we will notify you in accordance with applicable law.</p>
+            </div>
+
+            <div class="legal-section" id="updates">
+                <div class="legal-section-num">Section 08</div>
+                <h2>Policy Updates</h2>
+                <p>We may update this Privacy Policy from time to time to reflect changes in our practices or for other operational, legal, or regulatory reasons. If we make significant changes, we will notify you by email or through a notice on our website prior to the changes taking effect.</p>
+                <p>Your continued use of our services after any update constitutes your acceptance of the revised Privacy Policy. We encourage you to review this page periodically to stay informed.</p>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <img src="assets/hvtfooterlogo.png" alt="High Velocity Trading" class="footer-logo">
+                <div class="footer-partners">
+                    <a href="https://lp.ninjatrader.com/platform?im_ref=2jfSCezFAxyZWTpxAGxOez3aUku3QZ1x1XCtUE0&sharedid=&irpid=7019303&irgwc=1&afsrc=1" target="_blank" rel="noopener noreferrer"><img src="assets/NinjaTrader_Wordmark_color_RGB.png" alt="NinjaTrader" class="footer-partner-logo"></a>
+                    <a href="https://kinetick.com/NinjaTrader" target="_blank" rel="noopener noreferrer"><img src="assets/Kinetick_Logo.png" alt="Kinetick" class="footer-partner-logo"></a>
+                </div>
+                <p>Trade With Structure. No Emotion.</p>
+                <p class="footer-tagline">Built for future traders who want clarity and repeatable execution. No noise, guessing or emotional decisions.</p>
+                <a href="tel:7864614235" class="footer-phone">786-461-4235</a>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="index.html#product">About</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                    <li><a href="#">Billing</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Socials</h4>
+                <ul>
+                    <li><a href="#">Instagram</a></li>
+                    <li><a href="#">Twitter (X)</a></li>
+                    <li><a href="#">YouTube</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="terms.html">Terms of Service</a></li>
+                    <li><a href="privacy.html">Privacy Policy</a></li>
+                    <li><a href="risk-disclosure.html">Risk Disclosure</a></li>
+                    <li><a href="cancellation.html">Cancellation Policy</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 High Velocity Trading. All rights reserved.</p>
+            <p class="footer-risk">Risk Disclosure: Futures and forex trading contains substantial risk and is not for every investor. An investor could potentially lose all or more than the initial investment. Risk capital is money that can be lost without jeopardizing ones' financial security or lifestyle. Only risk capital should be used for trading and only those with sufficient risk capital should consider trading. Past performance is not necessarily indicative of future results. Testimonials appearing on this website may not be representative of other clients or customers and is not a guarantee of future performance or success.</p>
+        </div>
+    </div>
+</footer>
+
+<script>
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+    nav.classList.toggle('nav--scrolled', window.scrollY > 40);
+}, { passive: true });
+
+const hamburger  = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobileMenu');
+hamburger.addEventListener('click', () => {
+    const open = mobileMenu.classList.toggle('open');
+    hamburger.classList.toggle('open', open);
+    hamburger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    hamburger.setAttribute('aria-expanded', open);
+    document.body.style.overflow = open ? 'hidden' : '';
+});
+mobileMenu.querySelectorAll('a').forEach(a =>
+    a.addEventListener('click', () => {
+        mobileMenu.classList.remove('open');
+        hamburger.classList.remove('open');
+        hamburger.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+    })
+);
+
+const tocLinks = document.querySelectorAll('.legal-toc a');
+const sections = document.querySelectorAll('.legal-section');
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            tocLinks.forEach(a => a.classList.remove('active'));
+            const active = document.querySelector(`.legal-toc a[href="#${entry.target.id}"]`);
+            if (active) active.classList.add('active');
+        }
+    });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

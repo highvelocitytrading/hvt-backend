@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=(self), usb=(), interest-cohort=()">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://js.authorize.net https://jstest.authorize.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com; font-src 'self' https://fonts.gstatic.com https://api.fontshare.com; img-src 'self' data: https://pub-ae4c5aafb8f24f34aaac5fc0a105eae3.r2.dev; frame-src https://js.authorize.net https://jstest.authorize.net; connect-src 'self' https://app.highvelocitytrading.com https://api.authorize.net https://apitest.authorize.net; object-src 'none';">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HVT Echo Algo — Checkout</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=general-sans@300,400,500,600,700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body { background: var(--bg, #080c14); display: flex; flex-direction: column; min-height: 100vh; }
+        .co-page {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 16px;
+            min-height: 100vh;
+        }
+        .co-back {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-2, #8a9ab5);
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: color 0.18s;
+            z-index: 10;
+        }
+        .co-back:hover { color: var(--text, #fff); }
+        .co-back svg { flex-shrink: 0; }
+        /* Show checkout form inline — not as overlay */
+        #checkoutFormWrap {
+            width: 100%;
+            max-width: 480px;
+        }
+        /* Hide overlay chrome — this page IS the checkout */
+        .checkout-overlay,
+        .checkout-header { display: none !important; }
+        .checkout-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-2, #8a9ab5);
+            font-size: 14px;
+            padding: 60px 0;
+        }
+    </style>
+</head>
+<body>
+
+<a href="/" class="co-back">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    Back to site
+</a>
+
+<div class="co-page">
+    <div class="checkout-loading" id="checkoutLoading">
+        <div class="checkout-spinner"></div>
+        <p>Loading secure checkout…</p>
+    </div>
+    <div id="checkoutFormWrap"></div>
+</div>
+
+<!-- Hidden AcceptUI trigger — always in DOM so Accept.js initializes it on load -->
+<button id="hvtAcceptUIHidden" type="button" class="AcceptUI" tabindex="-1" aria-hidden="true"
+    style="position:absolute;width:0;height:0;overflow:hidden;opacity:0;pointer-events:none;"
+    data-billingAddressOptions='{"show":false,"required":false}'
+    data-apiLoginID=""
+    data-clientKey=""
+    data-acceptUIFormBtnTxt="Pay Now"
+    data-acceptUIFormHeaderTxt="Payment Information"
+    data-responseHandler="hvtHandlePayment"
+    data-paymentOptions='{"showCreditCard":true,"showBankAccount":false}'>
+    Pay Now
+</button>
+
+<script src="script.js"></script>
+<script>
+    // Auto-open Discord checkout as soon as script.js is ready
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof openCheckout === 'function') {
+            openCheckout('echo');
+        } else {
+            // fallback: wait a tick for script.js to finish registering globals
+            setTimeout(function () { openCheckout && openCheckout('echo'); }, 100);
+        }
+    });
+</script>
+</body>
+</html>

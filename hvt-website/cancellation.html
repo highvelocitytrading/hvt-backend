@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=(self), usb=(), interest-cohort=()">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://api.web3forms.com https://pci.jotform.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com; font-src 'self' https://fonts.gstatic.com https://api.fontshare.com; img-src 'self' data: https://pub-ae4c5aafb8f24f34aaac5fc0a105eae3.r2.dev; frame-src https://pci.jotform.com; connect-src 'self' https://api.web3forms.com; object-src 'none';">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cancellation & Refund Policy — High Velocity Trading</title>
+    <meta name="description" content="Cancellation and Refund Policy for High Velocity Trading subscriptions and digital products.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=general-sans@300,400,500,600,700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .legal-hero {
+            padding-top: calc(var(--nav-h) + 56px);
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--border);
+        }
+        .legal-hero .section-label { margin-bottom: 12px; }
+        .legal-hero h1 {
+            font-size: clamp(28px, 5vw, 48px);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.15;
+            margin-bottom: 14px;
+        }
+        .legal-meta { font-size: 13px; color: var(--text-3); }
+
+        .legal-layout {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 64px;
+            align-items: start;
+            padding: 56px 0 120px;
+        }
+
+        .legal-toc {
+            position: sticky;
+            top: calc(var(--nav-h) + 24px);
+        }
+        .legal-toc h4 {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: var(--text-3);
+            margin-bottom: 14px;
+        }
+        .legal-toc ol {
+            list-style: none;
+            counter-reset: toc;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .legal-toc ol li { counter-increment: toc; }
+        .legal-toc ol li a {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-2);
+            padding: 6px 10px;
+            border-radius: 8px;
+            transition: color 0.15s, background 0.15s;
+            line-height: 1.4;
+        }
+        .legal-toc ol li a::before {
+            content: counter(toc, decimal-leading-zero);
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-3);
+            flex-shrink: 0;
+        }
+        .legal-toc ol li a:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.05);
+        }
+        .legal-toc ol li a.active {
+            color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        .legal-content { min-width: 0; }
+
+        .legal-section {
+            padding-bottom: 56px;
+            margin-bottom: 56px;
+            border-bottom: 1px solid var(--border);
+        }
+        .legal-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .legal-section-num {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+        .legal-section h2 {
+            font-size: clamp(18px, 3vw, 24px);
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            line-height: 1.25;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+        .legal-section p {
+            font-size: 15px;
+            line-height: 1.75;
+            color: rgba(255,255,255,0.65);
+            margin-bottom: 16px;
+        }
+        .legal-section p:last-child { margin-bottom: 0; }
+        .legal-section ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .legal-section ul li {
+            font-size: 15px;
+            line-height: 1.7;
+            color: rgba(255,255,255,0.65);
+            padding-left: 20px;
+            position: relative;
+        }
+        .legal-section ul li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 11px;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--accent);
+            opacity: 0.6;
+        }
+
+        .legal-callout {
+            background: var(--accent-dim);
+            border: 1px solid rgba(0,85,254,0.20);
+            border-left: 3px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            margin: 20px 0;
+        }
+        .legal-callout p {
+            font-size: 14px !important;
+            color: rgba(255,255,255,0.75) !important;
+            margin-bottom: 0 !important;
+        }
+        .legal-callout strong { color: #fff; }
+
+        .legal-warning {
+            background: rgba(255,165,0,0.06);
+            border: 1px solid rgba(255,165,0,0.18);
+            border-left: 3px solid rgba(255,165,0,0.7);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            margin: 20px 0;
+        }
+        .legal-warning p {
+            font-size: 14px !important;
+            color: rgba(255,255,255,0.70) !important;
+            margin-bottom: 0 !important;
+        }
+
+        .legal-contact-box {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: var(--bg-1);
+            border: 1px solid var(--border-2);
+            border-radius: var(--radius);
+            padding: 18px 22px;
+            margin: 20px 0;
+        }
+        .legal-contact-box svg {
+            width: 18px;
+            height: 18px;
+            stroke: var(--accent);
+            flex-shrink: 0;
+        }
+        .legal-contact-box p {
+            margin: 0 !important;
+            font-size: 14px !important;
+            color: rgba(255,255,255,0.70) !important;
+        }
+        .legal-contact-box a {
+            color: var(--accent);
+            font-weight: 500;
+        }
+        .legal-contact-box a:hover { text-decoration: underline; }
+
+        .sub-heading {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-2);
+            margin-bottom: 8px;
+            margin-top: 28px;
+        }
+
+        @media (max-width: 900px) {
+            .legal-layout { grid-template-columns: 1fr; gap: 32px; }
+            .legal-toc { position: static; }
+        }
+        @media (max-width: 768px) {
+            .legal-hero { padding-top: calc(var(--nav-h) + 32px); }
+            .legal-toc { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav class="nav" id="nav">
+    <div class="nav-inner">
+        <a href="/" class="nav-logo">
+            <img src="assets/&quot;V&quot; HVT.png" alt="High Velocity Trading" class="logo-img">
+            <span class="nav-wordmark">HIGH VELOCITY TRADING</span>
+        </a>
+        <div class="nav-pill">
+            <ul class="nav-links">
+                <li><a href="index.html#product">Product</a></li>
+                <li><a href="index.html#about">About</a></li>
+                <li><a href="index.html#features">Features</a></li>
+                <li><a href="index.html#pricing">Pricing</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+        </div>
+        <div class="nav-cta">
+            <a href="https://app.highvelocitytrading.com/login" class="nav-text-link">Member Portal</a>
+            <a href="index.html#pricing" class="nav-btn">Get Started</a>
+        </div>
+        <button class="hamburger" id="hamburger" aria-label="Open menu">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+    <ul>
+        <li><a href="index.html#product">Product</a></li>
+        <li><a href="index.html#about">About</a></li>
+        <li><a href="index.html#features">Features</a></li>
+        <li><a href="index.html#pricing">Pricing</a></li>
+        <li><a href="contact.html">Contact</a></li>
+    </ul>
+    <div class="mobile-cta">
+        <a href="https://app.highvelocitytrading.com/login" class="btn btn-ghost btn-full">Member Portal</a>
+        <a href="index.html#pricing" class="btn btn-primary btn-full">Get Started</a>
+    </div>
+</div>
+
+<!-- ===== HERO ===== -->
+<div class="legal-hero">
+    <div class="container">
+        <div class="section-label">Legal</div>
+        <h1>Cancellation &amp; Refund Policy</h1>
+        <p class="legal-meta">Effective Date: January 1, 2025 &nbsp;·&nbsp; High Velocity Trading</p>
+    </div>
+</div>
+
+<!-- ===== CONTENT ===== -->
+<div class="container">
+    <div class="legal-layout">
+
+        <!-- TOC -->
+        <nav class="legal-toc" aria-label="Table of contents">
+            <h4>On this page</h4>
+            <ol>
+                <li><a href="#general">General Disclaimer</a></li>
+                <li><a href="#trade-signals">Trade Signals</a></li>
+                <li><a href="#information">Information</a></li>
+                <li><a href="#live-room">Live Trading Room</a></li>
+                <li><a href="#participation">Participation</a></li>
+                <li><a href="#subscription">Subscription Agreement</a></li>
+                <li><a href="#purchases">Purchases &amp; Refunds</a></li>
+                <li><a href="#cancellations">Cancellations</a></li>
+                <li><a href="#educational">Educational Services</a></li>
+                <li><a href="#termination">Termination</a></li>
+                <li><a href="#risk">Risk Disclosure</a></li>
+            </ol>
+        </nav>
+
+        <!-- Sections -->
+        <div class="legal-content">
+
+            <div class="legal-section" id="general">
+                <div class="legal-section-num">Section 01</div>
+                <h2>General Disclaimer</h2>
+                <p>All information contained in the High Velocity Trading website is compiled for the convenience and use of the site's visitors and subscribers. It is provided without responsibility for its accuracy.</p>
+                <p>Any site visitor or subscriber having access to information contained within this website is under the strict condition that any errors or omissions shall not provide the basis of any claim, demand, or cause of action against High Velocity Trading or anyone affiliated therewith.</p>
+            </div>
+
+            <div class="legal-section" id="trade-signals">
+                <div class="legal-section-num">Section 02</div>
+                <h2>Trade Signals</h2>
+                <p>Performance relied upon by High Velocity Trading is intended solely for educational and demonstration purposes only. Certain aspects of High Velocity Trading results are based upon hypothetical trading performance information, performed on a simulated account without any consideration for commissions or slippage.</p>
+                <div class="legal-warning">
+                    <p>Hypothetical or simulated performance results have certain inherent limitations, unlike an actual performance record. Simulated results do not represent actual trading. Since the trades have not actually been executed, results may have under- or over-compensated for the impact, if any, of certain market factors such as a lack of liquidity. Simulated programs are also designed with the benefit of hindsight. <strong>No representation is being made that any account will achieve profits or losses similar to those shown.</strong></p>
+                </div>
+                <p>Trading Signal services on Futures, Stocks, Forex, and Options contracts are speculative, and no guarantee is given that past, present, or future signals will provide profits to traders. All trade signals provided to visitors and subscribers are purely for educational and demonstration purposes only. Any participation in these markets utilizing the High Velocity Trading service is entirely at your own risk.</p>
+                <p>High Velocity Trading is not a financial advisory service. All trades — both written and verbal — and any documentation on the website or received via email, are not an offer to buy, sell, or participate in Futures, Stocks, Forex, or Options markets. We do not provide investment advice in any capacity. Visitors and subscribers assume full liability for all trading decisions. High Velocity Trading and its employees and associates take no responsibility for any profits or losses incurred.</p>
+            </div>
+
+            <div class="legal-section" id="information">
+                <div class="legal-section-num">Section 03</div>
+                <h2>Information</h2>
+                <p>Any report or documentation presented on this website includes information from sources believed to be reliable and accurate as of the date of publication. No independent verification has been made, nor do we guarantee its accuracy or completeness. Opinions expressed are subject to change without notice.</p>
+                <p>Any reliance on information contained in these reports is at the sole risk of the site visitor or subscriber. Any reproduction or retransmission of this report without express written consent of High Velocity Trading is strictly prohibited.</p>
+            </div>
+
+            <div class="legal-section" id="live-room">
+                <div class="legal-section-num">Section 04</div>
+                <h2>Live Trading &amp; Training Room</h2>
+                <p>All signals and trading opportunities disclosed to visitors or subscribers within the Live Trading Room are for educational and demonstration purposes only. All live trading demonstrations are presented on simulated trading accounts without consideration for commissions or slippage.</p>
+                <p>High Velocity Trading takes no responsibility for any participation by visitors or subscribers in the Futures, Stocks, Forex, or Options markets, nor for any profits or losses incurred.</p>
+            </div>
+
+            <div class="legal-section" id="participation">
+                <div class="legal-section-num">Section 05</div>
+                <h2>Participation</h2>
+                <p>Trading in the Forex, Futures, Stocks, and Options markets involves substantial risk and may not be suitable for everyone.</p>
+                <ul>
+                    <li>Never risk more than 2% of your account on any single trade.</li>
+                    <li>Do your own due diligence before making any trading decisions.</li>
+                    <li>Consult a licensed financial adviser prior to participating in any market.</li>
+                </ul>
+                <div class="legal-callout">
+                    <p>High Velocity Trading is <strong>not a registered financial adviser</strong> nor a licensed Commodity Trading Adviser (CTA).</p>
+                </div>
+            </div>
+
+            <div class="legal-section" id="subscription">
+                <div class="legal-section-num">Section 06</div>
+                <h2>Subscription Agreement</h2>
+                <p>Subscribers to the High Velocity Trading website agree to pay a monthly fee in accordance with the site's Terms of Use. No registered subscriber may copy, sell, reproduce, transmit, or publicly display any information or materials related to High Velocity Trading.</p>
+                <p>Subscriptions are solely for the fee payer and may not be transferred or shared. The subscriber will be held liable for any third-party access facilitated by the subscriber.</p>
+            </div>
+
+            <div class="legal-section" id="purchases">
+                <div class="legal-section-num">Section 07</div>
+                <h2>Purchases &amp; Refunds</h2>
+                <p>High Velocity Trading offers individual digital products and subscription-based services. All purchases are final. No physical products are shipped — all access is digital.</p>
+                <p>Subscription billing begins immediately upon signup and renews automatically. By subscribing, you authorize High Velocity Trading (or its payment processor) to store and process your payment information for recurring billing.</p>
+                <p>If payment fails for any reason, your access may be terminated immediately. It is your responsibility to ensure your payment method remains valid and active.</p>
+                <div class="legal-callout">
+                    <p><strong>All payments are non-refundable.</strong> No refunds or credits will be issued for any reason, including dissatisfaction or failure to cancel prior to renewal.</p>
+                </div>
+            </div>
+
+            <div class="legal-section" id="cancellations">
+                <div class="legal-section-num">Section 08</div>
+                <h2>Cancellations</h2>
+                <p>You may cancel your subscription at any time by submitting a cancellation request via email. Cancellations are accepted exclusively by email — phone, chat, or other forms of communication are not accepted.</p>
+                <div class="legal-contact-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    <p>Submit cancellation requests to <a href="mailto:alerts@highvelocitytrading.com">alerts@highvelocitytrading.com</a>. A written confirmation of receipt is required for cancellation to be valid.</p>
+                </div>
+                <div class="legal-warning">
+                    <p><strong>Cancellation results in immediate termination of access and forfeiture of all associated data and content.</strong> No data can be recovered once an account is cancelled.</p>
+                </div>
+            </div>
+
+            <div class="legal-section" id="educational">
+                <div class="legal-section-num">Section 09</div>
+                <h2>Educational Services</h2>
+                <p>Access to educational content and proprietary materials is non-refundable once granted. Issuing a refund after access has been provided would constitute a violation of High Velocity Trading's intellectual property rights.</p>
+            </div>
+
+            <div class="legal-section" id="termination">
+                <div class="legal-section-num">Section 10</div>
+                <h2>Termination</h2>
+                <p>High Velocity Trading reserves the right to terminate subscriptions at any time for violation of these Terms or for non-payment. No refunds will be issued upon termination for cause.</p>
+            </div>
+
+            <div class="legal-section" id="risk">
+                <div class="legal-section-num">Section 11</div>
+                <h2>Risk Disclosure</h2>
+
+                <p class="sub-heading">General Risk</p>
+                <p>Trading involves significant risk. You may lose more than your initial investment. Past performance does not guarantee future results. Do not trade with money you cannot afford to lose.</p>
+
+                <p class="sub-heading">Hypothetical Performance</p>
+                <div class="legal-warning">
+                    <p>Hypothetical trading results have inherent limitations. Simulated results do not reflect actual trading and no guarantee is made that any account will achieve similar results. Hypothetical performance is generally prepared with the benefit of hindsight and does not involve financial risk. There are numerous other factors related to the markets in general or to the implementation of any specific trading program which cannot be fully accounted for — all of which can adversely affect trading results.</p>
+                </div>
+
+                <p class="sub-heading">U.S. Government &amp; CFTC Required Disclaimers</p>
+                <p>The Commodity Futures Trading Commission (CFTC) requires the following disclosure: There is a substantial risk of loss in trading commodity futures, options, and off-exchange foreign currency products. Past performance is not necessarily indicative of future results. The risk of loss in trading can be substantial. You should therefore carefully consider whether such trading is suitable for you in light of your financial condition.</p>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <img src="assets/hvtfooterlogo.png" alt="High Velocity Trading" class="footer-logo">
+                <div class="footer-partners">
+                    <a href="https://lp.ninjatrader.com/platform?im_ref=2jfSCezFAxyZWTpxAGxOez3aUku3QZ1x1XCtUE0&sharedid=&irpid=7019303&irgwc=1&afsrc=1" target="_blank" rel="noopener noreferrer"><img src="assets/NinjaTrader_Wordmark_color_RGB.png" alt="NinjaTrader" class="footer-partner-logo"></a>
+                    <a href="https://kinetick.com/NinjaTrader" target="_blank" rel="noopener noreferrer"><img src="assets/Kinetick_Logo.png" alt="Kinetick" class="footer-partner-logo"></a>
+                </div>
+                <p>Trade With Structure. No Emotion.</p>
+                <p class="footer-tagline">Built for future traders who want clarity and repeatable execution. No noise, guessing or emotional decisions.</p>
+                <a href="tel:7864614235" class="footer-phone">786-461-4235</a>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="index.html#product">About</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                    <li><a href="#">Billing</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Socials</h4>
+                <ul>
+                    <li><a href="#">Instagram</a></li>
+                    <li><a href="#">Twitter (X)</a></li>
+                    <li><a href="#">YouTube</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="terms.html">Terms of Service</a></li>
+                    <li><a href="privacy.html">Privacy Policy</a></li>
+                    <li><a href="risk-disclosure.html">Risk Disclosure</a></li>
+                    <li><a href="cancellation.html">Cancellation Policy</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 High Velocity Trading. All rights reserved.</p>
+            <p class="footer-risk">Risk Disclosure: Futures and forex trading contains substantial risk and is not for every investor. An investor could potentially lose all or more than the initial investment. Risk capital is money that can be lost without jeopardizing ones' financial security or lifestyle. Only risk capital should be used for trading and only those with sufficient risk capital should consider trading. Past performance is not necessarily indicative of future results. Testimonials appearing on this website may not be representative of other clients or customers and is not a guarantee of future performance or success.</p>
+        </div>
+    </div>
+</footer>
+
+<script>
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+    nav.classList.toggle('nav--scrolled', window.scrollY > 40);
+}, { passive: true });
+
+const hamburger  = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobileMenu');
+hamburger.addEventListener('click', () => {
+    const open = mobileMenu.classList.toggle('open');
+    hamburger.classList.toggle('open', open);
+    hamburger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    hamburger.setAttribute('aria-expanded', open);
+    document.body.style.overflow = open ? 'hidden' : '';
+});
+mobileMenu.querySelectorAll('a').forEach(a =>
+    a.addEventListener('click', () => {
+        mobileMenu.classList.remove('open');
+        hamburger.classList.remove('open');
+        hamburger.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+    })
+);
+
+const tocLinks = document.querySelectorAll('.legal-toc a');
+const sections = document.querySelectorAll('.legal-section');
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            tocLinks.forEach(a => a.classList.remove('active'));
+            const active = document.querySelector(`.legal-toc a[href="#${entry.target.id}"]`);
+            if (active) active.classList.add('active');
+        }
+    });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=(self), usb=(), interest-cohort=()">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://api.web3forms.com https://js.authorize.net https://jstest.authorize.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com; font-src 'self' https://fonts.gstatic.com https://api.fontshare.com; img-src 'self' data: https://pub-ae4c5aafb8f24f34aaac5fc0a105eae3.r2.dev; frame-src https://js.authorize.net https://jstest.authorize.net; connect-src 'self' https://api.web3forms.com https://app.highvelocitytrading.com https://api.authorize.net https://apitest.authorize.net; object-src 'none';">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>High Velocity Trading — Futures Trading Software</title>
+    <meta name="description" content="HVT synthesizes order-flow, cumulative delta, momentum, and market structure to generate high-probability futures entries.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=general-sans@300,400,500,600,700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav class="nav" id="nav">
+    <div class="nav-inner">
+        <a href="/" class="nav-logo">
+            <img src="assets/&quot;V&quot; HVT.png" alt="High Velocity Trading" class="logo-img">
+            <span class="nav-wordmark">HIGH VELOCITY TRADING</span>
+        </a>
+        <div class="nav-pill">
+            <ul class="nav-links">
+                <li><a href="#product">Product</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+        </div>
+        <div class="nav-cta">
+            <a href="https://app.highvelocitytrading.com/login" class="nav-text-link">Member Portal</a>
+            <a href="#pricing" class="nav-btn">Get Started</a>
+        </div>
+        <button class="hamburger" id="hamburger" aria-label="Open menu">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+</nav>
+
+<!-- Mobile menu -->
+<div class="mobile-menu" id="mobileMenu">
+    <ul>
+        <li><a href="#product">Product</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="contact.html">Contact</a></li>
+    </ul>
+    <div class="mobile-cta">
+        <a href="https://app.highvelocitytrading.com/login" class="btn btn-ghost btn-full">Member Portal</a>
+
+        <a href="#pricing" class="btn btn-primary btn-full">Get Started</a>
+    </div>
+</div>
+
+<!-- ===== HERO ===== -->
+<section class="hero" id="hero">
+    <div class="hero-sticky">
+        <canvas id="bullExplosionCanvas" aria-hidden="true"></canvas>
+        <div class="hero-glow"></div>
+        <div class="container hero-container">
+            <div class="hero-badge reveal">Futures Trading Software</div>
+            <h1 class="hero-heading reveal">
+                Futures Trading Simplified by Institutional-Grade Software
+            </h1>
+            <p class="hero-sub reveal">
+                High Velocity software synthesizes order-flow, cumulative delta, momentum, market structure, and volume on a multi-time frame basis.
+            </p>
+            <div class="hero-actions reveal">
+                <a href="#pricing" class="btn btn-primary btn-lg">Get Started</a>
+                <a href="#features" class="btn btn-ghost btn-lg">See How It Works</a>
+            </div>
+            <div class="hero-proof reveal">
+                <div class="proof-dots">
+                    <span></span><span></span><span></span><span></span><span></span>
+                </div>
+                <p>Trusted by 1,000+ active traders</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- ===== HOW IT WORKS ===== -->
+<section class="section" id="product">
+    <div class="container">
+        <div class="section-label reveal">High Velocity Trading</div>
+        <h2 class="section-heading reveal">How it works.</h2>
+        <p class="section-sub reveal">Built for serious futures traders who need more than price action.</p>
+
+        <div class="product-cards">
+            <div class="product-card reveal">
+                <div class="product-card-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                </div>
+                <h3>Read Market Structure Like a Pro</h3>
+                <p>Learn to spot where institutional money flows before retail catches on. We show you the exact patterns that signal major moves in ES, NQ, and other futures contracts.</p>
+            </div>
+            <div class="product-card reveal">
+                <div class="product-card-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
+                <h3>Clear Signals, No Guesswork</h3>
+                <p>Our indicators highlight precise entry and exit points on your charts. When momentum shifts and smart money moves, you'll see it immediately.</p>
+            </div>
+            <div class="product-card reveal">
+                <div class="product-card-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <h3>Protect Your Capital First</h3>
+                <p>Every setup includes defined risk levels and position sizing. You'll know your stops and targets before entering any trade.</p>
+            </div>
+            <div class="product-card reveal">
+                <div class="product-card-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                </div>
+                <h3>Real Trading Education</h3>
+                <p>Step-by-step training using actual market examples. Learn to think like institutional traders and spot the setups that move billions daily.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== WHAT'S INCLUDED ===== -->
+<section class="section included-section" id="included">
+    <div class="container">
+        <div class="section-label reveal">High Velocity Trading</div>
+        <h2 class="section-heading reveal">Everything in the package.</h2>
+
+        <div class="included-grid">
+            <div class="included-card reveal">
+                <div class="included-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                </div>
+                <h3>Specialized, Proprietary Indicators</h3>
+                <p>Access our proprietary indicator suite, each individualized to fit the market you are trading. We help you configure the ES and the NQ for you to achieve the earnings you deserve from our software.</p>
+            </div>
+            <div class="included-card reveal">
+                <div class="included-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                </div>
+                <h3>Proprietary Signal System</h3>
+                <p>Know exactly when to take ultra-low-risk trades and when to avoid clicking your mouse in a consolidating or choppy market.</p>
+            </div>
+            <div class="included-card reveal">
+                <div class="included-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <h3>Execution-Focused Trade Guidance</h3>
+                <p>The software suite is built to remove guesswork and help you execute low-risk trades with confidence. The stop loss and targets are integrated into your ATM tool.</p>
+            </div>
+            <div class="included-card reveal">
+                <div class="included-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                </div>
+                <h3>Step-By-Step Setup Instructions</h3>
+                <p>Includes clear instructions to install, configure, and use each indicator for a new level of results. Any issues, call us for help!</p>
+            </div>
+            <div class="included-card reveal">
+                <div class="included-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                </div>
+                <h3>Real-Time Options Alerts</h3>
+                <p>Stay ahead of the market with real-time alerts delivered directly to your platform, so you never miss a high-probability setup.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== FEATURES SHOWCASE ===== -->
+<section class="section features-section" id="features">
+    <div class="container">
+        <div class="features-layout">
+
+            <!-- Left: tab list -->
+            <div class="features-left">
+                <div class="section-label reveal">Software</div>
+                <h2 class="section-heading reveal">The software does the reading.<br>You do the trading.</h2>
+                <p class="section-sub reveal">Proprietary indicators built around order flow, market structure, and momentum — telling you exactly when to enter and when to stay out.</p>
+
+                <ul class="feature-tabs" id="featureTabs">
+                    <li class="feature-tab active" data-tab="signals">
+                        <div class="tab-dot"></div>
+                        <div class="tab-text">
+                            <strong>Signal Bars</strong>
+                            <span>Color-coded rows tell you when conditions are right — and when to wait.</span>
+                        </div>
+                    </li>
+                    <li class="feature-tab" data-tab="entries">
+                        <div class="tab-dot"></div>
+                        <div class="tab-text">
+                            <strong>Configured Entries</strong>
+                            <span>Entry signals appear on your chart with exact price levels.</span>
+                        </div>
+                    </li>
+                    <li class="feature-tab" data-tab="orderflow">
+                        <div class="tab-dot"></div>
+                        <div class="tab-text">
+                            <strong>Order Flow Reading</strong>
+                            <span>See live contract flow and limit orders beneath every candle.</span>
+                        </div>
+                    </li>
+                    <li class="feature-tab" data-tab="risk">
+                        <div class="tab-dot"></div>
+                        <div class="tab-text">
+                            <strong>Built-In Risk Management</strong>
+                            <span>Stops and targets are pre-configured before you ever click.</span>
+                        </div>
+                    </li>
+                    <li class="feature-tab" data-tab="mtf">
+                        <div class="tab-dot"></div>
+                        <div class="tab-text">
+                            <strong>Multi-Timeframe Confirmation</strong>
+                            <span>Your entry is confirmed across all timeframes, automatically.</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Right: panels -->
+            <div class="features-right">
+
+                <div class="feature-panel active" id="panel-signals">
+                    <div class="panel-label">Signal Bars</div>
+                    <p class="panel-headline">"Green means buy. Red means sell. That's it."</p>
+                    <p class="panel-desc">HVT's proprietary indicator rows sit below your chart and update in real time. Each row synthesizes a different layer of market data — order flow, momentum, and structure — into a single color-coded output. When they align, conditions are right. When they conflict, you wait.</p>
+                    <div class="panel-sees">
+                        <div class="panel-sees-label">What you see on your chart</div>
+                        <ul class="panel-see-list">
+                            <li>Multiple color-coded signal rows below every candle</li>
+                            <li>Aligned colors = market is ready to trade</li>
+                            <li>Conflicting or yellow = market is consolidating, stay flat</li>
+                        </ul>
+                    </div>
+                    <div class="panel-result">
+                        <span>The result:</span> You never have to interpret complex data yourself. The bars do it for you.
+                    </div>
+                </div>
+
+                <div class="feature-panel" id="panel-entries">
+                    <div class="panel-label">Configured Entries</div>
+                    <p class="panel-headline">"The software shows you exactly where to enter. You place the trade."</p>
+                    <p class="panel-desc">HVT synthesizes all active indicator data into a clear entry signal that appears directly on your chart as a labeled Buy or Sell marker. You see the level, you decide to take it, and you place the order manually. No automation — just complete clarity on where the setup is.</p>
+                    <div class="panel-sees">
+                        <div class="panel-sees-label">What you see on your chart</div>
+                        <ul class="panel-see-list">
+                            <li>Buy or Sell markers plotted at the exact entry level</li>
+                            <li>No signal = conditions aren't right, stay out</li>
+                            <li>You execute manually — the software does the analysis</li>
+                        </ul>
+                    </div>
+                    <div class="panel-result">
+                        <span>The result:</span> No guessing where to enter. The software identifies it — you pull the trigger.
+                    </div>
+                </div>
+
+                <div class="feature-panel" id="panel-orderflow">
+                    <div class="panel-label">Order Flow Reading</div>
+                    <p class="panel-headline">"See the contracts moving through the market before price reacts."</p>
+                    <p class="panel-desc">Beneath every candle, HVT tracks live contract flow — how many contracts are trading per minute, where buy and sell limit orders are sitting, and whether real buying or selling pressure is driving the move. This is the information institutional traders use that most retail traders never see.</p>
+                    <div class="panel-sees">
+                        <div class="panel-sees-label">What you see on your chart</div>
+                        <ul class="panel-see-list">
+                            <li>Live contract count — updated every minute</li>
+                            <li>Buy LMT and Sell LMT order tracking below the chart</li>
+                            <li>Real pressure beneath each candle, not just price</li>
+                        </ul>
+                    </div>
+                    <div class="panel-result">
+                        <span>The result:</span> Price is the last thing to react. You're reading what moves it first.
+                    </div>
+                </div>
+
+                <div class="feature-panel" id="panel-risk">
+                    <div class="panel-label">Built-In Risk Management</div>
+                    <p class="panel-headline">"The moment you enter, your stop and target are already set."</p>
+                    <p class="panel-desc">HVT is built around NinjaTrader's ATM (Advanced Trade Management) strategy. You place the order manually — but the instant it fills, your stop loss and profit target are automatically applied. You never have to set them yourself or move a stop mid-trade.</p>
+                    <div class="panel-sees">
+                        <div class="panel-sees-label">What you see on your chart</div>
+                        <ul class="panel-see-list">
+                            <li>Stop loss and profit target applied automatically on fill</li>
+                            <li>Pre-configured ATM strategy — no manual adjustments needed</li>
+                            <li>Your risk is defined before you ever enter</li>
+                        </ul>
+                    </div>
+                    <div class="panel-result">
+                        <span>The result:</span> You place the trade. The ATM strategy handles everything after.
+                    </div>
+                </div>
+
+                <div class="feature-panel" id="panel-mtf">
+                    <div class="panel-label">Multi-Timeframe Confirmation</div>
+                    <p class="panel-headline">"Your short-term entry is confirmed by the bigger picture — automatically."</p>
+                    <p class="panel-desc">HVT runs multiple timeframe signal rows simultaneously. The TF1 and TF signal indicators confirm that your short-term entry aligns with the broader trend and market structure. You're never trading a 1-minute setup against a dominant higher-timeframe move.</p>
+                    <div class="panel-sees">
+                        <div class="panel-sees-label">What you see on your chart</div>
+                        <ul class="panel-see-list">
+                            <li>TF1 Signal and TF Signal indicator rows on your chart</li>
+                            <li>Timeframe alignment visible in real time</li>
+                            <li>Entries only fire when short and long-term signals agree</li>
+                        </ul>
+                    </div>
+                    <div class="panel-result">
+                        <span>The result:</span> Short-term precision. Long-term alignment. Every single trade.
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== TESTIMONIALS ===== -->
+<section class="section" id="testimonials">
+    <div class="container">
+        <div class="section-label reveal">Results</div>
+        <h2 class="section-heading reveal">Don't just take our word for it.</h2>
+        <p class="section-sub reveal">
+            <a href="#pricing" class="text-link">Get started →</a>
+        </p>
+
+        <div class="testimonials-grid">
+            <div class="testimonial-card reveal">
+                <p class="testimonial-headline">"Honestly the first thing I noticed was how much calmer I trade now."</p>
+                <p>"I'm usually all over the place with entries but the pivots + confirmation signals slow me down in a good way. I take fewer trades, but they're way better. Futures finally feels manageable instead of chaotic."</p>
+                <div class="testimonial-meta">
+                    <div class="testimonial-avatar"></div>
+                    <div>
+                        <strong>J.R.</strong>
+                        <span>San Diego, CA</span>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card reveal">
+                <p class="testimonial-headline">"The indicators paid for themselves in my first week."</p>
+                <p>"Not every day is perfect, but having those momentum shifts marked out made a huge difference. I stopped forcing trades. When it shows a clean setup, it usually plays out. I'm actually seeing consistency for the first time."</p>
+                <div class="testimonial-meta">
+                    <div class="testimonial-avatar"></div>
+                    <div>
+                        <strong>L.M.</strong>
+                        <span>Chicago, IL</span>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card reveal">
+                <p class="testimonial-headline">"This is the only time an indicator package actually helped me."</p>
+                <p>"Most tools I've bought just added noise. This was the opposite. The workspace layout + the clear rules made everything simpler. I'm not guessing anymore — I actually understand why I'm taking a trade."</p>
+                <div class="testimonial-meta">
+                    <div class="testimonial-avatar"></div>
+                    <div>
+                        <strong>S.T.</strong>
+                        <span>Atlanta, GA</span>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card reveal">
+                <p class="testimonial-headline">"The clarity is the game changer."</p>
+                <p>"I trade ES in the morning before work, so I don't have time to overthink. The signals show me when the move has real strength behind it. I've cut out almost all the hesitation and second-guessing."</p>
+                <div class="testimonial-meta">
+                    <div class="testimonial-avatar"></div>
+                    <div>
+                        <strong>K.J.</strong>
+                        <span>Sarasota, FL</span>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card reveal">
+                <p class="testimonial-headline">"Not gonna lie, the system kept me out of so many bad trades."</p>
+                <p>"I used to get chopped up nonstop. Now if the signal isn't lined up with the structure, I just don't take it. That alone made my account curve way smoother."</p>
+                <div class="testimonial-meta">
+                    <div class="testimonial-avatar"></div>
+                    <div>
+                        <strong>B.L.</strong>
+                        <span>Frankfort, KY</span>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card reveal">
+                <p class="testimonial-headline">"I'm finally trading with a plan instead of vibes."</p>
+                <p>"It used to be pure emotion for me. Now I'm following the checklist they gave and it actually works. I'm way more patient and way more selective. It's a different world."</p>
+                <div class="testimonial-meta">
+                    <div class="testimonial-avatar"></div>
+                    <div>
+                        <strong>A.P.</strong>
+                        <span>Houston, TX</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== PRICING ===== -->
+<section class="section pricing-section" id="pricing">
+    <div class="container">
+        <div class="section-label reveal">Pricing</div>
+        <h2 class="section-heading reveal">Start trading with edge.</h2>
+        <p class="section-sub reveal">One software suite. Two ways in.</p>
+
+        <div class="pricing-grid">
+            <div class="pricing-card reveal">
+                <div class="pricing-tier">Monthly</div>
+                <div class="pricing-price">$497 <span class="pricing-cadence">/month</span></div>
+                <ul class="pricing-features">
+                    <li><svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>All proprietary indicators</li>
+                    <li><svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Trade execution system &amp; setup tools</li>
+                    <li><svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Unirenko chart templates</li>
+                    <li><svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Rule-based strategy</li>
+                    <li><svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Discord trading room access</li>
+                </ul>
+                <a href="https://highvelocitytrading.com/checkout-membership" class="btn btn-primary btn-full pricing-cta" data-plan="monthly">Unlock Software</a>
+            </div>
+
+            <div class="pricing-card pricing-card--featured reveal">
+                <div class="pricing-badge">Best Value</div>
+                <div class="pricing-tier">Lifetime</div>
+                <div class="pricing-price">$2,497 <span class="pricing-cadence">one-time</span></div>
+                <ul class="pricing-features">
+                    <li><svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Everything in Monthly</li>
+                    <li><svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Lifetime access to future updates</li>
+                    <li><svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Full course access</li>
+                    <li><svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>3 month Discord trading room</li>
+                </ul>
+                <a href="https://highvelocitytrading.com/checkout-lifetime" class="btn btn-primary btn-full pricing-cta" data-plan="lifetime">Unlock Software</a>
+            </div>
+        </div>
+
+        <p class="pricing-note reveal">
+            Need help? Call <a href="tel:7864614235">786-461-4235</a> or email <a href="mailto:alerts@hvt-mail.com">alerts@hvt-mail.com</a>
+        </p>
+    </div>
+</section>
+
+<!-- ===== ADD-ONS ===== -->
+<section class="section addons-section" id="addons">
+    <div class="container">
+        <div class="section-label reveal">Add-Ons</div>
+        <h2 class="section-heading reveal">Boost your edge.</h2>
+        <p class="section-sub reveal">Standalone tools you can stack on top of any plan — or use on their own.</p>
+
+        <div class="addons-grid">
+            <!-- Discord Trading Room -->
+            <div class="addon-card reveal">
+                <div class="addon-icon addon-icon--discord">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </div>
+                <div class="addon-badge">$37 / month</div>
+                <h3 class="addon-name">HVT Trading Room</h3>
+                <p class="addon-desc">Live trade alerts, real-time market commentary, and direct access to our coaching team — inside a private Discord server.</p>
+                <ul class="addon-feats">
+                    <li><svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Real-time trade alerts</li>
+                    <li><svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Live market commentary</li>
+                    <li><svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Direct coach access</li>
+                    <li><svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Cancel anytime</li>
+                </ul>
+                <button class="btn btn-primary btn-full addon-cta" data-plan="discord">Join Trading Room</button>
+            </div>
+
+            <!-- Echo Algo -->
+            <div class="addon-card reveal">
+                <div class="addon-icon addon-icon--echo">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
+                <div class="addon-badge addon-badge--echo">$97 one-time</div>
+                <h3 class="addon-name">HVT Echo Algo</h3>
+                <p class="addon-desc">An automated signal tool built for NinjaTrader. Plug it in, follow the signals, and trade with confidence — prop-firm ready.</p>
+                <ul class="addon-feats">
+                    <li><svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Plug-and-play NinjaTrader algo</li>
+                    <li><svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Works with all major prop firms</li>
+                    <li><svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Lifetime license key</li>
+                    <li><svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Free updates included</li>
+                </ul>
+                <button class="btn btn-primary btn-full addon-cta" data-plan="echo">Get Echo Algo</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== FAQ ===== -->
+<section class="section faq-section" id="faq">
+    <div class="container faq-inner">
+        <div class="section-label reveal">FAQ</div>
+        <h2 class="section-heading reveal">Common questions.</h2>
+
+        <div class="faq-list" id="faqList">
+            <div class="faq-item reveal">
+                <button class="faq-q" aria-expanded="false" aria-controls="faq-a-1">
+                    What makes the futures trading system's signals so accurate?
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="faq-a" id="faq-a-1">
+                    <p>Our signals combine order-flow analysis, cumulative delta, momentum, and multi-timeframe market structure into a single synthesized output. Rather than relying on one indicator, the system cross-references all inputs — entries are only flagged when all conditions align, which dramatically reduces false signals.</p>
+                </div>
+            </div>
+            <div class="faq-item reveal">
+                <button class="faq-q" aria-expanded="false" aria-controls="faq-a-2">
+                    What market do you trade live in your Live Tube Channel?
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="faq-a" id="faq-a-2">
+                    <p>We primarily trade the ES (S&amp;P 500 futures) and NQ (Nasdaq futures) live in our trading room. These are the most liquid futures markets in the world, which makes them ideal for demonstrating the software's signals in real-time.</p>
+                </div>
+            </div>
+            <div class="faq-item reveal">
+                <button class="faq-q" aria-expanded="false" aria-controls="faq-a-3">
+                    Can the software be configured to trade other futures markets?
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="faq-a" id="faq-a-3">
+                    <p>Yes. While we configure the software specifically for ES and NQ as part of onboarding, our indicators can be applied to other futures markets including CL (Crude Oil), GC (Gold), and more. Speak to our representatives if you are interested in configuring for other markets.</p>
+                </div>
+            </div>
+            <div class="faq-item reveal">
+                <button class="faq-q" aria-expanded="false" aria-controls="faq-a-4">
+                    Do you trade a live account in your trading room?
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="faq-a" id="faq-a-4">
+                    <p>Yes. Our trading room sessions use live accounts, not simulated environments. We believe accountability is part of the process — you see the same setups we take, in real time, with real money on the line.</p>
+                </div>
+            </div>
+            <div class="faq-item reveal">
+                <button class="faq-q" aria-expanded="false" aria-controls="faq-a-5">
+                    What services do our indicators work on?
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="faq-a" id="faq-a-5">
+                    <p>HVT indicators run on NinjaTrader 8, which is free to download and use for simulation. NinjaTrader connects to all major futures brokers and data feeds including Rithmic, Tradovate, and Interactive Brokers. Installation and configuration is fully guided — we walk you through every step.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== ABOUT ===== -->
+<section class="section about-section" id="about">
+    <div class="container">
+        <div class="about-layout">
+            <div class="about-left reveal">
+                <div class="section-label">About Us</div>
+                <h2 class="section-heading">We started because we were tired of guessing.</h2>
+            </div>
+            <div class="about-right">
+                <div class="about-card reveal">
+                    <h3>Who We Are</h3>
+                    <p>We're traders still in the trenches — learning, improving, and pushing forward every day. High Velocity Trading wasn't built by a distant institution. It was built by people who understand the grind and wanted a cleaner way to trade.</p>
+                </div>
+                <div class="about-card reveal">
+                    <h3>Why We Built This</h3>
+                    <p>Most people don't fail because they lack motivation. They fail because they lack structure. We wanted a system that emphasizes clear decision-making, defined risk, and repeatable execution — removing emotion and replacing it with confidence.</p>
+                </div>
+                <div class="about-card reveal">
+                    <h3>Our Philosophy</h3>
+                    <p>Success is earned through patience and focus, not shortcuts. Trading is about showing up with a plan, managing risk, and staying consistent. If you can master discipline here, it carries into everything else you pursue.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== FINAL CTA ===== -->
+<section class="cta-section">
+    <div class="container">
+        <div class="cta-inner reveal">
+            <div class="section-label">Join Us Now</div>
+            <h2 class="cta-heading">Everything You Need.<br>All In One Place.</h2>
+            <p class="cta-sub">Get instant access to our complete trading course — step-by-step video training built around the same strategies, indicators, and frameworks our members use every day.</p>
+            <div class="cta-actions">
+                <a href="https://app.highvelocitytrading.com/login" class="btn btn-primary btn-lg">Member Portal</a>
+                <a href="tel:7864614235" class="btn btn-ghost btn-lg">Call Us</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <img src="assets/hvtfooterlogo.png" alt="High Velocity Trading" class="footer-logo">
+                <div class="footer-partners">
+                    <a href="https://lp.ninjatrader.com/platform?im_ref=2jfSCezFAxyZWTpxAGxOez3aUku3QZ1x1XCtUE0&sharedid=&irpid=7019303&irgwc=1&afsrc=1" target="_blank" rel="noopener noreferrer"><img src="assets/NinjaTrader_Wordmark_color_RGB.png" alt="NinjaTrader" class="footer-partner-logo"></a>
+                    <a href="https://kinetick.com/NinjaTrader" target="_blank" rel="noopener noreferrer"><img src="assets/Kinetick_Logo.png" alt="Kinetick" class="footer-partner-logo"></a>
+                </div>
+                <p>Trade With Structure. No Emotion.</p>
+                <p class="footer-tagline">Built for future traders who want clarity and repeatable execution. No noise, guessing or emotional decisions.</p>
+                <a href="tel:7864614235" class="footer-phone">786-461-4235</a>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                    <li><a href="contact.html#billing">Billing</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Socials</h4>
+                <ul>
+                    <li><a href="#">Instagram</a></li>
+                    <li><a href="#">Twitter (X)</a></li>
+                    <li><a href="#">YouTube</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="terms.html">Terms of Service</a></li>
+                    <li><a href="privacy.html">Privacy Policy</a></li>
+                    <li><a href="risk-disclosure.html">Risk Disclosure</a></li>
+                    <li><a href="cancellation.html">Cancellation Policy</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 High Velocity Trading. All rights reserved.</p>
+            <p class="footer-risk">Risk Disclosure: Futures and forex trading contains substantial risk and is not for every investor. An investor could potentially lose all or more than the initial investment. Risk capital is money that can be lost without jeopardizing ones' financial security or lifestyle. Only risk capital should be used for trading and only those with sufficient risk capital should consider trading. Past performance is not necessarily indicative of future results. Testimonials appearing on this website may not be representative of other clients or customers and is not a guarantee of future performance or success.</p>
+        </div>
+    </div>
+</footer>
+
+<!-- ===== CHECKOUT OVERLAY ===== -->
+<div class="checkout-overlay" id="checkoutOverlay" role="dialog" aria-modal="true" aria-label="Secure Checkout">
+    <div class="checkout-inner">
+        <div class="checkout-header">
+            <span class="checkout-plan-label" id="checkoutPlanLabel"></span>
+            <button class="checkout-close" id="checkoutClose" aria-label="Close checkout">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <span>Back to site</span>
+            </button>
+        </div>
+        <div class="checkout-body">
+            <div class="checkout-loading" id="checkoutLoading">
+                <div class="checkout-spinner"></div>
+                <p>Loading secure checkout…</p>
+            </div>
+            <div class="checkout-form-wrap" id="checkoutFormWrap"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden AcceptUI trigger — always in DOM so Accept.js initializes it on load -->
+<button id="hvtAcceptUIHidden" type="button" class="AcceptUI" tabindex="-1" aria-hidden="true"
+    style="position:absolute;width:0;height:0;overflow:hidden;opacity:0;pointer-events:none;"
+    data-billingAddressOptions='{"show":false,"required":false}'
+    data-apiLoginID=""
+    data-clientKey=""
+    data-acceptUIFormBtnTxt="Pay Now"
+    data-acceptUIFormHeaderTxt="Payment Information"
+    data-responseHandler="hvtHandlePayment"
+    data-paymentOptions='{"showCreditCard":true,"showBankAccount":false}'>
+    Pay Now
+</button>
+
+<script src="script.js"></script>
+</body>
+</html>
