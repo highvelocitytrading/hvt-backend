@@ -30,6 +30,7 @@ const SITE = path.join(__dirname, 'hvt-website');
 // ─── GLOBAL MIDDLEWARE ────────────────────────────────────────────────────────
 app.use(securityHeaders);
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '7d', etag: true, index: false }));
+app.use('/assets', express.static(path.join(__dirname, 'assets'), { maxAge: '7d', etag: true }));
 
 // ─── MARKETING SITE (hvt-website) ────────────────────────────────────────────
 // Serve all static assets (CSS, JS, images, fonts) from hvt-website/

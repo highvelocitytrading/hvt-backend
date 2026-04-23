@@ -1,0 +1,492 @@
+/* ═══════════════════════════════════════════════════════
+   CHECKOUT — Premium Dark UI v2
+   ═══════════════════════════════════════════════════════ */
+
+/* ─── Animations ──────────────────────────────────── */
+@keyframes ckSlideUp {
+    from { opacity: 0; transform: translateY(24px); filter: blur(6px); }
+    to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
+}
+@keyframes ckFloat {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+}
+@keyframes ckGlow {
+    0%, 100% { box-shadow: 0 0 30px rgba(0,85,254,0.08); }
+    50%      { box-shadow: 0 0 50px rgba(0,85,254,0.16); }
+}
+@keyframes ckShine {
+    from { left: -100%; }
+    to   { left: 200%; }
+}
+@keyframes ckPriceGlow {
+    0%, 100% {
+        box-shadow:
+            0 0 20px rgba(0,85,254,0.12),
+            0 0 50px rgba(0,85,254,0.06),
+            inset 0 1px 0 rgba(255,255,255,0.08),
+            inset 0 -1px 0 rgba(0,0,0,0.15);
+        text-shadow:
+            0 0 10px rgba(0,85,254,0.5),
+            0 0 30px rgba(0,85,254,0.3),
+            0 0 60px rgba(0,85,254,0.15);
+    }
+    50% {
+        box-shadow:
+            0 0 28px rgba(0,85,254,0.2),
+            0 0 70px rgba(0,85,254,0.10),
+            inset 0 1px 0 rgba(255,255,255,0.10),
+            inset 0 -1px 0 rgba(0,0,0,0.15);
+        text-shadow:
+            0 0 14px rgba(0,85,254,0.6),
+            0 0 40px rgba(0,85,254,0.35),
+            0 0 80px rgba(0,85,254,0.2);
+    }
+}
+
+.ck-anim {
+    animation: ckSlideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ─── Top bar ─────────────────────────────────────── */
+.ck-topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 40px;
+    height: 48px;
+    background: rgba(4,4,10,0.90);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.ck-topbar-plan {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--accent);
+}
+.ck-topbar-back {
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+    transition: color 0.18s;
+}
+.ck-topbar-back:hover { color: #fff; }
+
+/* ─── Page ────────────────────────────────────────── */
+.ck-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 120px 40px 60px;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    column-gap: 48px;
+    row-gap: 0;
+    align-items: start;
+    position: relative;
+}
+.ck-page::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+        radial-gradient(ellipse 40% 50% at 25% 50%, rgba(0,50,180,0.14) 0%, transparent 100%),
+        radial-gradient(ellipse 40% 50% at 75% 30%, rgba(0,30,120,0.08) 0%, transparent 100%),
+        #000;
+    z-index: -1;
+}
+
+/* ─── Product image — left column ─────────────────── */
+.ck-logo {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    position: sticky;
+    top: 120px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+}
+.ck-logo-img {
+    width: 280px;
+    height: auto;
+    filter: drop-shadow(0 24px 60px rgba(0,20,100,0.55));
+    animation: ckFloat 5s ease-in-out infinite;
+}
+
+/* ─── Right column ────────────────────────────────── */
+.ck-card, .ck-secure {
+    grid-column: 2;
+}
+
+.ck-card {
+    max-width: 500px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+/* ─── Label ───────────────────────────────────────── */
+.ck-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    color: rgba(255,255,255,0.22);
+    margin-bottom: 16px;
+}
+
+/* ─── Order Summary — Liquid Glass ────────────────── */
+.ck-summary {
+    padding: 24px 24px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.ck-summary-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    margin-bottom: 16px;
+    position: relative;
+    z-index: 1;
+}
+
+.ck-badge {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: #fff;
+    background: var(--accent);
+    padding: 3px 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+.ck-badge-monthly {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.65);
+}
+
+.ck-plan-name {
+    font-family: 'General Sans', 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 3px;
+}
+.ck-plan-sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.30);
+}
+
+.ck-plan-price {
+    text-align: right;
+    position: relative;
+    z-index: 1;
+}
+.ck-price {
+    font-family: 'General Sans', 'Inter', sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: #fff;
+    text-shadow:
+        0 0 10px rgba(0,85,254,0.5),
+        0 0 30px rgba(0,85,254,0.3),
+        0 0 60px rgba(0,85,254,0.15);
+    position: relative;
+    padding: 14px 22px;
+    background: linear-gradient(
+        135deg,
+        rgba(0,85,254,0.08) 0%,
+        rgba(255,255,255,0.06) 40%,
+        rgba(0,85,254,0.05) 100%
+    );
+    border: 1px solid rgba(0,85,254,0.18);
+    border-radius: 12px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow:
+        0 0 20px rgba(0,85,254,0.12),
+        0 0 50px rgba(0,85,254,0.06),
+        inset 0 1px 0 rgba(255,255,255,0.08),
+        inset 0 -1px 0 rgba(0,0,0,0.15);
+    animation: ckPriceGlow 4s ease-in-out infinite;
+}
+.ck-price-note {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 8px;
+}
+
+.ck-summary-features {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    position: relative;
+    z-index: 1;
+}
+.ck-feat {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.45);
+}
+.ck-feat svg {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+}
+
+/* ─── Steps ───────────────────────────────────────── */
+.ck-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.ck-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+.ck-step-num {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.20);
+    border: 1.5px solid rgba(255,255,255,0.07);
+    transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+.ck-step.active .ck-step-num {
+    border-color: transparent;
+    color: #fff;
+    background: var(--accent);
+    box-shadow: 0 0 20px rgba(0,85,254,0.40), 0 0 6px rgba(0,85,254,0.60);
+}
+.ck-step.done .ck-step-num {
+    background: rgba(0,85,254,0.20);
+    border-color: rgba(0,85,254,0.35);
+    color: var(--accent);
+}
+.ck-step-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    color: rgba(255,255,255,0.16);
+    transition: color 0.3s;
+}
+.ck-step.active .ck-step-label {
+    color: rgba(255,255,255,0.55);
+}
+.ck-step-line {
+    width: 48px;
+    height: 1px;
+    background: rgba(255,255,255,0.05);
+    margin: 0 16px;
+    margin-bottom: 18px;
+}
+
+/* ─── Form ────────────────────────────────────────── */
+.ck-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px 24px 24px;
+}
+.ck-hidden { display: none !important; }
+
+.ck-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.ck-field label {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.40);
+    letter-spacing: 0.02em;
+}
+.ck-optional {
+    font-weight: 400;
+    color: rgba(255,255,255,0.18);
+    font-size: 10px;
+    margin-left: 3px;
+}
+
+.ck-field input {
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 13px 14px;
+    font-family: 'General Sans', 'Inter', sans-serif;
+    font-size: 14px;
+    color: #fff;
+    outline: none;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    -webkit-appearance: none;
+}
+.ck-field input::placeholder {
+    color: rgba(255,255,255,0.14);
+}
+.ck-field input:hover {
+    border-color: rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.045);
+}
+.ck-field input:focus {
+    border-color: rgba(0,85,254,0.45);
+    box-shadow: 0 0 0 3px rgba(0,85,254,0.08), 0 0 24px rgba(0,85,254,0.06);
+    background: rgba(255,255,255,0.05);
+}
+
+.ck-field-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+}
+
+.ck-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.55);
+    letter-spacing: 0.02em;
+    padding-top: 8px;
+    margin-bottom: -4px;
+}
+
+/* ─── Buttons ─────────────────────────────────────── */
+.ck-btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-family: 'General Sans', 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--accent);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 0 2px 10px rgba(0,85,254,0.25);
+    margin-top: 2px;
+    position: relative;
+    overflow: hidden;
+}
+.ck-btn::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(105deg, transparent, rgba(255,255,255,0.12), transparent);
+    transform: skewX(-15deg);
+    transition: none;
+    pointer-events: none;
+}
+.ck-btn:hover::after {
+    left: 200%;
+    transition: left 0.6s ease;
+}
+.ck-btn:hover {
+    background: #1a6aff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(0,85,254,0.35);
+}
+.ck-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(0,85,254,0.20);
+}
+.ck-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+}
+.ck-btn span {
+    margin-left: 4px;
+    font-size: 15px;
+}
+
+.ck-btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+}
+.ck-btn-back {
+    padding: 13px 20px;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    background: transparent;
+    color: rgba(255,255,255,0.35);
+    font-family: 'General Sans', 'Inter', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.ck-btn-back:hover {
+    border-color: rgba(255,255,255,0.14);
+    color: #fff;
+    background: rgba(255,255,255,0.03);
+}
+
+/* ─── Secure footer ───────────────────────────────── */
+.ck-secure {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 14px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.18);
+    letter-spacing: 0.02em;
+}
+.ck-secure svg { opacity: 0.30; }
+
+/* ─── Responsive ──────────────────────────────────── */
+@media (max-width: 900px) {
+    .ck-page {
+        grid-template-columns: 1fr;
+        max-width: 500px;
+        padding: 120px 20px 60px;
+    }
+    .ck-logo {
+        grid-row: auto;
+        position: static;
+        min-height: auto;
+        margin-bottom: 16px;
+    }
+    .ck-logo-img {
+        width: 160px;
+        animation: none;
+    }
+    .ck-label, .ck-summary, .ck-steps, .ck-form, .ck-secure {
+        grid-column: 1;
+    }
+}
+@media (max-width: 600px) {
+    .ck-topbar { padding: 0 16px; height: 44px; }
+    .ck-page { padding: 100px 16px 48px; }
+    .ck-logo-img { width: 120px; }
+    .ck-summary { padding: 20px; }
+    .ck-summary-top { flex-direction: column; gap: 10px; }
+    .ck-plan-price { text-align: left; }
+    .ck-price { font-size: 24px; }
+    .ck-summary-features { grid-template-columns: 1fr; }
+    .ck-field-row { grid-template-columns: 1fr; }
+    .ck-btn-row { flex-direction: column; }
+    .ck-btn-back { width: 100%; text-align: center; }
+}

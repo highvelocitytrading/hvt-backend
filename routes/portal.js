@@ -877,16 +877,16 @@ router.get('/trading-journal', requireSession, (req, res) => {
               <button type="button" id="cal-info" aria-label="Info" class="j-info-btn">i</button>
             </div>
             <div style="padding:12px 20px 20px;">
-              <div style="display:grid;grid-template-columns:repeat(7,minmax(72px,1fr));gap:10px;margin-bottom:10px;">
-                <div style="text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e2e8f0;font-weight:700;padding:4px 0;">Sun</div>
-                <div style="text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e2e8f0;font-weight:700;padding:4px 0;">Mon</div>
-                <div style="text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e2e8f0;font-weight:700;padding:4px 0;">Tue</div>
-                <div style="text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e2e8f0;font-weight:700;padding:4px 0;">Wed</div>
-                <div style="text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e2e8f0;font-weight:700;padding:4px 0;">Thu</div>
-                <div style="text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e2e8f0;font-weight:700;padding:4px 0;">Fri</div>
-                <div style="text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e2e8f0;font-weight:700;padding:4px 0;">Sat</div>
+              <div style="display:grid;grid-template-columns:repeat(7,minmax(72px,1fr));gap:6px;margin-bottom:6px;">
+                <div class="cal-weekday">Sun</div>
+                <div class="cal-weekday">Mon</div>
+                <div class="cal-weekday">Tue</div>
+                <div class="cal-weekday">Wed</div>
+                <div class="cal-weekday">Thu</div>
+                <div class="cal-weekday">Fri</div>
+                <div class="cal-weekday">Sat</div>
               </div>
-              <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,minmax(72px,1fr));gap:10px;min-width:0;"></div>
+              <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,minmax(72px,1fr));gap:6px;min-width:0;"></div>
             </div>
           </div>
         </div>
@@ -899,40 +899,67 @@ router.get('/trading-journal', requireSession, (req, res) => {
     </div>
     <style>
       body{justify-content:flex-start !important;padding-top:90px !important;}
-      .journal-wrap .card{max-width:none;}
-      .journal-tab{padding:8px 18px;border-radius:999px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;}
-      .journal-tab:hover{background:rgba(255,255,255,0.08);color:#e2e8f0;}
-      .journal-tab.active{background:rgba(34,84,245,0.15);border-color:rgba(34,84,245,0.35);color:#60a5fa;}
-      .j-card-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:600;margin-bottom:4px;}
-      .j-card-value{font-size:22px;font-weight:700;}
-      .j-bar-wrap{display:flex;height:8px;border-radius:4px;overflow:hidden;margin-top:8px;background:rgba(255,255,255,0.06);}
+
+      /* Flatten the bubbly shell card — slim border, no heavy accent bar */
+      .journal-wrap .card{max-width:none;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;}
+      .journal-wrap .card .ct{display:none;}
+
+      /* Period switcher — ghost underline, not chunky pills */
+      .journal-tab{padding:8px 4px;margin-right:18px;border-radius:0;border:none;border-bottom:1px solid transparent;background:transparent;color:#64748b;font-size:12px;font-weight:500;letter-spacing:0.02em;cursor:pointer;transition:color .18s,border-color .18s;font-family:inherit;}
+      .journal-tab:hover{background:transparent;color:#cbd5e1;}
+      .journal-tab.active{background:transparent;border-bottom-color:#0055fe;color:#fff;}
+
+      /* Metric cards — quieter label, bigger number, thinner bar */
+      .j-card{padding:18px 20px !important;}
+      .j-card-label{font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#64748b;font-weight:500;margin-bottom:10px;}
+      .j-card-value{font-size:28px;font-weight:600;letter-spacing:-0.02em;line-height:1;}
+      .j-bar-wrap{display:flex;height:3px;border-radius:2px;overflow:hidden;margin-top:14px;background:rgba(255,255,255,0.05);}
       .j-bar{height:100%;}.j-bar-win{background:#22c55e;}.j-bar-loss{background:#ef4444;}
-      .j-info-btn{width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#64748b;cursor:pointer;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;}
-      .j-panel-tab{padding:10px 18px;border:none;background:transparent;color:#64748b;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;}
-      .j-panel-tab:hover{color:#94a3b8;}
-      .j-panel-tab.active{color:#2254F5;border-bottom-color:#2254F5;}
+
+      /* Info icon — softer ghost */
+      .j-info-btn{width:22px;height:22px;border-radius:50%;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#475569;cursor:pointer;font-size:10px;font-weight:500;display:flex;align-items:center;justify-content:center;transition:color .18s,border-color .18s;}
+      .j-info-btn:hover{color:#94a3b8;border-color:rgba(255,255,255,0.16);}
+
+      /* Panel tabs — underline, thinner */
+      .j-panel-tab{padding:12px 16px;border:none;background:transparent;color:#64748b;font-size:12px;font-weight:500;letter-spacing:0.02em;cursor:pointer;border-bottom:1px solid transparent;transition:color .18s,border-color .18s;}
+      .j-panel-tab:hover{color:#cbd5e1;}
+      .j-panel-tab.active{color:#fff;border-bottom-color:#0055fe;}
+
+      /* Trades table — tighter, smaller, less shouty */
       .j-trades-table{width:100%;border-collapse:collapse;font-size:13px;}
-      .j-trades-table th{text-align:left;padding:10px 14px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#64748b;border-bottom:1px solid rgba(255,255,255,0.06);position:sticky;top:0;background:#0d1117;z-index:2;}
-      .j-trades-table td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.04);color:#e2e8f0;}
-      .j-trades-content::-webkit-scrollbar{width:4px;}
-      .j-trades-content::-webkit-scrollbar-thumb{background:rgba(34,84,245,0.4);border-radius:4px;}
-      .cal-nav-btn,.cal-today-btn{width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#94a3b8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;}
-      .cal-today-btn{width:auto;padding:5px 10px;font-size:11px;}
-      #cal-prev:hover,#cal-next:hover,#cal-prev-yr:hover,#cal-next-yr:hover,#cal-today:hover{background:rgba(255,255,255,0.08);color:#fff;}
-      .cal-day{aspect-ratio:1;min-width:0;border-radius:8px;display:flex;flex-direction:column;align-items:stretch;cursor:pointer;transition:all .15s;border:2px solid transparent;position:relative;padding:10px 8px;box-sizing:border-box;background:rgba(255,255,255,0.02);gap:6px;}
-      .cal-day:hover{background:rgba(255,255,255,0.06);}
+      .j-trades-table th{text-align:left;padding:10px 18px;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#475569;font-weight:500;border-bottom:1px solid rgba(255,255,255,0.05);position:sticky;top:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);z-index:2;}
+      .j-trades-table td{padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.04);color:#cbd5e1;}
+      .j-trades-content::-webkit-scrollbar{width:3px;}
+      .j-trades-content::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.14);border-radius:2px;}
+
+      /* Calendar nav — flat, square-ish, ghost */
+      .cal-nav-btn,.cal-today-btn{width:30px;height:30px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#64748b;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:color .18s,border-color .18s,background .18s;}
+      .cal-today-btn{width:auto;padding:0 10px;font-size:10px;letter-spacing:0.14em;font-weight:500;}
+      #cal-prev:hover,#cal-next:hover,#cal-prev-yr:hover,#cal-next-yr:hover,#cal-today:hover{background:rgba(255,255,255,0.04);color:#e2e8f0;border-color:rgba(255,255,255,0.12);}
+
+      /* Calendar cells — quiet, flat, 1px border */
+      .cal-weekday{text-align:center;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#475569;font-weight:500;padding:6px 0;}
+      .cal-day{aspect-ratio:1;min-width:0;border-radius:6px;display:flex;flex-direction:column;align-items:stretch;cursor:pointer;transition:background .15s,border-color .15s;border:1px solid rgba(255,255,255,0.04);position:relative;padding:8px 6px;box-sizing:border-box;background:transparent;gap:4px;}
+      .cal-day:hover{background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.10);}
+      .cal-day.other-month{opacity:0.35;}
       .cal-day.other-month .cal-num{color:#334155;}
-      .cal-day.has-pnl.profit{background:rgba(34,197,94,0.25);border-color:rgba(34,197,94,0.5);}
-      .cal-day.has-pnl.profit:hover{background:rgba(34,197,94,0.35);}
-      .cal-day.has-pnl.loss{background:rgba(239,68,68,0.25);border-color:rgba(239,68,68,0.5);}
-      .cal-day.has-pnl.loss:hover{background:rgba(239,68,68,0.35);}
-      .cal-day.is-today .cal-num{box-shadow:0 0 0 2px rgba(34,84,245,0.7);border-radius:50%;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;}
-      .cal-num{font-size:15px;font-weight:700;color:#e2e8f0;flex-shrink:0;line-height:1;}
+      .cal-day.has-pnl.profit{background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.28);}
+      .cal-day.has-pnl.profit:hover{background:rgba(34,197,94,0.14);border-color:rgba(34,197,94,0.42);}
+      .cal-day.has-pnl.loss{background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.28);}
+      .cal-day.has-pnl.loss:hover{background:rgba(239,68,68,0.14);border-color:rgba(239,68,68,0.42);}
+      .cal-day.is-today{border-color:rgba(0,85,254,0.45);}
+      .cal-day.is-today .cal-num{color:#4d8bff;font-weight:700;}
+      .cal-num{font-size:12px;font-weight:500;color:#94a3b8;flex-shrink:0;line-height:1;}
       .cal-day-content{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:0;overflow:hidden;padding:0 2px;}
-      .cal-pnl{font-size:12px;font-weight:700;line-height:1.3;word-break:break-all;}
-      .cal-trades{font-size:10px;color:inherit;opacity:0.9;margin-top:2px;line-height:1.2;}
+      .cal-pnl{font-size:11px;font-weight:600;line-height:1.3;word-break:break-all;letter-spacing:-0.01em;}
+      .cal-trades{font-size:9px;color:inherit;opacity:0.75;margin-top:2px;line-height:1.2;letter-spacing:0.04em;}
       .cal-day.has-pnl.profit .cal-pnl,.cal-day.has-pnl.profit .cal-trades{color:#22c55e;}
       .cal-day.has-pnl.loss .cal-pnl,.cal-day.has-pnl.loss .cal-trades{color:#ef4444;}
+
+      /* Section headers inside cards — quiet, uppercase, small */
+      .journal-wrap .card > div > span[style*="font-weight:700"]{font-size:11px !important;letter-spacing:0.16em !important;font-weight:500 !important;color:#94a3b8 !important;text-transform:uppercase;}
+      #cal-month-year{font-size:13px !important;font-weight:600 !important;letter-spacing:0.02em !important;color:#e2e8f0 !important;}
+
       @media(max-width:900px){.journal-metrics{grid-template-columns:1fr !important;} .journal-bottom-grid{grid-template-columns:1fr !important;}}
     </style>
     <script>
