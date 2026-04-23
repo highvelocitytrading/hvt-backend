@@ -13,7 +13,7 @@ const { nowISO }             = require('../helpers/utils');
 const { supabase, revokeMonthlyPropActivations } = require('../services/supabase');
 const { ntRevokeLicense }    = require('../services/ninjatrader');
 const { requireSession }     = require('../middleware/auth');
-const { shell }              = require('../helpers/html');
+const { shell, portalNavCss, portalNavHtml } = require('../helpers/html');
 
 // ─── LICENSE CHECK (called by NT indicators) ──────────────────────────────────
 // GET /api/license-check?machineId=MACHINEID
@@ -104,20 +104,13 @@ router.get('/prop-activation', requireSession, (req, res) => {
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link rel="icon" type="image/png" href="/favicon.png?v=1">
 <title>Activate Prop Account – High Velocity Trading</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#fff;padding:90px 20px 60px;overflow-x:hidden}
+body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#fff;padding:130px 20px 60px;overflow-x:hidden}
 .bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:#000}
 .bg::before{content:'';position:absolute;top:0;left:0;width:65%;height:65%;background:radial-gradient(ellipse at 15% 30%,#00001C 0%,transparent 65%)}
-.topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:64px;width:100%;background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.08)}
-.topnav-logo img{height:29px;width:auto;object-fit:contain;display:block}
-.topnav-right{display:flex;align-items:center;gap:14px}
-.nav-link{color:rgba(255,255,255,0.82);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;text-decoration:none;letter-spacing:0.02em;padding:8px 0;transition:color .2s}
-.nav-link:hover{color:#fff}
-.prop-firm-btn{display:inline-block;background:#2254F5;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.02em;text-decoration:none;padding:8px 14px;border-radius:6px;border:none;transition:background .2s ease,color .2s ease;white-space:nowrap}
-.prop-firm-btn:hover{background:#2d5cf7;color:#fff}
+${portalNavCss()}
 .content{position:relative;z-index:1;max-width:620px;margin:0 auto}
 .hero{text-align:center;margin-bottom:28px}
 .hero-pill{display:inline-block;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.25);border-radius:999px;color:#2254F5;font-size:11px;letter-spacing:3px;text-transform:uppercase;padding:6px 18px;margin-bottom:14px}
@@ -151,23 +144,9 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#ff
 .act-status.active{background:rgba(74,222,128,0.1);color:#4ade80;border:1px solid rgba(74,222,128,0.2)}
 .act-status.revoked{background:rgba(248,113,113,0.1);color:#f87171;border:1px solid rgba(248,113,113,0.2)}
 .empty-state{text-align:center;padding:24px;color:#334155;font-size:13px}
-@media(max-width:600px){.topnav{padding:0 12px}.topnav-logo img{height:21px}}
 </style></head><body>
 <div class="bg" aria-hidden="true"></div>
-<div class="topnav-wrap">
-  <nav class="topnav">
-    <div>
-      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer">
-        <img src="/hvt-logo.cropped.png" alt="HVT" style="height:29px;width:auto;object-fit:contain;display:block;" onerror="this.style.display='none'" />
-      </a>
-    </div>
-    <div class="topnav-right">
-      <a href="/member" class="nav-link">Portal</a>
-      <a href="/billing/confirm-session" class="nav-link">Billing</a>
-      <a href="/logout" class="nav-link">Log out</a>
-    </div>
-  </nav>
-</div>
+${portalNavHtml()}
 <div class="content">
   <div class="hero">
     <span class="hero-pill">PROP FIRM ACTIVATION</span>

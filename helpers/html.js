@@ -13,48 +13,82 @@ function ninjaLogoSVG() {
     return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 17.5V6.5L11 12l-5 5.5Z" fill="#2254F5" opacity="0.95"/><path d="M12.5 18V6l5.5 6-5.5 6Z" fill="#2254F5" opacity="0.95"/><path d="M4.5 19.2h15" stroke="rgba(255,255,255,0.08)" stroke-width="1.2" opacity="0.9"/></svg>`;
 }
 
+// ─── PORTAL NAV (shared across all member tile pages) ─────────────────────────
+// Renders the unified nav bar: V logo + wordmark on the left, a centered pill
+// with Portal/Course/Journal/Shop, and Billing/Log out/Prop Firms on the right.
+// `active` marks which pill link is the current page: 'portal' | 'course' |
+// 'journal' | 'shop' | null.
+function portalNavCss() {
+    return `
+.hvt-nav{position:fixed;top:16px;left:0;right:0;z-index:20;padding:0 24px;pointer-events:none;}
+.hvt-nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;position:relative;pointer-events:auto;}
+.hvt-nav-logo{display:flex;align-items:center;gap:0;text-decoration:none;flex-shrink:0;margin-top:-14px;margin-left:-20px;}
+.hvt-nav-logo .hvt-nav-logo-img{height:94px;width:auto;object-fit:contain;filter:drop-shadow(0 2px 10px rgba(0,85,254,0.30));}
+.hvt-nav-wordmark{font-size:14px;font-weight:500;color:rgba(255,255,255,0.90);letter-spacing:0.14em;text-transform:uppercase;white-space:nowrap;margin-left:-50px;font-family:'Inter','General Sans','DM Sans',sans-serif;opacity:1;transform:translateX(0);filter:blur(0);transition:opacity .35s cubic-bezier(0.22,1,0.36,1),transform .45s cubic-bezier(0.22,1,0.36,1),filter .35s ease,letter-spacing .45s cubic-bezier(0.22,1,0.36,1),margin-left .45s cubic-bezier(0.22,1,0.36,1);}
+.hvt-nav.is-collapsed .hvt-nav-wordmark{opacity:0;transform:translateX(-14px);filter:blur(4px);letter-spacing:0.04em;margin-left:-80px;pointer-events:none;}
+.hvt-nav-pill{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;padding:6px 8px;background:rgba(255,255,255,0.05);backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);border:1px solid rgba(255,255,255,0.08);border-radius:100px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.06),0 4px 24px rgba(0,0,0,0.25);}
+.hvt-nav-pill a{font-size:13px;font-weight:500;color:rgba(255,255,255,0.55);text-decoration:none;letter-spacing:0.01em;padding:8px 18px;border-radius:100px;transition:color .18s,background .18s;font-family:'Inter','General Sans','DM Sans',sans-serif;}
+.hvt-nav-pill a:hover{color:#fff;background:rgba(255,255,255,0.08);}
+.hvt-nav-pill a.active{color:#0055fe;background:rgba(0,85,254,0.12);}
+.hvt-nav-cta{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.hvt-nav-cta a{font-size:13px;font-weight:500;letter-spacing:0.01em;text-decoration:none;padding:8px 18px;border-radius:100px;transition:background .18s,border-color .18s,color .18s;font-family:'Inter','General Sans','DM Sans',sans-serif;}
+.hvt-nav-link-ghost{color:rgba(255,255,255,0.55);padding:8px 0 !important;border-radius:0 !important;}
+.hvt-nav-link-ghost:hover{color:#fff;}
+.hvt-nav-btn-primary{color:#fff;background:#0055fe;box-shadow:0 6px 20px rgba(0,85,254,0.35),inset 0 1px 0 rgba(255,255,255,0.18);}
+.hvt-nav-btn-primary:hover{background:#1a6aff;box-shadow:0 10px 28px rgba(0,85,254,0.45),inset 0 1px 0 rgba(255,255,255,0.22);}
+@media(max-width:820px){.hvt-nav-pill{display:none;}}
+@media(max-width:560px){.hvt-nav{padding:0 12px;top:12px;}.hvt-nav-link-ghost{display:none;}.hvt-nav-logo{margin-top:-8px;margin-left:-8px;}.hvt-nav-logo .hvt-nav-logo-img{height:60px;}.hvt-nav-wordmark{margin-left:-30px;font-size:11px;}}
+`;
+}
+
+function portalNavHtml(active, extraCta) {
+    const cls = (k) => k === active ? ' class="active"' : '';
+    const extra = extraCta || '';
+    return `<nav class="hvt-nav">
+  <div class="hvt-nav-inner">
+    <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="hvt-nav-logo">
+      <img src='/assets/%22V%22%20HVT.png' alt="High Velocity Trading" class="hvt-nav-logo-img" onerror="this.onerror=null;this.style.display='none'" />
+      <span class="hvt-nav-wordmark">HIGH VELOCITY TRADING</span>
+    </a>
+    <div class="hvt-nav-pill">
+      <a href="/member"${cls('portal')}>Portal</a>
+      <a href="/course"${cls('course')}>Course</a>
+      <a href="/trading-journal"${cls('journal')}>Journal</a>
+      <a href="/shop"${cls('shop')}>Shop</a>
+    </div>
+    <div class="hvt-nav-cta">
+      <a href="/billing/confirm-session" class="hvt-nav-link-ghost">Billing</a>
+      <a href="/logout" class="hvt-nav-link-ghost">Log out</a>
+      <a href="/prop-activation" class="hvt-nav-btn-primary">Prop Firms</a>
+      ${extra}
+    </div>
+  </div>
+</nav>
+<script>(function(){var n=document.querySelector('.hvt-nav');if(!n)return;var t=28,k=false;function s(){k=false;if(window.scrollY>t)n.classList.add('is-collapsed');else n.classList.remove('is-collapsed');}window.addEventListener('scroll',function(){if(!k){requestAnimationFrame(s);k=true;}},{passive:true});s();})();</script>`;
+}
+
 // ─── PAGE SHELL ───────────────────────────────────────────────────────────────
 // Full branded HTML page wrapper with nav, hero, and footer
 function shell(title, body, hero) {
     const pill      = (hero && hero.pill)  ? hero.pill  : 'MEMBER PORTAL';
     const heroTitle = (hero && hero.title) ? hero.title : 'Your Edge Starts Here';
     const heroSub   = (hero && hero.sub)   ? hero.sub   : 'Access your live trading room, course, and billing — all in one place.';
+    const navActive = (hero && hero.navActive) ? hero.navActive : null;
     return `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link rel="icon" type="image/png" href="/favicon.png?v=1">
 <title>${title} – High Velocity Trading</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Bebas+Neue&family=Montserrat:wght@800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Bebas+Neue&family=Montserrat:wght@800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;margin:0;padding:110px 20px 24px;color:#fff;position:relative;overflow-x:hidden;display:flex;flex-direction:column;align-items:center;}
+body{font-family:'DM Sans',sans-serif;background:#000000;min-height:100vh;margin:0;padding:130px 20px 24px;color:#fff;position:relative;overflow-x:hidden;display:flex;flex-direction:column;align-items:center;}
 .hvt-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:#000000;}
 .hvt-bg::before{content:'';position:absolute;top:0;left:0;width:65%;height:65%;background:radial-gradient(ellipse at 15% 30%,#00001C 0%,transparent 65%);pointer-events:none;}
 .hero{text-align:center;margin-bottom:16px;position:relative;z-index:1;}
 .hero-pill{display:inline-block;background:rgba(34,84,245,0.08);border:1px solid rgba(34,84,245,0.25);border-radius:999px;color:#2254F5;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-family:'DM Sans',sans-serif;padding:6px 18px;}
 .hero-pill{display:inline-block;}.hero h1{display:block;font-size:32px;font-weight:800;color:#fff;letter-spacing:-0.5px;margin:14px 0 8px;line-height:1.1;font-family:'DM Sans',sans-serif;}.hero-sub{display:block;color:#64748b;font-size:14px;line-height:1.6;max-width:440px;margin:0 auto;}
 .hero-div{height:1px;background:linear-gradient(90deg,transparent,rgba(34,84,245,0.3),transparent);margin:16px auto 0;max-width:200px;}
-.topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10;}
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:64px;width:100%;background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.08);position:relative;}
-.topnav-logo{display:flex;align-items:center;gap:0;text-decoration:none;}
-.topnav-logo img{height:29px;width:auto;object-fit:contain;display:block;background:transparent;}
-.topnav-left{display:flex;align-items:center;gap:12px;}
-.topnav-left a.topnav-link{color:rgba(255,255,255,0.65);font-size:14px;font-weight:500;text-decoration:none;letter-spacing:0.2px;padding:8px 0;transition:color .2s;}
-.topnav-left a.topnav-link:hover{color:rgba(255,255,255,0.85);}
-.topnav-right{display:flex;align-items:center;gap:12px;flex-shrink:0;}
-.topnav-right a.topnav-link,.topnav-right a.topnav-out{color:rgba(255,255,255,0.82);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;text-decoration:none;letter-spacing:0.02em;padding:8px 0;transition:color .2s;}
-.topnav-right a.topnav-link:hover,.topnav-right a.topnav-out:hover{color:#fff;}
-.topnav-cta{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);letter-spacing:0.2px;transition:background .2s,color .2s,border-color .2s;}
-.topnav-cta:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18);}
-.prop-firm-btn{display:inline-block;background:#2254F5;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.02em;text-decoration:none;padding:8px 14px;border-radius:6px;border:none;transition:background .2s ease,color .2s ease;white-space:nowrap;}
-.prop-firm-btn:hover{background:#2d5cf7;color:#fff;}
-.prop-firm-btn:active{opacity:0.92;}
-@media(max-width:600px){
-  .topnav{padding:0 12px;}
-  .topnav-left a.topnav-link{display:none;}
-  .topnav-right a.topnav-link,.topnav-right a.topnav-out{display:none;}
-  .topnav-right a.topnav-cta{display:inline-block;}
-  .topnav-logo img{height:21px;}
-}
+${portalNavCss()}
 .card{width:100%;max-width:460px;background:rgba(255,255,255,0.03);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(34,84,245,0.2);border-radius:20px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.6);position:relative;z-index:1;}
 .ct{height:3px;background:linear-gradient(90deg,#2254F5,#2254F5,#2254F5);}
 .cb{padding:36px 32px;}
@@ -90,16 +124,7 @@ input::placeholder{color:#334155;}
 .discord-join-btn img{height:22px;width:auto;object-fit:contain;flex-shrink:0;display:block;}
 </style></head><body>
 <div class="hvt-bg" aria-hidden="true"></div>
-<div class="topnav-wrap">
-  <nav class="topnav">
-    <div class="topnav-left">
-      <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topnav-logo"><img src="/hvt-logo.cropped.png" alt="High Velocity Trading" style="height:29px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display='none'" /></a>
-    </div>
-    <div class="topnav-right" style="display:flex;align-items:center;gap:12px;">
-      ${hero && hero.hideNav ? '' : '<a href="/member" class="topnav-link">Portal</a><a href="/billing/confirm-session" class="topnav-out">Billing</a><a href="/logout" class="topnav-out">Log out</a><a href="/prop-activation" class="prop-firm-btn">Prop Firms</a>'}
-    </div>
-  </nav>
-</div>
+${hero && hero.hideNav ? '' : portalNavHtml(navActive)}
 <div class="hero">
   <span class="hero-pill">${pill}</span>
   <h1>${heroTitle}</h1>
@@ -389,4 +414,4 @@ body::before{content:'';position:fixed;inset:0;background:
 </body></html>`;
 }
 
-module.exports = { V_LOGO_SVG, ninjaLogoSVG, shell, resultPage, memberPortalHtml };
+module.exports = { V_LOGO_SVG, ninjaLogoSVG, shell, resultPage, memberPortalHtml, portalNavCss, portalNavHtml };

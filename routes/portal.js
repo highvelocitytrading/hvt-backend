@@ -22,7 +22,7 @@ const {
     SESSION_COOKIE: AUTH_COOKIE, _sessions,
     createSession, getSessionFromCookie, getSessionAsync, requireSession
 }                                                   = require('../middleware/auth');
-const { shell, resultPage, memberPortalHtml, ninjaLogoSVG } = require('../helpers/html');
+const { shell, resultPage, memberPortalHtml, ninjaLogoSVG, portalNavCss, portalNavHtml } = require('../helpers/html');
 const { frm, rateLimit }                            = require('../middleware/rateLimiter');
 
 // ─── CHECK ACCESS (external Jotform check) ────────────────────────────────────
@@ -667,21 +667,16 @@ router.get('/member', requireSession, (req, res) => {
 router.get('/shop', requireSession, (req, res) => {
     const s = req._session;
     res.send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Member Shop — HVT</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:"DM Sans",sans-serif;background:#000;min-height:100vh;color:#fff;overflow-x:hidden}
 .bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:#000}
 .bg::before{content:"";position:absolute;top:0;left:0;width:70%;height:60%;background:radial-gradient(ellipse at 20% 20%,#00001C 0%,transparent 60%);pointer-events:none}
-.topnav-wrap{position:fixed;top:0;left:0;right:0;z-index:10}
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;width:100%;background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.08)}
-.topnav-logo img{height:29px;width:auto;object-fit:contain;display:block}
-.topnav-right{display:flex;align-items:center;gap:12px}
-.topnav-out{color:rgba(255,255,255,0.82);font-size:13px;font-weight:600;text-decoration:none;padding:8px 0;transition:color .2s}
-.topnav-out:hover{color:#fff}
+${portalNavCss()}
 .back-btn{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,0.5);font-size:13px;font-weight:500;text-decoration:none;padding:8px 0;transition:color .2s}
 .back-btn:hover{color:#fff}
-.wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:100px 24px 80px}
+.wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:130px 24px 80px}
 .hero{text-align:center;margin-bottom:56px}
 .pill{display:inline-block;background:rgba(212,168,83,0.12);border:1px solid rgba(232,200,120,0.35);border-radius:999px;color:#e8c878;font-size:10px;letter-spacing:3px;text-transform:uppercase;padding:5px 16px;margin-bottom:16px}
 .hero h1{font-size:36px;font-weight:800;letter-spacing:-0.5px;color:#fff;margin-bottom:10px}
@@ -719,17 +714,10 @@ body{font-family:"DM Sans",sans-serif;background:#000;min-height:100vh;color:#ff
 .coming-soon{display:block;width:100%;padding:14px;background:rgba(255,255,255,0.04);color:#334155;border:1px solid rgba(255,255,255,0.07);border-radius:999px;font-size:13px;font-weight:600;text-align:center;cursor:default;letter-spacing:0.5px}
 .footer-note{text-align:center;color:#334155;font-size:12px;padding-top:32px;border-top:1px solid rgba(255,255,255,0.05)}
 .footer-note a{color:#475569;text-decoration:none}
-@media(max-width:600px){.topnav{padding:0 12px}.hero h1{font-size:26px}}
+@media(max-width:600px){.hero h1{font-size:26px}}
 </style></head><body>
 <div class="bg" aria-hidden="true"></div>
-<div class="topnav-wrap"><nav class="topnav">
-  <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer"><img src="/hvt-logo.cropped.png" alt="HVT" style="height:29px;width:auto;object-fit:contain;display:block;" onerror="this.onerror=null;this.style.display=none" /></a>
-  <div class="topnav-right">
-    <a href="/member" class="topnav-out">Portal</a>
-    <a href="/billing/confirm-session" class="topnav-out">Billing</a>
-    <a href="/logout" class="topnav-out">Log out</a>
-  </div>
-</nav></div>
+${portalNavHtml('shop')}
 <div class="wrap">
   <a href="/member" class="back-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back to Portal</a>
   <div class="hero" style="margin-top:24px;">
@@ -1214,26 +1202,18 @@ router.get('/api/journal/data', requireSession, async (req, res) => {
 // ─── COURSE PLAYER ────────────────────────────────────────────────────────────
 router.get('/course', requireSession, (req, res) => {
     const s = req._session;
-    const LOGO_URL = '/hvt-logo.cropped.png';
     res.send(`<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Course Library — HVT</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
-body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-serif;display:flex;flex-direction:column}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;border-bottom:1px solid rgba(255,255,255,0.08);background:rgba(10,10,12,0.85);backdrop-filter:blur(16px);flex-shrink:0;z-index:200;position:relative}
-.topbar-left{display:flex;align-items:center;gap:12px;min-width:0;flex-shrink:0}
-.topbar-logo{display:flex;align-items:center;text-decoration:none;flex-shrink:0}
-.topbar-logo img{height:29px;width:auto;object-fit:contain;display:block}
-.topbar-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
-.topnav-link,.topnav-out{color:rgba(255,255,255,0.82);font-size:13px;font-weight:600;text-decoration:none;padding:8px 0;transition:color .2s}
-.topnav-link:hover,.topnav-out:hover{color:#fff}
-.prop-firm-btn{display:inline-block;background:#2254F5;color:#fff;font-size:12px;font-weight:500;text-decoration:none;padding:8px 14px;border-radius:6px;white-space:nowrap}
-.prop-firm-btn:hover{background:#2d5cf7}
+body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-serif;display:flex;flex-direction:column;padding-top:110px}
+@media(max-width:560px){body{padding-top:80px}}
+${portalNavCss()}
 .mob-menu{display:none;align-items:center;justify-content:center;width:36px;height:36px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:6px;cursor:pointer;color:rgba(255,255,255,0.7);font-size:18px;flex-shrink:0}
 .layout{display:flex;flex:1;overflow:hidden}
 .sidebar{width:288px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.07);background:#060810;display:flex;flex-direction:column;overflow:hidden;transition:transform .25s ease}
@@ -1279,32 +1259,15 @@ body{background:#060810;color:#fff;font-family:'DM Sans',-apple-system,sans-seri
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:149;backdrop-filter:blur(2px)}
 .sidebar-overlay.show{display:block}
 @media(max-width:768px){
-  .topbar{padding:0 12px;height:56px}
-  .topbar-logo img{height:21px}
-  .topbar-right a.topnav-link,.topbar-right a.topnav-out{display:none}
   .mob-menu{display:flex}
-  .sidebar{position:fixed;left:0;top:56px;bottom:0;width:280px;z-index:150;transform:translateX(-100%);box-shadow:4px 0 32px rgba(0,0,0,0.6)}
+  .sidebar{position:fixed;left:0;top:80px;bottom:0;width:280px;z-index:150;transform:translateX(-100%);box-shadow:4px 0 32px rgba(0,0,0,0.6)}
   .sidebar.open{transform:translateX(0)}
   .video-meta{padding:12px 16px}
   .video-meta h2{font-size:14px}
 }
-@media(max-width:400px){.topbar-logo img{height:18px}}
 </style>
 </head><body>
-<div class="topbar">
-  <div class="topbar-left">
-    <a href="https://highvelocitytrading.com" target="_blank" rel="noopener noreferrer" class="topbar-logo">
-      <img src="${LOGO_URL}" alt="High Velocity Trading" onerror="this.style.display='none'" />
-    </a>
-  </div>
-  <div class="topbar-right">
-    <a href="/member" class="topnav-link">Portal</a>
-    <a href="/billing/confirm-session" class="topnav-out">Billing</a>
-    <a href="/logout" class="topnav-out">Log out</a>
-    <a href="/prop-activation" class="prop-firm-btn">Prop Firms</a>
-    <button class="mob-menu" id="mobMenu">&#9776;</button>
-  </div>
-</div>
+${portalNavHtml('course', '<button class="mob-menu" id="mobMenu">&#9776;</button>')}
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="layout">
   <div class="sidebar" id="sidebar">
