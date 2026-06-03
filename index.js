@@ -57,7 +57,7 @@ app.use(webhooksRouter);
 app.use(formsRouter);
 app.use(paymentRouter);
 app.use(licensesRouter);
-app.use(echoRouter);
+app.use('/api/echo', echoRouter);
 app.use('/billing', billingRouter);
 app.use('/cancel',  cancelRouter);
 app.use(portalRouter);
