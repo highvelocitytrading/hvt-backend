@@ -208,7 +208,7 @@ async function activate(){
 async function loadActivations(){
   const list=document.getElementById('actsList');
   try{
-    const r=await fetch('/api/prop-activations/mine');
+    const r=await fetch('prop-activations/mine');
     const d=await r.json();
     if(!d.ok||!d.activations||!d.activations.length){list.innerHTML='<div class="empty-state">No activations yet.</div>';return;}
     list.innerHTML=d.activations.map(a=>'<div class="act-row"><div><div class="act-firm">'+esc(a.firm_name)+'</div><div class="act-mid">'+(a.machine_id?a.machine_id.substring(0,14)+'...':'No machine ID')+'</div></div><span class="act-status '+(a.status||'')+'">'+esc(a.status)+'</span></div>').join('');
