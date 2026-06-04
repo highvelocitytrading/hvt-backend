@@ -56,6 +56,7 @@ app.use('/api/payment', corsForForms);
 app.use(webhooksRouter);
 app.use(formsRouter);
 app.use(paymentRouter);
+app.use('/api', licensesRouter);
 app.use(licensesRouter);
 app.use('/api/echo', echoRouter);
 app.use('/billing', billingRouter);
